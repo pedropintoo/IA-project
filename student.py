@@ -5,14 +5,96 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
-
 import asyncio
 import getpass
 import os
+import websockets
+import json
+
+from src.search_problem import SearchProblem
+from src.snake_game import SnakeGame
+from src.search_tree import SearchTree
 
 async def agent_loop(server_address="localhost:8000", agent_name="student"):
     """Autonomous AI client loop."""
     print(f"Hello world! I'm {agent_name} and I'm ready to play in {server_address}.")
+
+    async with websockets.connect(f"ws://{server_address}/player") as websocket:
+        # Receive information about static game properties
+        await websocket.send(json.dumps({"cmd": "join", "name": agent_name}))
+
+        map_info = json.loads(
+            await websocket.recv() ###
+        )
+        
+        step_info = json.loads(
+            await websocket.recv()
+        )
+        
+        food = step_info["food"]
+        body = step_info["body"]
+        
+        first_food = food[0][:-1]
+        head = body[0]
+        print(head)
+        print(first_food)
+        domain = SnakeGame(None, first_food)
+        problem = SearchProblem(domain, initial=head, goal=first_food)
+        
+        tree = SearchTree(problem, 'A*')
+        solution = tree.search() # lista pa la chegar
+        directions = tree.inverse_plan
+        print(directions)
+        
+        key = ""
+        direction = directions.pop()
+        
+        if direction == "NORTH":
+            key = "w"
+        elif direction == "WEST":
+            key = "a"
+        elif direction == "SOUTH":
+            key = "s"
+        elif direction == "EAST":
+            key = "d"
+
+        while True:
+            try:
+                state = json.loads(
+                    await websocket.recv()
+                )  # receive game update, this must be called timely or your game will get out of sync with the server
+                print("PIP")
+                # print(
+                #     state
+                # )  # print the state, you can use this to further process the game state
+                key = ""
+                
+                if len(directions) == 0:
+                    problem = SearchProblem(domain, initial=state["body"][0], goal=[state["food"][0][0],state["food"][0][1]])
+                    tree = SearchTree(problem, 'A*')
+                    solution = tree.search() # lista pa la chegar
+                    directions = tree.inverse_plan
+                
+                direction = directions.pop()
+                
+                if direction == "NORTH":
+                    key = "w"
+                elif direction == "WEST":
+                    key = "a"
+                elif direction == "SOUTH":
+                    key = "s"
+                elif direction == "EAST":
+                    key = "d"
+                print(direction)
+                
+                await websocket.send(
+                    json.dumps({"cmd": "key", "key": key})
+                )  # send key command to server - you must implement this send in the AI agent
+            except websockets.exceptions.ConnectionClosedOK:
+                print("Server has cleanly disconnected us")
+                return
+
+        
 
 # DO NOT CHANGE THE LINES BELLOW
 # You can change the default values using the command line, example:

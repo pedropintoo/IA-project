@@ -5,9 +5,16 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
-from search_domain import SearchDomain
-from consts import Direction
+from src.search_domain import SearchDomain
+import numpy as np
 import math
+
+DIRECTIONS = {
+    "NORTH": [0, 1],
+    "EAST": [1, 0],
+    "WEST": [-1, 0],
+    "SOUTH": [0, -1] 
+}
 
 class SnakeGame(SearchDomain):
     def __init__(self, body_coords, food_coords):
@@ -15,29 +22,20 @@ class SnakeGame(SearchDomain):
         self.food_coords = food_coords
     
     def actions(self, state): # given a state, what direction can I go
-        actlist = [Direction.NORTH, Direction.EAST, Direction.WEST, Direction.SOUTH]
+        actlist = ["NORTH", "EAST", "WEST", "SOUTH"]
         return actlist 
     
-    def result(self,city,action): # Given a city and an action, what is the next city?
-        (C1,C2) = action
-        if C1==city:
-            return C2 # TODO: ...
-    
-    def cost(self, city, action):
-        # city1,city2 = action
-        
-        # if city1 == city2:
-        #     return None # or assert..
-        
-        # for (c1, c2, cost) in self.connections:
-        #     if action in [(c1,c2), (c2,c1)]:
-        #         return cost
-        
-        return None
-        
-    def heuristic(self, city, goal_city):
-        pass
+    def result(self,state, action): # Given a state and an action, what is the next state?
+        vector = DIRECTIONS[action]
+        # print(state, action, " = ", [state[0] + vector[0], state[1] + vector[1]])
+        return [state[0] + vector[0], state[1] + vector[1]]
 
-    def satisfies(self, city, goal_state):
-        return goal_state==city
+    def cost(self, state, action):
+        return 1
     
+    def heuristic(self, state, goal_state):
+        return (abs(state[0] - goal_state[0]) + abs(state[1] - goal_state[1])) * 10
+
+    def satisfies(self, state, goal_state):
+        return state == goal_state
+
