@@ -42,3 +42,4 @@ python -m pygame.examples.aliens
 # Tested on:
 - MacOS 15.0.1
 - Ubuntu 24.04
+- Fedora 40
