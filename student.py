@@ -10,6 +10,10 @@ import asyncio
 import getpass
 import os
 
+async def agent_loop(server_address="localhost:8000", agent_name="student"):
+    """Autonomous AI client loop."""
+    print(f"Hello world! I'm {agent_name} and I'm ready to play in {server_address}.")
+
 # DO NOT CHANGE THE LINES BELLOW
 # You can change the default values using the command line, example:
 # $ NAME='arrumador' python3 student.py
