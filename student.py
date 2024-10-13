@@ -27,37 +27,12 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
             await websocket.recv() ###
         )
         
-        step_info = json.loads(
-            await websocket.recv()
-        )
+        width, height = map_info["size"]
         
-        food = step_info["food"]
-        body = step_info["body"]
+        domain = SnakeGame(width, height)
         
-        first_food = food[0][:-1]
-        head = body[0]
-        print(head)
-        print(first_food)
-        domain = SnakeGame(None, first_food)
-        problem = SearchProblem(domain, initial=head, goal=first_food)
+        directions = None
         
-        tree = SearchTree(problem, 'A*')
-        solution = tree.search() # lista pa la chegar
-        directions = tree.inverse_plan
-        print(directions)
-        
-        key = ""
-        direction = directions.pop()
-        
-        if direction == "NORTH":
-            key = "w"
-        elif direction == "WEST":
-            key = "a"
-        elif direction == "SOUTH":
-            key = "s"
-        elif direction == "EAST":
-            key = "d"
-
         while True:
             try:
                 state = json.loads(
@@ -69,10 +44,14 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
                 # )  # print the state, you can use this to further process the game state
                 key = ""
                 
-                if len(directions) == 0:
-                    problem = SearchProblem(domain, initial=state["body"][0], goal=[state["food"][0][0],state["food"][0][1]])
+                if directions == None or len(directions) == 0:
+                    body = state["body"]
+                    food = [state["food"][0][0],state["food"][0][1]]
+                    
+                    problem = SearchProblem(domain, initial=body, goal=food)
                     tree = SearchTree(problem, 'A*')
                     solution = tree.search() # lista pa la chegar
+                    print(solution)
                     directions = tree.inverse_plan
                 
                 direction = directions.pop()
