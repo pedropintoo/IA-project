@@ -1,6 +1,7 @@
 venv/
 env/
 .idea/
+highscores.json
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
