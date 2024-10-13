@@ -15,6 +15,21 @@ from src.search_problem import SearchProblem
 from src.snake_game import SnakeGame
 from src.search_tree import SearchTree
 
+DIRECTION_TO_KEY = {
+    "NORTH": "w",
+    "WEST": "a",
+    "SOUTH": "s",
+    "EAST": "d"
+}
+
+def find_ones(matrix):
+    ones_coordinates = []
+    for row_idx, row in enumerate(matrix):
+        for col_idx, value in enumerate(row):
+            if value == 1:
+                ones_coordinates.append([row_idx, col_idx])
+    return ones_coordinates
+
 async def agent_loop(server_address="localhost:8000", agent_name="student"):
     """Autonomous AI client loop."""
     print(f"Hello world! I'm {agent_name} and I'm ready to play in {server_address}.")
@@ -28,8 +43,9 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
         )
         
         width, height = map_info["size"]
-        
-        domain = SnakeGame(width, height)
+        internal_walls = find_ones(map_info["map"])
+
+        domain = SnakeGame(width, height, internal_walls, traverse=True)
         
         directions = None
         
@@ -46,26 +62,19 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
                 
                 if directions == None or len(directions) == 0:
                     body = state["body"]
+                    body = body + body[0]
                     food = [state["food"][0][0],state["food"][0][1]]
+                    domain.traverse = state["traverse"]
                     
                     problem = SearchProblem(domain, initial=body, goal=food)
                     tree = SearchTree(problem, 'A*')
                     solution = tree.search() # lista pa la chegar
-                    print(solution)
+
                     directions = tree.inverse_plan
-                
+
                 direction = directions.pop()
-                
-                if direction == "NORTH":
-                    key = "w"
-                elif direction == "WEST":
-                    key = "a"
-                elif direction == "SOUTH":
-                    key = "s"
-                elif direction == "EAST":
-                    key = "d"
-                print(direction)
-                
+                key = DIRECTION_TO_KEY[direction]
+                print(domain.traverse, direction)                
                 await websocket.send(
                     json.dumps({"cmd": "key", "key": key})
                 )  # send key command to server - you must implement this send in the AI agent
