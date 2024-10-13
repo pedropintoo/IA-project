@@ -1,22 +1,15 @@
-import argparse
-import asyncio
 import json
 import logging
-import os
 import sys
-
 import pygame
+import os
+import argparse
+import asyncio
 import websockets
 
-logging.basicConfig(level=logging.DEBUG)
-logger_websockets = logging.getLogger("websockets")
-logger_websockets.setLevel(logging.WARN)
+from common import Directions, Food, Snake, ScoreBoard, get_direction
 
-logger = logging.getLogger("Viewer")
-logger.setLevel(logging.DEBUG)
-
-from viewer.common import Directions, Food, Snake, ScoreBoard, get_direction
-from viewer.sprites import SnakeSprite, FoodSprite, ScoreBoardSprite
+from sprites import SnakeSprite, FoodSprite, ScoreBoardSprite
 
 
 async def main_loop(q):

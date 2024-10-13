@@ -74,7 +74,6 @@ class SearchTree:
                 return self.get_path(node)
 
             self.non_terminals += 1
-            print(node.cost, node.heuristic, " = ", node.cost+node.heuristic)
             if limit != None and node.depth >= limit:
                 continue
             

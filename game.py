@@ -10,7 +10,7 @@ logger = logging.getLogger("Game")
 logger.setLevel(logging.DEBUG)
 
 INITIAL_SCORE = 0   # 0
-GAME_SPEED = 15     # 10
+GAME_SPEED = 10     # 10
 MAP_SIZE = (48, 24) # (48, 24)
 
 
@@ -114,7 +114,7 @@ class Snake:
         self._body.append(new_pos)
         if self.to_grow > 0:  # if we are growing
             self.to_grow -= 1
-        elif self.to_grow < 0:  # if we are shrinking
+        elif self.to_grow < 0 and len(self._body)>3:  # if we are shrinking
             self.to_grow += 1
             self._body.pop(0)
             self._body.pop(0)

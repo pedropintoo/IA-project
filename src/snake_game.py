@@ -27,7 +27,6 @@ class SnakeGame(SearchDomain):
         
         if not self.traverse:
             if new_head in self.internal_walls:
-                print("WALL")
                 return True
             
             ## Crossing border walls
@@ -42,10 +41,8 @@ class SnakeGame(SearchDomain):
         _actlist = []
         for direction in DIRECTIONS:
             new_head = self.result(body,direction)[0]
-            print(direction)
             if not self._check_collision(body, new_head):
                 _actlist.append(direction)
-        print(_actlist)
         return _actlist 
 
     def result(self, body, action): # Given a state and an action, what is the next state?
