@@ -18,7 +18,7 @@ logger = logging.getLogger("Map")
 logger.setLevel(logging.DEBUG)
 
 STAR = (3 * 16, 7 * 16)
-
+## For pygame data/tilemap.png
 SNAKE = {
     "up": (3 * 40, 0),
     "left": (4 * 40, 1 * 40),
