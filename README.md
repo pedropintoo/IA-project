@@ -6,31 +6,39 @@ Snakes clone for AI teaching
 
 Make sure you are running Python 3.11.
 
-`$ pip install -r requirements.txt`
-
-*Tip: you might want to create a virtualenv first*
+```bash
+python3 -m venv venv
+source env/bin/activate
+pip install -r requirements.txt
+```
 
 ## How to play
 
-open 3 terminals:
+Open **3 terminals**:
+```bash
+python3 server.py
+```
+```bash
+python3 viewer.py
+```
+```bash
+python3 client.py
+```
 
-`$ python3 server.py`
-
-`$ python3 viewer.py`
-
-`$ python3 client.py`
-
-to play using the sample client make sure the client pygame hidden window has focus
+:warning: To play using the sample client make sure the client pygame hidden window has focus.
 
 ### Keys
 
-Directions: arrows
+*Directions*: arrows
 
 ## Debug Installation
 
 Make sure pygame is properly installed:
 
+```bash
 python -m pygame.examples.aliens
+```
 
 # Tested on:
 - MacOS 15.0.1
+- Ubuntu 24.04
