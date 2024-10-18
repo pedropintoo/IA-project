@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import sys
+import pprint
 
 from consts import Tiles
 import pygame
@@ -17,17 +18,30 @@ logger = logging.getLogger("Viewer")
 logger.setLevel(logging.DEBUG)
 
 from viewer.common import Directions, Food, Snake, Stone, ScoreBoard, get_direction
-from viewer.sprites import SnakeSprite, FoodSprite, StoneSprite, ScoreBoardSprite
+from viewer.sprites import GameStateSprite, SnakeSprite, FoodSprite, StoneSprite, ScoreBoardSprite
 
 
 async def main_loop(q):
     while True:
         await main()
 
+def should_quit():
+    for event in pygame.event.get():
+        if event.type == pygame.QUIT:
+            pygame.quit()
+            raise SystemExit
+
 
 async def main(SCALE=32):
     logging.info("Waiting for map information from server")
-    state = await q.get()  # first state message includes map information
+    while True:
+        try:
+            should_quit()
+            state = q.get_nowait()  # first state message includes map information
+            break
+        except asyncio.queues.QueueEmpty:
+            await asyncio.sleep(0.1)
+        
     logging.debug("Initial game status: %s", state)
     newgame_json = json.loads(state)
 
@@ -39,6 +53,7 @@ async def main(SCALE=32):
     display = pygame.display.set_mode((SCALE * WIDTH, SCALE * HEIGHT))
 
     all_sprites = pygame.sprite.Group()
+    snake_sprites = pygame.sprite.Group()
     food_sprites = pygame.sprite.Group()
     prev_foods = None
 
@@ -49,30 +64,10 @@ async def main(SCALE=32):
                 all_sprites.add(StoneSprite(Stone(pos=(x, y)), WIDTH, HEIGHT, SCALE))
 
     while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.display.quit()
-                pygame.quit()
-                sys.exit(0)
-
-        # Render Window
-        display.fill("white")
-
-        try:
-            all_sprites.update()
-            food_sprites.update()
-        except Exception as e:
-            logging.error(e)
-        food_sprites.draw(display)
-        all_sprites.draw(display)
-
-        # update window
-        pygame.display.flip()
+        should_quit()
 
         try:
             state = json.loads(q.get_nowait())
-            import pprint
-
             pprint.pprint(state)
 
             if "snakes" in state and "food" in state:
@@ -81,9 +76,10 @@ async def main(SCALE=32):
                 foods_update = state["food"]
             else:
                 print("Show SCOREBOARD")
+                return
 
         except asyncio.queues.QueueEmpty:
-            await asyncio.sleep(1.0 / GAME_SPEED)
+            await asyncio.sleep(0.1 / GAME_SPEED)
             continue
 
         # Update Foods
@@ -102,13 +98,18 @@ async def main(SCALE=32):
         # Update Snakes
         if new_game:
             snakes = {
-                snake["name"]: Snake(body=snake["body"], direction=Directions.RIGHT)
+                snake["name"]: Snake(body=snake["body"], direction=Directions.RIGHT, score=snake["score"], name=snake["name"], traverse=snake["traverse"])
                 for snake in snakes_update
             }
 
             all_sprites.add(
+                [GameStateSprite(snake, i, WIDTH, HEIGHT, SCALE) for i, snake in enumerate(snakes.values())]
+            )
+
+            snake_sprites.add(
                 [SnakeSprite(snake, WIDTH, HEIGHT, SCALE) for snake in snakes.values()]
             )
+
             new_game = False
         else:
             for snake in snakes_update:
@@ -118,6 +119,29 @@ async def main(SCALE=32):
                 snakes[snake["name"]].direction = get_direction(
                     head[0], head[1], neck[0], neck[1], HEIGHT=HEIGHT, WIDTH=WIDTH
                 )
+                snakes[snake["name"]].score = snake["score"]
+                snakes[snake["name"]].traverse = snake["traverse"]
+
+            # Remove dead snakes
+            for snake in snakes.values():
+                if snake.name not in [s["name"] for s in snakes_update]:
+                    snake_sprites.remove([s for s in snake_sprites if s.snake.name == snake.name])
+
+        # Render Window
+        display.fill("white")
+
+        try:
+            all_sprites.update()
+            snake_sprites.update()
+            food_sprites.update()
+        except Exception as e:
+            logging.error(e)
+        food_sprites.draw(display)
+        all_sprites.draw(display)
+        snake_sprites.draw(display)
+
+        # update window
+        pygame.display.flip()
 
 
 async def messages_handler(ws_path, queue):
