@@ -48,6 +48,7 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
         domain = SnakeGame(width, height, internal_walls, traverse=True)
         
         directions = None
+        # last_direction = None
         
         while True:
             try:
@@ -73,11 +74,16 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
                     directions = tree.inverse_plan
 
                 direction = directions.pop()
+                
+                # if last_direction != None and last_direction != direction:
+                
                 key = DIRECTION_TO_KEY[direction]
                 print(domain.traverse, direction)                
                 await websocket.send(
                     json.dumps({"cmd": "key", "key": key})
                 )  # send key command to server - you must implement this send in the AI agent
+                    # last_direction = direction
+                
             except websockets.exceptions.ConnectionClosedOK:
                 print("Server has cleanly disconnected us")
                 return

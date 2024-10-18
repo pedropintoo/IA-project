@@ -21,8 +21,20 @@ class SearchNode:
         return str(self)
 
     def in_parent(self, newstate):
+        
         if self.parent == None:
             return False
-        if self.parent.state == newstate:
+        
+        print(self.parent.state, newstate)
+        
+        if self.parent.state[0][0] == newstate[0][0] and self.parent.state[0][1] == newstate[0][1]:
+            print(self.parent.state[0], newstate[0])
+        if self.parent.state[0] == newstate[0]:
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
             return True
+        
+        if self.parent.state == newstate:
+            print("<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
+            return True
+
         return self.parent.in_parent(newstate)
