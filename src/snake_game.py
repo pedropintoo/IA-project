@@ -15,17 +15,17 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, width, height, internal_walls, traverse):
+    def __init__(self, width, height, internal_walls):
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
-        self.traverse = traverse
     
-    def _check_collision(self, body, new_head):
+    def _check_collision(self, state, new_head):
+        body = state["body"]
         if new_head in body:
             return True
         
-        if not self.traverse:
+        if not state["traverse"]:
             if new_head in self.internal_walls:
                 return True
             
@@ -37,44 +37,51 @@ class SnakeGame(SearchDomain):
             
         return False
     
-    def actions(self, body): # given a state, what direction can I go
+    def actions(self, state): # given a state, what direction can I go
         _actlist = []
         for direction in DIRECTIONS:
-            new_head = self.result(body,direction)[0]
-            if not self._check_collision(body, new_head):
+            new_head = self.result(state,direction)["body"][0]
+            if not self._check_collision(state, new_head):
                 _actlist.append(direction)
         return _actlist 
 
-    def result(self, body, action): # Given a state and an action, what is the next state?
+    def result(self, state, action): # Given a state and an action, what is the next state?
+        body = state["body"]
         vector = DIRECTIONS[action]
         new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
         new_body = body[:]
         new_body.pop()
         new_body[:0] = [new_head]
-        return new_body
+        return {
+                "body": new_body,
+                "sight": state["sight"],
+                "range": state["range"],
+                "traverse": state["traverse"]
+                }
 
     def cost(self, state, action):
         return 1
     
-    def heuristic(self, body, goal_state):
-        head = body[0]
+    def heuristic(self, state, goal_state):
+        head = state["body"][0]
+        traverse = state["traverse"]
         # Internal walls are not considered
         
         dx_no_crossing_walls = abs(head[0] - goal_state[0])
-        if self.traverse:
+        if traverse:
             dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
         else:
             dx = dx_no_crossing_walls
             
         dy_no_crossing_walls = abs(head[1] - goal_state[1])
-        if self.traverse:
+        if traverse:
             dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
         else:
             dy = dy_no_crossing_walls
 
         return (dx + dy) * 10
 
-    def satisfies(self, body, goal_state):
-        head = body[0]
+    def satisfies(self, state, goal_state):
+        head = state["body"][0]
         return head == goal_state
 

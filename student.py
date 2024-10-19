@@ -11,6 +11,7 @@ import os
 import websockets
 import json
 import logging
+import random
 
 from src.search_problem import SearchProblem
 from src.snake_game import SnakeGame
@@ -59,6 +60,8 @@ class Agent:
         self.sight = None
         self.range = None
         
+        self.directions = []
+        
 
     async def run(self):
         await self.connect()
@@ -82,26 +85,33 @@ class Agent:
         self.domain = SnakeGame(
             self.width, 
             self.height, 
-            self.internal_walls, 
-            traverse=True
+            self.internal_walls
         )
     
     async def observe(self, state):
         self.step = state["step"]
-        self.food = state["food"]
         self.ts = state["ts"]
+        self.food = state["food"]
         self.body = state["body"]
         self.sight = state["sight"]
         self.range = state["range"]
         self.traverse = state["traverse"]
-        self.domain.traverse = self.traverse
     
     async def think(self):
         self.action = ""
         
-        if self.search_enable:
-            self.search_enable = False
-            self.problem = SearchProblem(self.domain, initial=self.body, goal=[self.food[0][0], self.food[0][1]])
+        if self.directions != []:
+            self.action = DIRECTION_TO_KEY[self.directions.pop()]
+            logger.info(f"Following solution! [{self.action}]")
+        else:
+            
+            initial_state = {
+                "body": self.body + [self.body[0]], # extend the body to avoid collision with tail 
+                "sight": self.sight, 
+                "range": self.range, 
+                "traverse": self.traverse
+            }
+            self.problem = SearchProblem(self.domain, initial=initial_state, goal=[self.food[0][0], self.food[0][1]])
             self.tree = SearchTree(self.problem, 'A*')
             
             loop = asyncio.get_event_loop()
@@ -110,14 +120,6 @@ class Agent:
             self.directions = self.tree.inverse_plan
             self.action = DIRECTION_TO_KEY[self.directions.pop()]
             logger.info("Solution founded!")
-            return
-        
-        if self.directions:
-            self.action = DIRECTION_TO_KEY[self.directions.pop()]
-            logger.info(f"Following solution! [{self.action}]")
-            return
-        else:
-            self.search_enable = True
         
     
     async def act(self):
@@ -127,7 +129,13 @@ class Agent:
         )
 
     def fast_action(self):
-        return "" # TODO: Implement a fast action to prevent collisions
+        print("\33[31mFast action!\33[0m")
+        return DIRECTION_TO_KEY[random.choice(self.domain.actions({
+                                                  "body": self.body,
+                                                  "sight": self.sight,
+                                                  "range": self.range,
+                                                  "traverse": self.traverse
+                                                  }))] # TODO: Implement a better strategy
     
     async def play(self):
 
@@ -147,11 +155,10 @@ class Agent:
                 await self.observe(state)
                 try:
                     logger.info("Thinking...")
-                    await asyncio.wait_for(self.think(), timeout=1/(self.fps+1))
+                    await asyncio.wait_for(self.think(), timeout=1/(self.fps+3))
                 except asyncio.TimeoutError:
-                    self.search_enable = True
+                    self.directions = []
                     self.action = self.fast_action()
-                    logger.info(f"Timeout [{1/(self.fps+1)} seconds]! Fast action!")
                 finally:
                     await self.act()
                                 
