@@ -11,3 +11,8 @@ Equal probability:
 Impact:
  - SCORE++
  
+
+## TODO:
+
+After mapping, allot of super foods.
+Play with probabilities and eat all in a once.
