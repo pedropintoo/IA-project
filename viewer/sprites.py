@@ -163,6 +163,17 @@ class SnakeSprite(pygame.sprite.Sprite):
         prev_x, prev_y = self.snake.body[0]
         prev_dir = None
 
+        # Draw the sight as squares based on grid-based sight
+        for x, y_dict in self.snake.sight.items():
+            x = int(x) 
+            for y, value in y_dict.items():
+                if value != 0:
+                    continue
+                y = int(y)
+
+                rect = pygame.Rect(x * self.SCALE, y * self.SCALE, self.SCALE, self.SCALE)
+                pygame.draw.rect(self.image, "darkseagreen2", rect, 1)  # Green outline for sight
+                    
         # Walk from 1st body position towards tail
         for x, y in self.snake.body[1:]:
             dir = get_direction(x, y, prev_x, prev_y, self.HEIGHT, self.WIDTH)

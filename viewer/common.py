@@ -33,6 +33,7 @@ class Snake:
     score: int
     name: str
     traverse: bool
+    sight: dict[str, dict[str, int]]
 
 
 @dataclass
