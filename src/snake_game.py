@@ -20,6 +20,9 @@ class SnakeGame(SearchDomain):
         self.height = height
         self.internal_walls = internal_walls
     
+    def _body_perfect_effects(self, state):
+        return int(state["range"])
+    
     def _check_collision(self, state, new_head):
         body = state["body"]
         if new_head in body:
