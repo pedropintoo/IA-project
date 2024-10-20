@@ -37,32 +37,30 @@ class SearchTree:
 
     # Path (sequence of states) from root to node
     def get_path(self,node):
-        if node.parent == None:
-            return [node.state]
-        path = self.get_path(node.parent)
-        path += [node.state]
-        return (path)
+        path = []
+        while node is not None:
+            path[:0] = [node.state]
+            node = node.parent
+        return path
 
     @property
     def plan(self):
         n = self.solution
-        _plan = [n.action]
-        while n.parent != None:
-            n = n.parent
+        _plan = []
+        while n is not None:
             if n.action:
                 _plan[:0] = [n.action]
-
+            n = n.parent
         return _plan
     
     @property
     def inverse_plan(self):
         n = self.solution
-        _plan = [n.action]
-        while n.parent != None:
-            n = n.parent
+        _plan = []
+        while n is not None:
             if n.action:
-                _plan.extend([n.action])
-
+                _plan.append(n.action)
+            n = n.parent
         return _plan
 
     # Search solution

@@ -59,7 +59,8 @@ class Agent:
         self.range = None
         
         self.available_objects = [Tiles.FOOD, Tiles.SUPER, Tiles.SNAKE]
-        self.last_saw_objects = {}
+        self.objects_saw = {}
+        self.last_objects_saw = {}
 
     async def run(self):
         await self.connect()
@@ -118,12 +119,15 @@ class Agent:
     
     async def think(self):
         self.action = self.fast_action(error=False)
-        saw_objects = self.find_objects(self.sight)
+        self.objects_saw = self.find_objects(self.sight)
         
-        if self.body_perfect_effects() and Tiles.SUPER.value in saw_objects.keys():
-            del saw_objects[Tiles.SUPER.value]
+        if self.body_perfect_effects() and Tiles.SUPER.value in self.objects_saw.keys():
+            del self.objects_saw[Tiles.SUPER.value] # TODO: Implement a better strategy
         
-        if self.directions != [] and all([saw_objects[obj] == [] for obj in self.available_objects]):
+        if Tiles.SNAKE.value in self.objects_saw.keys():
+            del self.objects_saw[Tiles.SNAKE.value] # TODO: Implement a better strategy
+        
+        if self.directions != [] and all([self.objects_saw[obj] == [] for obj in self.available_objects]):
             self.action = DIRECTION_TO_KEY[self.directions.pop()]
             logger.info(f"Following solution! [{self.action}]")
         else:
@@ -135,9 +139,9 @@ class Agent:
                 "traverse": self.traverse
             }
             
-            logger.info(f"Saw objects: {saw_objects}")
-            if saw_objects != {}:
-                goal = random.choice(list(saw_objects.values())[0]) # TODO: Implement a better strategy
+            logger.info(f"Saw objects: {self.objects_saw}")
+            if self.objects_saw != {}:
+                goal = random.choice(list(self.objects_saw.values())[0]) # TODO: Implement a better strategy
             else:
                 if self.exploration_path == []:
                     self.exploration_path = self.matrix.get_exploration_path(self.range)
@@ -145,11 +149,12 @@ class Agent:
                 
             logger.info(f"Searching for solution! {goal}")
             self.problem = SearchProblem(self.domain, initial=initial_state, goal=goal)
-            self.tree = SearchTree(self.problem, 'greedy')
+            self.tree = SearchTree(self.problem, 'A*')
             
             try:
                 loop = asyncio.get_event_loop()
                 await loop.run_in_executor(None, self.tree.search)
+                logger.info(f"Average branching: {self.tree.avg_branching}")
             except Exception as e:
                 logger.error(f"Error: {e}")
                 
@@ -162,7 +167,8 @@ class Agent:
                         logger.info(f"Following solution! [{self.action}]")
                         logger.info("Solution founded!")
         
-        self.last_saw_objects = saw_objects
+        self.last_objects_saw = self.objects_saw
+        self.objects_saw = {}
     
     async def act(self):
         logger.info(f"Action: [{self.action}, {self.traverse}] in [{self.domain.actions({'body': self.body, 'sight': self.sight, 'range': self.range, 'traverse': self.traverse})}]")
@@ -176,6 +182,7 @@ class Agent:
         if error:
             print("\33[31mFast action!\33[0m")
             self.directions = []
+            self.objects_saw = {}
         return DIRECTION_TO_KEY[random.choice(self.domain.actions({
                                                   "body": self.body,
                                                   "sight": self.sight,

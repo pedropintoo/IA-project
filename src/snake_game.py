@@ -20,11 +20,12 @@ class SnakeGame(SearchDomain):
         self.height = height
         self.internal_walls = internal_walls
     
-    def _body_perfect_effects(self, state):
-        return int(state["range"])
-    
-    def _check_collision(self, state, new_head):
+    def _check_collision(self, state, action):
+        """Check if the action will result in a collision"""
         body = state["body"]
+        vector = DIRECTIONS[action]
+        new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
+        
         if new_head in body:
             return True
         
@@ -32,7 +33,6 @@ class SnakeGame(SearchDomain):
             if new_head in self.internal_walls:
                 return True
             
-            ## Crossing border walls
             head = body[0]
             distance = [abs(new_head[0] - head[0]), abs(new_head[1] - head[1])]
             if distance[0] > 1 or distance[1] > 1:
@@ -40,21 +40,21 @@ class SnakeGame(SearchDomain):
             
         return False
     
-    def actions(self, state): # given a state, what direction can I go
+    def actions(self, state):
+        """Return the list of possible actions in a given state"""
         _actlist = []
-        for direction in DIRECTIONS:
-            new_head = self.result(state,direction)["body"][0]
-            if not self._check_collision(state, new_head):
-                _actlist.append(direction)
+        for action in DIRECTIONS:
+            if not self._check_collision(state, action):
+                _actlist.append(action)
         return _actlist 
 
     def result(self, state, action): # Given a state and an action, what is the next state?
         body = state["body"]
         vector = DIRECTIONS[action]
         new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
-        new_body = body[:]
-        new_body.pop()
-        new_body[:0] = [new_head]
+        
+        new_body = [new_head] + body[:-1]
+        
         return {
                 "body": new_body,
                 "sight": state["sight"],
