@@ -20,6 +20,9 @@ class SnakeGame(SearchDomain):
         self.height = height
         self.internal_walls = internal_walls
     
+    def is_perfect_effects(self, state):
+        return state["range"] >= 5 and state["traverse"]
+    
     def _check_collision(self, state, action):
         """Check if the action will result in a collision"""
         body = state["body"]
@@ -57,7 +60,7 @@ class SnakeGame(SearchDomain):
         
         return {
                 "body": new_body,
-                "sight": state["sight"],
+                "observed_objects": state["observed_objects"],
                 "range": state["range"],
                 "traverse": state["traverse"]
                 }

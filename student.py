@@ -51,17 +51,123 @@ class Agent:
         self.exploration_path = []
         self.directions = []
         
-        self.search_enable = True
-        self.current_step = 0
-        self.ts = datetime.now()
-        self.body = None
-        self.sight = None
-        self.range = None
+        self.fps = None
+        self.timeout = None
+        self.domain = None
         
-        self.available_objects = [Tiles.FOOD, Tiles.SUPER, Tiles.SNAKE]
-        self.objects_saw = {}
-        self.last_objects_saw = {}
+        self.state = None
+        self.range = None
+        self.action = None
+        
+        self.observed_objects = defaultdict(list)
+        self.last_observed_objects = None
+    
+    def _ignore_object(self, obj):
+        if obj == Tiles.PASSAGE or obj == Tiles.STONE:
+            return True
+        if obj == Tiles.SUPER and self.domain.is_perfect_effects(self.state):
+            return True
+        if obj == Tiles.SNAKE:
+            return True
+        return False   
 
+    def _update_observed_objects(self):
+        self.last_observed_objects = self.observed_objects.copy()
+        self.observed_objects = defaultdict(list)
+        
+        for x_str, y_dict in self.state["sight"].items():
+            x = int(x_str) 
+            for y_str, value in y_dict.items():
+                y = int(y_str)
+                if self._ignore_object(value):
+                    continue
+                self.observed_objects[value].append([x, y])
+                
+        logger.info(f"Observed objects: {self.observed_objects}")
+
+    def _nothing_new_observed(self):
+        return all( self.observed_objects.get(obj) == self.last_observed_objects.get(obj) 
+                    for obj in self.observed_objects)
+
+    def observe(self, state):
+        self.state = state
+        self.ts = datetime.fromisoformat(state["ts"])
+        self.range = state["range"]
+        self._update_observed_objects()
+        
+        # Recalculate the exploration path if the range changes
+        if self.range != self.state["range"]:
+            self.range = self.state["range"]
+            self.exploration_path = self.matrix.get_exploration_path(self.range) # TODO: start from the current position (and continue the path)
+            logger.info(f"Exploration path recalculated! [{self.range}]")
+
+    def _find_goal(self):
+        """Find the goal to reach"""
+        if Tiles.FOOD in self.observed_objects:
+            return random.choice(self.observed_objects[Tiles.FOOD])
+        
+        if Tiles.SUPER in self.observed_objects:
+            return random.choice(self.observed_objects[Tiles.SUPER])
+        
+        if len(self.exploration_path) == 0:
+            self.exploration_path = self.matrix.get_exploration_path(self.range)
+        
+        return self.exploration_path.pop()
+
+    def _get_fast_action(self, warning=True):
+        """Non blocking fast action"""
+        if warning:
+            print("\33[31mFast action!\33[0m")
+
+        return DIRECTION_TO_KEY[random.choice(self.domain.actions(self.state))]
+
+    def think(self, time_limit):
+        # Follow a solution (nothing new observed)
+        if len(self.directions) != 0 and self._nothing_new_observed():
+            logger.info(f"Following solution! [{self.action}]")
+            self.action = DIRECTION_TO_KEY[self.directions.pop()]
+            return
+        
+        # Search for a new one
+        initial_state = {
+            "body": self.state["body"][:], 
+            "observed_objects": self.observed_objects[:], 
+            "range": self.range, 
+            "traverse": self.state["traverse"]
+        }
+        initial_state["body"].append(self.state["body"][-1]) # Append the last element to avoid tail collision 
+        
+        goal = self._find_goal()
+        logger.info(f"Searching a path to {goal}")
+        
+        self.problem = SearchProblem(self.domain, initial=initial_state, goal=goal)
+        self.tree = SearchTree(self.problem, 'greedy')
+        
+        solution = self.tree.search(time_limit=time_limit)
+        logger.info(f"Average branching: {self.tree.avg_branching}")
+
+        if not solution:
+            self.action = self._get_fast_action(warning=True)
+            return
+
+        logger.info("Solution founded!")
+        self.directions = self.tree.inverse_plan
+        self.action = DIRECTION_TO_KEY[self.directions.pop()]
+        logger.info(f"Following solution! [{self.action}]")
+
+    def _action_not_possible(self):
+        return self.action not in [DIRECTION_TO_KEY[direction] for direction in self.domain.actions(self.state)]
+    
+    async def act(self):
+        logger.info(f"Action: {self.action}")
+        if self._action_not_possible():
+            logger.info(f"\33[31mAction not possible! [{self.action}]\33[0m")
+            self.action = self._get_fast_action(warning=True)
+        
+        await self.websocket.send(
+            json.dumps({"cmd": "key", "key": self.action})
+        )
+    
     async def run(self):
         await self.connect()
         await self.play()
@@ -76,119 +182,14 @@ class Agent:
         map_info = json.loads(await self.websocket.recv())
         self.matrix = Matrix(map_info["map"])
         
-        self.width = self.matrix.width
-        self.height = self.matrix.height
-        self.internal_walls = self.matrix.find_ones()
-        
         self.fps = map_info["fps"]
         self.timeout = map_info["timeout"]
-        self.level = map_info["level"] # not used        
         
         self.domain = SnakeGame(
-            self.width, 
-            self.height, 
-            self.internal_walls
+            self.matrix.width, 
+            self.matrix.height, 
+            internal_walls=self.matrix.find_ones()
         )
-    
-    async def observe(self, state):
-        self.current_step = state["step"]
-        self.ts =  datetime.fromisoformat(state["ts"])
-        self.body = state["body"]
-        self.sight = state["sight"]
-        self.traverse = state["traverse"]
-        
-        # Recalculate the exploration path if the range changes
-        if self.range != state["range"]:
-            self.range = state["range"]
-            self.exploration_path = self.matrix.get_exploration_path(self.range)
-            logger.info(f"Exploration path recalculated! [{self.range}]")
-    
-    def find_objects(self, sight):
-        objects = defaultdict(list)
-        for x, y_dict in self.sight.items():
-            x = int(x) 
-            for y, value in y_dict.items():
-                y = int(y)
-                if [x, y] in self.body or value not in self.available_objects:
-                    continue
-                objects[value].append([x, y])
-        return objects
-    
-    def body_perfect_effects(self):
-        return self.range == 6 or (self.range == 5 and self.traverse)
-    
-    async def think(self):
-        self.action = self.fast_action(error=False)
-        self.objects_saw = self.find_objects(self.sight)
-        
-        if self.body_perfect_effects() and Tiles.SUPER.value in self.objects_saw.keys():
-            del self.objects_saw[Tiles.SUPER.value] # TODO: Implement a better strategy
-        
-        if Tiles.SNAKE.value in self.objects_saw.keys():
-            del self.objects_saw[Tiles.SNAKE.value] # TODO: Implement a better strategy
-        
-        if self.directions != [] and all([self.objects_saw[obj] == [] for obj in self.available_objects]):
-            self.action = DIRECTION_TO_KEY[self.directions.pop()]
-            logger.info(f"Following solution! [{self.action}]")
-        else:
-            
-            initial_state = {
-                "body": self.body + [self.body[0]], # extend the body to avoid collision with tail 
-                "sight": self.sight, 
-                "range": self.range, 
-                "traverse": self.traverse
-            }
-            
-            logger.info(f"Saw objects: {self.objects_saw}")
-            if self.objects_saw != {}:
-                goal = random.choice(list(self.objects_saw.values())[0]) # TODO: Implement a better strategy
-            else:
-                if self.exploration_path == []:
-                    self.exploration_path = self.matrix.get_exploration_path(self.range)
-                goal = self.exploration_path.pop()
-                
-            logger.info(f"Searching for solution! {goal}")
-            self.problem = SearchProblem(self.domain, initial=initial_state, goal=goal)
-            self.tree = SearchTree(self.problem, 'A*')
-            
-            try:
-                loop = asyncio.get_event_loop()
-                await loop.run_in_executor(None, self.tree.search)
-                logger.info(f"Average branching: {self.tree.avg_branching}")
-            except Exception as e:
-                logger.error(f"Error: {e}")
-                
-            if self.tree.solution:
-                self.directions = self.tree.inverse_plan
-                if self.directions != []:
-                    d = self.directions.pop()
-                    if d in DIRECTION_TO_KEY.keys():
-                        self.action = DIRECTION_TO_KEY[d]
-                        logger.info(f"Following solution! [{self.action}]")
-                        logger.info("Solution founded!")
-        
-        self.last_objects_saw = self.objects_saw
-        self.objects_saw = {}
-    
-    async def act(self):
-        logger.info(f"Action: [{self.action}, {self.traverse}] in [{self.domain.actions({'body': self.body, 'sight': self.sight, 'range': self.range, 'traverse': self.traverse})}]")
-        if self.action not in [DIRECTION_TO_KEY[d] for d in self.domain.actions({'body': self.body, 'sight': self.sight, 'range': self.range, 'traverse': self.traverse})]:
-            self.action = self.fast_action(error=True)
-        await self.websocket.send(
-            json.dumps({"cmd": "key", "key": self.action})
-        )
-
-    def fast_action(self, error=True):
-        if error:
-            print("\33[31mFast action!\33[0m")
-            self.directions = []
-            self.objects_saw = {}
-        return DIRECTION_TO_KEY[random.choice(self.domain.actions({
-                                                  "body": self.body,
-                                                  "sight": self.sight,
-                                                  "range": self.range,
-                                                  "traverse": self.traverse
-                                                  }))] # TODO: Implement a better strategy
     
     async def play(self):
 
@@ -198,22 +199,17 @@ class Agent:
                 state = json.loads(
                     await self.websocket.recv()
                 )
-                logger.info("Received state: [%s]", state["step"])
                 
                 if state.get("body") is None:
                     logger.info("Game Over!")
                     return
                 
-                await self.observe(state)
-                start = self.ts
-                try:
-                    logger.info("Thinking...")
-                    await asyncio.wait_for(self.think(), timeout=1/(self.fps*2) - (datetime.now() - self.ts).total_seconds())
-                except asyncio.TimeoutError:
-                    self.action = self.fast_action()
-                finally:
-                    logger.info(f"Time elapsed: {(datetime.now() - start).total_seconds()}")
-                    await self.act()
+                logger.info("Received state: [%s]", state["step"])
+                
+                self.observe(state)
+                self.think(time_limit=self.ts + timedelta(seconds=1/(self.fps+1)))
+                await self.act()
+                logger.info(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
                                 
             except websockets.exceptions.ConnectionClosedOK:
                 print("Server has cleanly disconnected us")

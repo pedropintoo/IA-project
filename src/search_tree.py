@@ -5,6 +5,9 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
+import heapq
+import datetime
+
 from src.search_node import SearchNode
 from src.search_problem import SearchProblem
 
@@ -15,12 +18,15 @@ class SearchTree:
         self.problem = problem
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goal))
         self.open_nodes = [root]
+        heapq.heapify(self.open_nodes)
         self.strategy = strategy
         self.solution = None
         self.non_terminals = 0
         
     @property 
     def avg_branching(self):
+        if self.non_terminals == 0:
+            return 0
         return (self.terminals + self.non_terminals - 1) / self.non_terminals
      
     @property
@@ -64,47 +70,46 @@ class SearchTree:
         return _plan
 
     # Search solution
-    def search(self, limit=None):
-        while self.open_nodes != []:
-            node = self.open_nodes.pop(0) # don't forgot this pop! in self.terminals
+    def search(self, time_limit=None):
+        while self.open_nodes is not None:
+            node = heapq.heappop(self.open_nodes)
+
+            # Goal test
             if self.problem.goal_test(node.state):
                 self.solution = node
                 return self.get_path(node)
 
             self.non_terminals += 1
-            if limit != None and node.depth >= limit:
-                continue
             
-            lnewnodes = [] # lower nodes!
-            for act in self.problem.domain.actions(node.state): # get the next possible actions!
-                newstate = self.problem.domain.result(node.state,act)
-                if node.in_parent(newstate):
+            if time_limit is not None and datetime.datetime.now() >= time_limit: 
+                return None
+            
+            new_lower_nodes = []
+            # Iterate over possible actions to generate new nodes
+            for act in self.problem.domain.actions(node.state):
+                new_state = self.problem.domain.result(node.state,act)
+                
+                if node.in_parent(new_state):
                     continue
+                
                 cost = node.cost + self.problem.domain.cost(node.state, act)
-                newnode = SearchNode(
-                    newstate, 
+                new_node = SearchNode(
+                    new_state, 
                     node, 
                     cost,
-                    heuristic=self.problem.domain.heuristic(newstate, self.problem.goal),
+                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goal),
                     action=act
                     )
-                lnewnodes.append(newnode)
+                new_lower_nodes.append(new_node)
                             
-            self.add_to_open(lnewnodes)
+            self.add_to_open(new_lower_nodes)
         return None
     
     # add new nodes to the list of open nodes according to the strategy
-    def add_to_open(self, lnewnodes):
-        if self.strategy == 'breadth':
-            self.open_nodes.extend(lnewnodes)
-        elif self.strategy == 'depth':
-            self.open_nodes[:0] = lnewnodes
-        elif self.strategy == 'uniform':
-            self.open_nodes.extend(lnewnodes)
-            self.open_nodes.sort(key=lambda node: node.cost)
-        elif self.strategy == 'greedy':
-            self.open_nodes.extend(lnewnodes)
-            self.open_nodes.sort(key=lambda node: node.heuristic)
-        elif self.strategy == 'A*':
-            self.open_nodes.extend(lnewnodes)
-            self.open_nodes.sort(key=lambda node: node.cost + node.heuristic)
+    def add_to_open(self, new_lower_nodes):
+        for node in new_lower_nodes:
+            if self.strategy == 'greedy':
+                heapq.heappush(self.open_nodes, node)
+            elif self.strategy == 'A*':
+                heapq.heappush(self.open_nodes, node)
+    

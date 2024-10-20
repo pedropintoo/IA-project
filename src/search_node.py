@@ -19,7 +19,11 @@ class SearchNode:
         return "no(" + str(self.state) + "," + str(self.parent) + ")"
     def __repr__(self):
         return str(self)
-
+    def __hash__(self):
+        return hash(str(self.state))
+    def __lt__(self, other):
+        return (self.cost + self.heuristic) < (other.cost + other.heuristic)
+    
     def in_parent(self, newstate):
         
         if self.parent == None:
@@ -32,3 +36,5 @@ class SearchNode:
             return True
 
         return self.parent.in_parent(newstate)
+
+    
