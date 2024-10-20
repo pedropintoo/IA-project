@@ -12,6 +12,7 @@ import websockets
 import json
 import logging
 import random
+import heapq
 
 from src.search_problem import SearchProblem
 from src.snake_game import SnakeGame
@@ -28,6 +29,8 @@ DIRECTION_TO_KEY = {
     "SOUTH": "s",
     "EAST": "d"
 }
+
+SUPER_FOOD_TIMEOUT = 5
 
 logging.basicConfig(
     level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -59,8 +62,10 @@ class Agent:
         self.range = None
         self.action = None
         
-        self.observed_objects = defaultdict(list)
         self.last_observed_objects = None
+        self.observed_objects = defaultdict(list)
+
+        self.current_goal = None
     
     def _ignore_object(self, obj):
         if obj == Tiles.PASSAGE or obj == Tiles.STONE:
@@ -84,13 +89,22 @@ class Agent:
         logger.info(f"Observed objects: {self.observed_objects}")
 
     def _nothing_new_observed(self):
-        return all( self.observed_objects.get(obj) == self.last_observed_objects.get(obj) 
-                    for obj in self.observed_objects)
+        if self.domain.is_perfect_effects(self.state):
+            return all(
+                self.last_observed_objects[obj] == self.observed_objects[obj] 
+                for obj in self.observed_objects
+                if obj != Tiles.SUPER
+            )
+            
+        return all(
+            self.last_observed_objects[obj] == self.observed_objects[obj] 
+            for obj in self.observed_objects
+        )    
+        
 
     def observe(self, state):
         self.state = state
         self.ts = datetime.fromisoformat(state["ts"])
-        self.range = state["range"]
         self._update_observed_objects()
         
         # Recalculate the exploration path if the range changes
@@ -101,16 +115,29 @@ class Agent:
 
     def _find_goal(self):
         """Find the goal to reach"""
+        self.current_goal = {"strategy": "food/super", "position": None}
         if Tiles.FOOD in self.observed_objects:
-            return random.choice(self.observed_objects[Tiles.FOOD])
-        
+            self.current_goal["position"] = random.choice(self.observed_objects[Tiles.FOOD])
+            return
+            
         if Tiles.SUPER in self.observed_objects and not self.domain.is_perfect_effects(self.state):
-            return random.choice(self.observed_objects[Tiles.SUPER])
+            self.current_goal["position"] = random.choice(self.observed_objects[Tiles.SUPER])
+            return
         
         if len(self.exploration_path) == 0:
             self.exploration_path = self.matrix.get_exploration_path(self.range)
         
-        return self.exploration_path.pop()
+        self.current_goal = {
+            "strategy": "exploration", 
+            "position": self.exploration_path.pop() # TODO: start from the closest position (maybe change in ExplorationPath class)
+        }
+        return 
+
+    def _undo_last_goal(self):
+        """Undo the last goal"""
+        if self.current_goal is not None and self.current_goal["strategy"] == "exploration":
+            self.exploration_path.append(self.current_goal["position"])
+        self.current_goal = None
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
@@ -121,10 +148,15 @@ class Agent:
 
     def think(self, time_limit):
         # Follow a solution (nothing new observed)
-        if len(self.directions) != 0 and self._nothing_new_observed():
-            logger.info(f"Following solution! [{self.action}]")
-            self.action = DIRECTION_TO_KEY[self.directions.pop()]
-            return
+        if len(self.directions) != 0:
+            if self._nothing_new_observed():
+                logger.info(f"Following solution! [{self.action}]")
+                self.action = DIRECTION_TO_KEY[self.directions.pop()]
+                return
+            else:
+                logger.info("\033[94mNew objects observed!\33[0m")
+        
+        # self._undo_last_goal() # Undo the last goal, if None it does nothing
         
         # Search for a new one
         initial_state = {
@@ -135,12 +167,12 @@ class Agent:
         }
         initial_state["body"].append(self.state["body"][-1]) # Append the last element to avoid tail collision 
         
-        goal = None
-        while goal is None or goal == self.state["body"][0]:
-            goal = self._find_goal()
-        logger.info(f"Searching a path to {goal}")
+        self.current_goal = None
+        while self.current_goal is None or self.current_goal["position"] == self.state["body"][0]:
+            self._find_goal()
+        logger.info(f"Searching a path to {self.current_goal}")
         
-        self.problem = SearchProblem(self.domain, initial=initial_state, goal=goal)
+        self.problem = SearchProblem(self.domain, initial=initial_state, goal=self.current_goal["position"])
         self.tree = SearchTree(self.problem, 'greedy')
         
         solution = self.tree.search(time_limit=time_limit)
@@ -148,10 +180,11 @@ class Agent:
 
         if solution is None:
             self.action = self._get_fast_action(warning=True)
+            # self._undo_last_goal()
             return
 
-        logger.info("Solution founded!")
         self.directions = self.tree.inverse_plan
+        logger.info(f"Plan: {len(self.directions)} from {self.state["body"][0]}")
         self.action = DIRECTION_TO_KEY[self.directions.pop()]
         logger.info(f"Following solution! [{self.action}]")
 

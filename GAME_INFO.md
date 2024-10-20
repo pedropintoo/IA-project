@@ -16,3 +16,6 @@ Impact:
 
 After mapping, allot of super foods.
 Play with probabilities and eat all in a once.
+with a HEAP using waiting times
+
+Quando a visão está a 2, ativar modo: cima baixo cima baixo (remover Hilbert Curves)
