@@ -6,6 +6,7 @@
  # @ Create Time: 2024-10-13
  '''
 from src.search_domain import SearchDomain
+from consts import Tiles
 
 DIRECTIONS = {
     "NORTH": [0, -1],
@@ -72,6 +73,7 @@ class SnakeGame(SearchDomain):
         head = state["body"][0]
         traverse = state["traverse"]
         # Internal walls are not considered
+        total_value = 0
         
         dx_no_crossing_walls = abs(head[0] - goal_state[0])
         if traverse:
@@ -85,7 +87,12 @@ class SnakeGame(SearchDomain):
         else:
             dy = dy_no_crossing_walls
 
-        return (dx + dy) * 10
+        total_value = (dx + dy)
+        
+        if self.is_perfect_effects(state) and head in state["observed_objects"].get(Tiles.SUPER.value, []):
+            total_value += 10
+
+        return total_value * 10
 
     def satisfies(self, state, goal_state):
         head = state["body"][0]

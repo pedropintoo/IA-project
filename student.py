@@ -65,8 +65,6 @@ class Agent:
     def _ignore_object(self, obj):
         if obj == Tiles.PASSAGE or obj == Tiles.STONE:
             return True
-        if obj == Tiles.SUPER and self.domain.is_perfect_effects(self.state):
-            return True
         if obj == Tiles.SNAKE:
             return True
         return False   
@@ -76,13 +74,13 @@ class Agent:
         self.observed_objects = defaultdict(list)
         
         for x_str, y_dict in self.state["sight"].items():
-            x = int(x_str) 
+            x = int(x_str)
             for y_str, value in y_dict.items():
                 y = int(y_str)
                 if self._ignore_object(value):
                     continue
                 self.observed_objects[value].append([x, y])
-                
+
         logger.info(f"Observed objects: {self.observed_objects}")
 
     def _nothing_new_observed(self):
@@ -106,7 +104,7 @@ class Agent:
         if Tiles.FOOD in self.observed_objects:
             return random.choice(self.observed_objects[Tiles.FOOD])
         
-        if Tiles.SUPER in self.observed_objects:
+        if Tiles.SUPER in self.observed_objects and not self.domain.is_perfect_effects(self.state):
             return random.choice(self.observed_objects[Tiles.SUPER])
         
         if len(self.exploration_path) == 0:
@@ -131,13 +129,15 @@ class Agent:
         # Search for a new one
         initial_state = {
             "body": self.state["body"][:], 
-            "observed_objects": self.observed_objects[:], 
+            "observed_objects": self.observed_objects, 
             "range": self.range, 
             "traverse": self.state["traverse"]
         }
         initial_state["body"].append(self.state["body"][-1]) # Append the last element to avoid tail collision 
         
-        goal = self._find_goal()
+        goal = None
+        while goal is None or goal == self.state["body"][0]:
+            goal = self._find_goal()
         logger.info(f"Searching a path to {goal}")
         
         self.problem = SearchProblem(self.domain, initial=initial_state, goal=goal)
@@ -146,7 +146,7 @@ class Agent:
         solution = self.tree.search(time_limit=time_limit)
         logger.info(f"Average branching: {self.tree.avg_branching}")
 
-        if not solution:
+        if solution is None:
             self.action = self._get_fast_action(warning=True)
             return
 

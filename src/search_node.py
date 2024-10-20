@@ -26,9 +26,9 @@ class SearchNode:
     
     def in_parent(self, newstate):
         
-        if self.parent == None:
+        if self.parent is None:
             return False
-                
+            
         if self.parent.state["body"][0] == newstate["body"][0]:
             return True
         

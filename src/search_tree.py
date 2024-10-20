@@ -71,7 +71,7 @@ class SearchTree:
 
     # Search solution
     def search(self, time_limit=None):
-        while self.open_nodes is not None:
+        while self.open_nodes is not None and len(self.open_nodes) > 0:
             node = heapq.heappop(self.open_nodes)
 
             # Goal test
