@@ -18,12 +18,22 @@ class Directions(Enum):
 @dataclass
 class Food:
     pos: tuple
+    is_super: bool
+
+
+@dataclass
+class Stone:
+    pos: tuple
 
 
 @dataclass
 class Snake:
     body: list
     direction: Directions
+    score: int
+    name: str
+    traverse: bool
+    sight: dict[str, dict[str, int]]
 
 
 @dataclass

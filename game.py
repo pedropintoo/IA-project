@@ -22,7 +22,7 @@ class Snake:
         self._direction: Direction = Direction.EAST
         self._history = deque(maxlen=HISTORY_LEN)
         self._score = 0
-        self._traverse = True      # if True, the snake can traverse rocks
+        self._traverse = True  # if True, the snake can traverse stones
         self._alive = True
         self.lastkey = ""
         self.to_grow = 1
@@ -40,7 +40,7 @@ class Snake:
 
     def grow(self, amount=1):
         self.to_grow += amount
-        self.to_grow = max(- len(self._body) + 1, self.to_grow)
+        self.to_grow = max(-len(self._body) + 1, self.to_grow)
 
     @property
     def head(self):
@@ -114,7 +114,7 @@ class Snake:
         self._body.append(new_pos)
         if self.to_grow > 0:  # if we are growing
             self.to_grow -= 1
-        elif self.to_grow < 0 and len(self._body)>3:  # if we are shrinking
+        elif self.to_grow < 0 and len(self._body) > 3:  # if we are shrinking
             self.to_grow += 1
             self._body.pop(0)
             self._body.pop(0)
@@ -166,7 +166,6 @@ class Game:
         self._state = {}
         self._snakes = {}
         self.map = Map(size=size)
-        self.respawn = False
 
     @property
     def snakes(self):
@@ -192,7 +191,6 @@ class Game:
             for player_name in players_names
         }
         self.map.spawn_food()
-
 
     def stop(self):
         logger.info("GAME OVER")
@@ -226,8 +224,6 @@ class Game:
         return True
 
     def kill_snake(self, name):
-        if self.respawn:  # we are already dead, no need to kill again
-            return
         logger.info("[step=%s] Snake <%s> has died", self._step, name)
         self._snakes[name].kill()
 
@@ -242,15 +238,21 @@ class Game:
             return
 
         for name1, snake1 in self._snakes.items():
+            if not snake1.alive:
+                continue
             # check collisions between snakes
             for name2, snake2 in self._snakes.items():
-                if name1 != name2 and snake2.collision(snake1.head):
+                if name1 != name2 and snake2.collision(snake1.head) and snake2.alive:
                     self.kill_snake(name1)
                     snake2.score += KILL_SNAKE_POINTS
 
             # check collisions with the map
             if self.map.is_blocked(snake1.head, traverse=snake1._traverse):
-                logger.info("Snake <%s> has crashed against a wall/rock at %s", name1, snake1.head)
+                logger.info(
+                    "Snake <%s> has crashed against a wall/rock at %s",
+                    name1,
+                    snake1.head,
+                )
                 self.kill_snake(name1)
 
             # check collisions with the food
@@ -263,18 +265,23 @@ class Game:
                     self.map.spawn_food()
                 elif what_i_ate == Tiles.SUPER:
                     kind = random.choice(
-                        [SuperFood.POINTS, SuperFood.LENGTH, SuperFood.RANGE, SuperFood.TRAVERSE]
+                        [
+                            SuperFood.POINTS,
+                            SuperFood.LENGTH,
+                            SuperFood.RANGE,
+                            SuperFood.TRAVERSE,
+                        ]
                     )
                     logger.debug("Snake <%s> ate <%s>", name1, kind.name)
 
                     if kind == SuperFood.POINTS:
-                        snake1.score += random.randint(-5, 5)
+                        snake1.score += random.randint(-5, 10)
                     elif kind == SuperFood.LENGTH:
                         extra = random.randint(-2, 2)
                         snake1.grow(extra)
                         snake1.score += extra
                     elif kind == SuperFood.RANGE:
-                        snake1.range = random.randint(1, 5)
+                        snake1.range = random.randint(2, 6)
                     elif kind == SuperFood.TRAVERSE:
                         snake1._traverse = not snake1._traverse
 
@@ -296,14 +303,15 @@ class Game:
                 logger.debug(f"[{self._step}] SCORE {name}: {snake.score}")
 
         for name, snake in self._snakes.items():
-            self.update_snake(name)
             if not snake.alive:
-                self.kill_snake(name)
+                continue
+            self.update_snake(name)
 
         self.collision()
 
         self._state = {
-            "level": self.map.level,
+            "food": self.map.food,
+            "players": [snake for snake in self._snakes],
             "step": self._step,
             "timeout": self._timeout,
             "snakes": [
@@ -313,12 +321,15 @@ class Game:
                     "sight": snake.sight(self.map, self._snakes.values()),
                     "score": snake.score,
                     "range": snake.range,
-                    "traverse": snake._traverse,   
+                    "traverse": snake._traverse,
                 }
                 for name, snake in self._snakes.items()
+                if snake.alive
             ],
-            "food": self.map.food,
         }
+
+        if all([not snake.alive for snake in self._snakes.values()]):
+            self.stop()
 
         return self._state
 

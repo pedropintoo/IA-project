@@ -6,6 +6,7 @@
  # @ Create Time: 2024-10-13
  '''
 from src.search_domain import SearchDomain
+from consts import Tiles
 
 DIRECTIONS = {
     "NORTH": [0, -1],
@@ -15,21 +16,27 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, width, height, internal_walls, traverse):
+    def __init__(self, width, height, internal_walls):
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
-        self.traverse = traverse
     
-    def _check_collision(self, body, new_head):
+    def is_perfect_effects(self, state):
+        return state["range"] >= 5 and state["traverse"]
+    
+    def _check_collision(self, state, action):
+        """Check if the action will result in a collision"""
+        body = state["body"]
+        vector = DIRECTIONS[action]
+        new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
+        
         if new_head in body:
             return True
         
-        if not self.traverse:
+        if not state["traverse"]:
             if new_head in self.internal_walls:
                 return True
             
-            ## Crossing border walls
             head = body[0]
             distance = [abs(new_head[0] - head[0]), abs(new_head[1] - head[1])]
             if distance[0] > 1 or distance[1] > 1:
@@ -37,44 +44,57 @@ class SnakeGame(SearchDomain):
             
         return False
     
-    def actions(self, body): # given a state, what direction can I go
+    def actions(self, state):
+        """Return the list of possible actions in a given state"""
         _actlist = []
-        for direction in DIRECTIONS:
-            new_head = self.result(body,direction)[0]
-            if not self._check_collision(body, new_head):
-                _actlist.append(direction)
+        for action in DIRECTIONS:
+            if not self._check_collision(state, action):
+                _actlist.append(action)
         return _actlist 
 
-    def result(self, body, action): # Given a state and an action, what is the next state?
+    def result(self, state, action): # Given a state and an action, what is the next state?
+        body = state["body"]
         vector = DIRECTIONS[action]
         new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
-        new_body = body[:]
-        new_body.pop()
-        new_body[:0] = [new_head]
-        return new_body
+        
+        new_body = [new_head] + body[:-1]
+        
+        return {
+                "body": new_body,
+                "observed_objects": state["observed_objects"],
+                "range": state["range"],
+                "traverse": state["traverse"]
+                }
 
     def cost(self, state, action):
         return 1
     
-    def heuristic(self, body, goal_state):
-        head = body[0]
+    def heuristic(self, state, goal_state):
+        head = state["body"][0]
+        traverse = state["traverse"]
         # Internal walls are not considered
+        total_value = 0
         
         dx_no_crossing_walls = abs(head[0] - goal_state[0])
-        if self.traverse:
+        if traverse:
             dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
         else:
             dx = dx_no_crossing_walls
             
         dy_no_crossing_walls = abs(head[1] - goal_state[1])
-        if self.traverse:
+        if traverse:
             dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
         else:
             dy = dy_no_crossing_walls
 
-        return (dx + dy) * 10
+        total_value = (dx + dy)
+        
+        if self.is_perfect_effects(state) and head in state["observed_objects"].get(Tiles.SUPER.value, []):
+            total_value += 10
 
-    def satisfies(self, body, goal_state):
-        head = body[0]
+        return total_value * 10
+
+    def satisfies(self, state, goal_state):
+        head = state["body"][0]
         return head == goal_state
 
