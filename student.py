@@ -8,30 +8,18 @@
 import asyncio
 import getpass
 import os
-import websockets
-import json
-import logging
-import random
-import heapq
 
-from src.search_problem import SearchProblem
-from src.snake_game import SnakeGame
-from src.search_tree import SearchTree
-from src.matrix_operations import Matrix
-from consts import Tiles
+from src.agent import Agent
 
-from datetime import datetime, timedelta
-from collections import defaultdict
-
-        
-
+async def agent_loop(server_address="localhost:8000", agent_name="student"):
+    agent = Agent(server_address, agent_name)
+    await agent.run()
+    
 # DO NOT CHANGE THE LINES BELLOW
 # You can change the default values using the command line, example:
-# $ NAME='arrumador' python3 student.py
+# $ NAME='arrumador' python3 client.py
 loop = asyncio.get_event_loop()
 SERVER = os.environ.get("SERVER", "localhost")
 PORT = os.environ.get("PORT", "8000")
 NAME = os.environ.get("NAME", getpass.getuser())
-
-agent = Agent(f"{SERVER}:{PORT}", NAME)
-loop.run_until_complete(agent.run())
+loop.run_until_complete(agent_loop(f"{SERVER}:{PORT}", NAME))

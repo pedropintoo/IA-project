@@ -17,7 +17,7 @@ import heapq
 from src.search_problem import SearchProblem
 from src.snake_game import SnakeGame
 from src.search_tree import SearchTree
-from src.matrix_operations import Matrix
+from src.matrix_operations import MatrixOperations
 from src.mapping import Mapping
 from consts import Tiles
 
@@ -119,7 +119,7 @@ class Agent:
         
         self.current_goal = {
             "strategy": "exploration", 
-            "position": self.mapping.next_exploration(self.state["body", self.state["range"], self.state["traverse"]])
+            "position": self.mapping.next_exploration(self.state["body"], self.state["range"], self.state["traverse"])
         }
         return 
 
@@ -200,9 +200,9 @@ class Agent:
         self.timeout = map_info["timeout"]
         
         self.domain = SnakeGame(
-            self.matrix.width, 
-            self.matrix.height, 
-            internal_walls=self.matrix.find_ones()
+            width=self.mapping.width, 
+            height=self.mapping.height, 
+            internal_walls=self.mapping.walls
         )
     
     async def play(self):
@@ -231,14 +231,3 @@ class Agent:
                   
         return
         
-
-# DO NOT CHANGE THE LINES BELLOW
-# You can change the default values using the command line, example:
-# $ NAME='arrumador' python3 student.py
-loop = asyncio.get_event_loop()
-SERVER = os.environ.get("SERVER", "localhost")
-PORT = os.environ.get("PORT", "8000")
-NAME = os.environ.get("NAME", getpass.getuser())
-
-agent = Agent(f"{SERVER}:{PORT}", NAME)
-loop.run_until_complete(agent.run())

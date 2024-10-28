@@ -9,11 +9,15 @@ class Mapping:
         self.super_foods = []
         self.exploration_map = []
         
+        self.height = len(matrix)
+        self.width = len(matrix[0])
+        self.walls = MatrixOperations.find_ones(matrix)
+        
         self.exploration_path = ExplorationPath(
-            walls=MatrixOperations.find_ones(matrix), 
+            walls=self.walls, 
             dead_ends=MatrixOperations.find_dead_ends(matrix), 
-            height=len(matrix), 
-            width=len(matrix[0])
+            height=self.height, 
+            width=self.width
         )
         
     def next_exploration(self, body, sight_range, traverse) -> tuple:
