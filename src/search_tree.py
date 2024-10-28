@@ -22,6 +22,7 @@ class SearchTree:
         self.strategy = strategy
         self.solution = None
         self.non_terminals = 0
+        self.max_total_cost = root.heuristic
         
     @property 
     def avg_branching(self):
@@ -83,7 +84,10 @@ class SearchTree:
             
             if time_limit is not None and datetime.datetime.now() >= time_limit: 
                 return None
-            
+
+            if node.cost + node.heuristic > self.max_total_cost:
+                continue
+
             new_lower_nodes = []
             # Iterate over possible actions to generate new nodes
             for act in self.problem.domain.actions(node.state):
