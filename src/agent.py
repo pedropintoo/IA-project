@@ -20,6 +20,7 @@ from src.search_tree import SearchTree
 from src.matrix_operations import MatrixOperations
 from src.mapping import Mapping
 from consts import Tiles
+from src.utils.logger import Logger
 
 from datetime import datetime, timedelta
 from collections import defaultdict
@@ -31,23 +32,15 @@ DIRECTION_TO_KEY = {
     "EAST": "d"
 }
 
-SUPER_FOOD_TIMEOUT = 5
-
-logging.basicConfig(
-    level=logging.DEBUG, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-
 wslogger = logging.getLogger("websockets")
 wslogger.setLevel(logging.INFO)
-
-logger = logging.getLogger("Server")
-logger.setLevel(logging.INFO)
-
 
 class Agent:
     """Autonomous AI client."""
     
     def __init__(self, server_address, agent_name):
+        self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
+        
         self.server_address = server_address
         self.agent_name = agent_name
         
@@ -85,7 +78,7 @@ class Agent:
                     continue
                 self.observed_objects[value].append([x, y])
 
-        logger.info(f"Observed objects: {self.observed_objects}")
+        self.logger.debug(f"Observed objects: {self.observed_objects}")
 
     def _nothing_new_observed(self):
         if self.domain.is_perfect_effects(self.state):
@@ -100,7 +93,6 @@ class Agent:
             for obj in self.observed_objects
         )    
         
-
     def observe(self, state):
         self.state = state
         self.ts = datetime.fromisoformat(state["ts"])
@@ -134,11 +126,11 @@ class Agent:
         # Follow a solution (nothing new observed)
         if len(self.directions) != 0:
             if self._nothing_new_observed():
-                logger.info(f"Following solution! [{self.action}]")
+                self.logger.debug(f"Following solution! [{self.action}]")
                 self.action = DIRECTION_TO_KEY[self.directions.pop()]
                 return
             else:
-                logger.info("\033[94mNew objects observed!\33[0m")
+                self.logger.info("\033[94mNew objects observed!\33[0m")
                 
         # Search for a new one
         initial_state = {
@@ -152,30 +144,30 @@ class Agent:
         self.current_goal = None
         while self.current_goal is None or self.current_goal["position"] == self.state["body"][0]:
             self._find_goal()
-        logger.info(f"Searching a path to {self.current_goal}")
+        self.logger.debug(f"Searching a path to {self.current_goal}")
         
         self.problem = SearchProblem(self.domain, initial=initial_state, goal=self.current_goal["position"])
         self.tree = SearchTree(self.problem, 'greedy')
         
         solution = self.tree.search(time_limit=time_limit)
-        logger.info(f"Average branching: {self.tree.avg_branching}")
+        self.logger.debug(f"Average branching: {self.tree.avg_branching}")
 
         if solution is None:
             self.action = self._get_fast_action(warning=True)
             return
 
         self.directions = self.tree.inverse_plan
-        logger.info(f"Plan: {len(self.directions)} from {self.state["body"][0]}")
+        self.logger.debug(f"Plan: {len(self.directions)} from {self.state["body"][0]}")
         self.action = DIRECTION_TO_KEY[self.directions.pop()]
-        logger.info(f"Following solution! [{self.action}]")
+        self.logger.debug(f"Following solution! [{self.action}]")
 
     def _action_not_possible(self):
         return self.action not in [DIRECTION_TO_KEY[direction] for direction in self.domain.actions(self.state)]
     
     async def act(self):
-        logger.info(f"Action: {self.action}")
+        self.logger.debug(f"Action: {self.action}")
         if self._action_not_possible():
-            logger.info(f"\33[31mAction not possible! [{self.action}]\33[0m")
+            self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
             self.action = self._get_fast_action(warning=True)
         
         await self.websocket.send(
@@ -190,8 +182,8 @@ class Agent:
         self.websocket = await websockets.connect(f"ws://{self.server_address}/player")
         await self.websocket.send(json.dumps({"cmd": "join", "name": self.agent_name}))
 
-        logger.info(f"Connected to server {self.server_address}")
-        logger.info(f"Waiting for game information")
+        self.logger.info(f"Connected to server {self.server_address}")
+        self.logger.debug(f"Waiting for game information")
         
         map_info = json.loads(await self.websocket.recv())
         self.mapping = Mapping(matrix=map_info["map"])
@@ -215,18 +207,18 @@ class Agent:
                 )
                 
                 if state.get("body") is None:
-                    logger.info("Game Over!")
+                    self.logger.info("Game Over!")
                     return
                 
-                logger.info("Received state: [%s]", state["step"])
+                self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
                 self.observe(state)
                 self.think(time_limit=self.ts + timedelta(seconds=1/(self.fps+1)))
                 await self.act()
-                logger.info(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+                self.logger.debug(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
                                 
             except websockets.exceptions.ConnectionClosedOK:
-                print("Server has cleanly disconnected us")
+                self.logger.warning("Server has cleanly disconnected us")
                 return
                   
         return
