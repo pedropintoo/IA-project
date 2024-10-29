@@ -8,8 +8,8 @@
 import heapq
 import datetime
 
-from src.search_node import SearchNode
-from src.search_problem import SearchProblem
+from src.search.search_node import SearchNode
+from src.search.search_problem import SearchProblem
 
 class SearchTree:
     """Search Tree"""

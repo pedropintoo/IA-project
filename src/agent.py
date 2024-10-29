@@ -13,17 +13,20 @@ import json
 import logging
 import random
 import heapq
+from datetime import datetime, timedelta
 
-from src.search_problem import SearchProblem
+## Search
+from src.search.search_problem import SearchProblem
+from src.search.search_tree import SearchTree
 from src.snake_game import SnakeGame
-from src.search_tree import SearchTree
+
+## Mapping & Exploration
 from src.matrix_operations import MatrixOperations
 from src.mapping import Mapping
-from consts import Tiles
-from src.utils.logger import Logger
 
-from datetime import datetime, timedelta
-from collections import defaultdict
+## Utils
+from src.utils.logger import Logger
+from consts import Tiles
 
 DIRECTION_TO_KEY = {
     "NORTH": "w",
@@ -35,150 +38,42 @@ DIRECTION_TO_KEY = {
 wslogger = logging.getLogger("websockets")
 wslogger.setLevel(logging.INFO)
 
+
+
 class Agent:
     """Autonomous AI client."""
     
     def __init__(self, server_address, agent_name):
-        self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
+        ## Utils
+        self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         self.server_address = server_address
         self.agent_name = agent_name
+        self.websocket = None
         
-        self.mapping = None
-        self.directions = []
-        
+        ## Defined by the start of the game
+        self.mapping = None 
         self.fps = None
         self.timeout = None
         self.domain = None
         
+        ## Action controller
+        self.actions_plan = []
         self.state = None
         self.action = None
-        
-        self.last_observed_objects = None
-        self.observed_objects = defaultdict(list)
-
         self.current_goal = None
+        self.perfect_effects = False
+        
     
-    def _ignore_object(self, obj):
-        if obj == Tiles.PASSAGE or obj == Tiles.STONE:
-            return True
-        if obj == Tiles.SNAKE:
-            return True
-        return False   
-
-    def _update_observed_objects(self):
-        self.last_observed_objects = self.observed_objects.copy()
-        self.observed_objects = defaultdict(list)
-        
-        for x_str, y_dict in self.state["sight"].items():
-            x = int(x_str)
-            for y_str, value in y_dict.items():
-                y = int(y_str)
-                if self._ignore_object(value):
-                    continue
-                self.observed_objects[value].append([x, y])
-
-        self.logger.debug(f"Observed objects: {self.observed_objects}")
-
-    def _nothing_new_observed(self):
-        if self.domain.is_perfect_effects(self.state):
-            return all(
-                self.last_observed_objects[obj] == self.observed_objects[obj] 
-                for obj in self.observed_objects
-                if obj != Tiles.SUPER
-            )
-            
-        return all(
-            self.last_observed_objects[obj] == self.observed_objects[obj] 
-            for obj in self.observed_objects
-        )    
-        
-    def observe(self, state):
-        self.state = state
-        self.ts = datetime.fromisoformat(state["ts"])
-        self._update_observed_objects()
-
-    def _find_goal(self):
-        """Find the goal to reach"""
-        self.current_goal = {"strategy": "food/super", "position": None}
-        if Tiles.FOOD in self.observed_objects:
-            self.current_goal["position"] = random.choice(self.observed_objects[Tiles.FOOD])
-            return
-            
-        if Tiles.SUPER in self.observed_objects and not self.domain.is_perfect_effects(self.state):
-            self.current_goal["position"] = random.choice(self.observed_objects[Tiles.SUPER])
-            return
-        
-        self.current_goal = {
-            "strategy": "exploration", 
-            "position": self.mapping.next_exploration(self.state["body"], self.state["range"], self.state["traverse"])
-        }
-        return 
-
-    def _get_fast_action(self, warning=True):
-        """Non blocking fast action"""
-        if warning:
-            print("\33[31mFast action!\33[0m")
-
-        return DIRECTION_TO_KEY[random.choice(self.domain.actions(self.state))]
-
-    def think(self, time_limit):
-        # Follow a solution (nothing new observed)
-        if len(self.directions) != 0:
-            if self._nothing_new_observed():
-                self.logger.debug(f"Following solution! [{self.action}]")
-                self.action = DIRECTION_TO_KEY[self.directions.pop()]
-                return
-            else:
-                self.logger.info("\033[94mNew objects observed!\33[0m")
-                
-        # Search for a new one
-        initial_state = {
-            "body": self.state["body"][:], 
-            "observed_objects": self.observed_objects, 
-            "range": self.state["range"], 
-            "traverse": self.state["traverse"]
-        }
-        initial_state["body"].append(self.state["body"][-1]) # Append the last element to avoid tail collision 
-        
-        self.current_goal = None
-        while self.current_goal is None or self.current_goal["position"] == self.state["body"][0]:
-            self._find_goal()
-        self.logger.debug(f"Searching a path to {self.current_goal}")
-        
-        self.problem = SearchProblem(self.domain, initial=initial_state, goal=self.current_goal["position"])
-        self.tree = SearchTree(self.problem, 'greedy')
-        
-        solution = self.tree.search(time_limit=time_limit)
-        self.logger.debug(f"Average branching: {self.tree.avg_branching}")
-
-        if solution is None:
-            self.action = self._get_fast_action(warning=True)
-            return
-
-        self.directions = self.tree.inverse_plan
-        self.logger.debug(f"Plan: {len(self.directions)} from {self.state["body"][0]}")
-        self.action = DIRECTION_TO_KEY[self.directions.pop()]
-        self.logger.debug(f"Following solution! [{self.action}]")
-
-    def _action_not_possible(self):
-        return self.action not in [DIRECTION_TO_KEY[direction] for direction in self.domain.actions(self.state)]
-    
-    async def act(self):
-        self.logger.debug(f"Action: {self.action}")
-        if self._action_not_possible():
-            self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
-            self.action = self._get_fast_action(warning=True)
-        
-        await self.websocket.send(
-            json.dumps({"cmd": "key", "key": self.action})
-        )
+    # ----- Main Loop -----
     
     async def run(self):
+        """Start the execution of the agent"""
         await self.connect()
         await self.play()
-
+    
     async def connect(self):
+        """Connect to the server via websocket"""
         self.websocket = await websockets.connect(f"ws://{self.server_address}/player")
         await self.websocket.send(json.dumps({"cmd": "join", "name": self.agent_name}))
 
@@ -196,30 +91,122 @@ class Agent:
             height=self.mapping.height, 
             internal_walls=self.mapping.walls
         )
-    
+        
     async def play(self):
-
+        """Main loop of the agent, where the game is played"""
         while True:
             try:
-                
-                state = json.loads(
-                    await self.websocket.recv()
-                )
-                
-                if state.get("body") is None:
+                state = json.loads(await self.websocket.recv())
+
+                if not state.get("body"):
                     self.logger.info("Game Over!")
-                    return
+                    break
                 
                 self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
+                ## --- Main Logic ---
                 self.observe(state)
                 self.think(time_limit=self.ts + timedelta(seconds=1/(self.fps+1)))
                 await self.act()
+                ## ------------------
+                
                 self.logger.debug(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
-                                
+                                 
             except websockets.exceptions.ConnectionClosedOK:
-                self.logger.warning("Server has cleanly disconnected us")
-                return
-                  
-        return
+                self.logger.warning("Server has cleanly disconnected us")                  
+    
+    # ------ Observe ------
+    
+    def observe(self, state):
+        self.state = state
+        self.ts = datetime.fromisoformat(state["ts"])
+        self.perfect_effects = self.domain.is_perfect_effects(state)
         
+        self.mapping.update(state)
+    
+    # ------- Act --------
+
+    async def act(self):
+        """Send the action to the server"""
+        self.logger.debug(f"Action: {self.action}")
+        
+        if self._action_not_possible():
+            # Big problem, because the agent is trying to do something that is not possible
+            # Can happen if the sync between the agent and the server is not perfect
+            # TODO: handle this situation
+            self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
+            self.action = self._get_fast_action(warning=True)
+        
+        await self.websocket.send(json.dumps({"cmd": "key", "key": self.action}))
+        
+    def _action_not_possible(self):
+        return self.action not in [DIRECTION_TO_KEY[direction] for direction in self.domain.actions(self.state)]
+    
+    # ------ Think -------
+    
+    def think(self, time_limit):
+        ## Follow the action plain (nothing new observed)
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.perfect_effects):
+            self.action = DIRECTION_TO_KEY[self.actions_plan.pop()]
+            self.logger.debug(f"Following the actions plain: [{self.action}]")
+            return
+        
+        ## Find a new goal
+        self.current_goal = self._find_goal()
+        self.logger.info(f"New goal {self.current_goal}")
+        
+        ## Start the search
+        # TODO: refactor the following code
+        initial_state = {
+            "body": self.state["body"], 
+            "observed_objects": self.mapping.observed_objects, 
+            "range": self.state["range"], 
+            "traverse": self.state["traverse"]
+        }
+        initial_state["body"].append(self.state["body"][-1]) # Append the last element to avoid tail collision 
+        
+        self.problem = SearchProblem(self.domain, initial=initial_state, goal=self.current_goal["position"])
+        self.tree = SearchTree(self.problem, 'greedy')
+        
+        solution = self.tree.search(time_limit=time_limit)
+        self.logger.debug(f"Average branching: {self.tree.avg_branching}")
+
+        if solution is None:
+            self.action = self._get_fast_action(warning=True)
+            return
+
+        self.actions_plan = self.tree.inverse_plan
+        self.logger.debug(f"Plan: {len(self.actions_plan)} from {self.state["body"][0]}")
+        self.action = DIRECTION_TO_KEY[self.actions_plan.pop()]
+        self.logger.debug(f"Following solution! [{self.action}]")
+
+    def _find_goal(self):
+        """Find a new goal based on mapping and state"""
+        new_goal = {}
+        
+        if self.mapping.observed(Tiles.FOOD):
+            new_goal["strategy"] = "food"
+            new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
+            
+        elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
+            new_goal["strategy"] = "super"
+            new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
+            
+        else:
+            new_goal["strategy"] = "exploration"
+            new_goal["position"] = self.mapping.next_exploration()
+            
+        if new_goal["position"] == self.state["body"][0]:
+            # TODO: fix this situation
+            self.logger.warning("Goal is the head of the snake!")
+        
+        return new_goal
+
+    def _get_fast_action(self, warning=True):
+        """Non blocking fast action"""
+        # TODO: make an heuristic to choose the best action (non-blocking)
+        if warning:
+            print("\33[31mFast action!\33[0m")
+
+        return DIRECTION_TO_KEY[random.choice(self.domain.actions(self.state))]
+

@@ -11,6 +11,7 @@ class ExplorationPath:
         self.exploration_path = []
         
     def next_exploration_point(self, body, range, traverse, super_foods, exploration_map):
+        # TODO: fix the Hilbert curves
         if len(self.exploration_path) == 0:
             self.exploration_path = HilbertCurve.get_curve(self.width, self.height, range)
         
