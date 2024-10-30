@@ -192,10 +192,9 @@ class Agent:
         else:
             new_goal["strategy"] = "exploration"
             new_goal["position"] = self.mapping.next_exploration()
-            
-        if new_goal["position"] == self.mapping.state["body"][0]:
-            # TODO: fix this situation
-            self.logger.warning("Goal is the head of the snake!")
+            # Avoid self-searching
+            if new_goal["position"] == self.mapping.state["body"][0]:
+                new_goal["position"] = self.mapping.next_exploration()
         
         return new_goal
 

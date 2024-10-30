@@ -14,8 +14,8 @@ class Mapping:
         self.super_foods = []
         self.exploration_map = []
         
-        self.height = len(matrix)
-        self.width = len(matrix[0])
+        self.height = len(matrix[0])
+        self.width = len(matrix)
         self.walls = MatrixOperations.find_ones(matrix)
         
         self.exploration_path = ExplorationPath(
