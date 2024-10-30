@@ -26,6 +26,7 @@ from src.mapping import Mapping
 
 ## Utils
 from src.utils.logger import Logger
+from src.utils.exceptions import TimeLimitExceeded
 from consts import Tiles
 
 DIRECTION_TO_KEY = {
@@ -59,7 +60,6 @@ class Agent:
         
         ## Action controller
         self.actions_plan = []
-        self.state = None
         self.action = None
         self.current_goal = None
         self.perfect_effects = False
@@ -99,7 +99,7 @@ class Agent:
                 state = json.loads(await self.websocket.recv())
 
                 if not state.get("body"):
-                    self.logger.info("Game Over!")
+                    self.logger.warning("Game Over!")
                     break
                 
                 self.logger.debug(f"Received state. Step: [{state["step"]}]")
@@ -118,7 +118,6 @@ class Agent:
     # ------ Observe ------
     
     def observe(self, state):
-        self.state = state
         self.ts = datetime.fromisoformat(state["ts"])
         self.perfect_effects = self.domain.is_perfect_effects(state)
         
@@ -128,7 +127,7 @@ class Agent:
 
     async def act(self):
         """Send the action to the server"""
-        self.logger.debug(f"Action: {self.action}")
+        self.logger.debug(f"Action: [{self.action}] in [{self.domain.actions(self.mapping.state)}]")
         
         if self._action_not_possible():
             # Big problem, because the agent is trying to do something that is not possible
@@ -137,48 +136,46 @@ class Agent:
             self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
             self.action = self._get_fast_action(warning=True)
         
-        await self.websocket.send(json.dumps({"cmd": "key", "key": self.action}))
+        await self.websocket.send(json.dumps({"cmd": "key", "key": DIRECTION_TO_KEY[self.action]})) # mapping to the server key
         
     def _action_not_possible(self):
-        return self.action not in [DIRECTION_TO_KEY[direction] for direction in self.domain.actions(self.state)]
+        return self.action not in self.domain.actions(self.mapping.state)
     
     # ------ Think -------
     
     def think(self, time_limit):
         ## Follow the action plain (nothing new observed)
         if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.perfect_effects):
-            self.action = DIRECTION_TO_KEY[self.actions_plan.pop()]
-            self.logger.debug(f"Following the actions plain: [{self.action}]")
+            self.action = self.actions_plan.pop()
             return
         
         ## Find a new goal
         self.current_goal = self._find_goal()
         self.logger.info(f"New goal {self.current_goal}")
         
-        ## Start the search
-        # TODO: refactor the following code
-        initial_state = {
-            "body": self.state["body"], 
-            "observed_objects": self.mapping.observed_objects, 
-            "range": self.state["range"], 
-            "traverse": self.state["traverse"]
-        }
-        initial_state["body"].append(self.state["body"][-1]) # Append the last element to avoid tail collision 
+        ## Create search structures
+        self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
+        self.tree = SearchTree(self.problem, 'A*')
         
-        self.problem = SearchProblem(self.domain, initial=initial_state, goal=self.current_goal["position"])
-        self.tree = SearchTree(self.problem, 'greedy')
-        
-        solution = self.tree.search(time_limit=time_limit)
-        self.logger.debug(f"Average branching: {self.tree.avg_branching}")
-
-        if solution is None:
-            self.action = self._get_fast_action(warning=True)
+        ## Search for the solution
+        try: 
+            solution = self.tree.search(time_limit=time_limit)
+        except TimeLimitExceeded as e:
+            self.logger.warning(e.args[0])
+            self.solution = self._get_fast_action(warning=True)
             return
-
+        
+        ## No solution found
+        if not solution:
+            self.logger.warning("No solution found!")
+            self.solution = self._get_fast_action(warning=True)
+            return
+        
+        ## Save the solution as a plan of actions
         self.actions_plan = self.tree.inverse_plan
-        self.logger.debug(f"Plan: {len(self.actions_plan)} from {self.state["body"][0]}")
-        self.action = DIRECTION_TO_KEY[self.actions_plan.pop()]
-        self.logger.debug(f"Following solution! [{self.action}]")
+        self.action = self.actions_plan.pop()
+        
+        self.logger.debug(f"Actions plan founded! avg_branching: {self.tree.avg_branching}")
 
     def _find_goal(self):
         """Find a new goal based on mapping and state"""
@@ -190,13 +187,13 @@ class Agent:
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal["strategy"] = "super"
-            new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
+            new_goal["position"] = self.mapping.closest_object(Tiles.SUPER)
             
         else:
             new_goal["strategy"] = "exploration"
             new_goal["position"] = self.mapping.next_exploration()
             
-        if new_goal["position"] == self.state["body"][0]:
+        if new_goal["position"] == self.mapping.state["body"][0]:
             # TODO: fix this situation
             self.logger.warning("Goal is the head of the snake!")
         
@@ -208,5 +205,5 @@ class Agent:
         if warning:
             print("\33[31mFast action!\33[0m")
 
-        return DIRECTION_TO_KEY[random.choice(self.domain.actions(self.state))]
+        return random.choice(self.domain.actions(self.mapping.state))
 
