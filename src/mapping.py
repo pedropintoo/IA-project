@@ -6,23 +6,21 @@ from src.matrix_operations import MatrixOperations
 from consts import Tiles
 
 class Mapping:
-    def __init__(self, matrix):
+    def __init__(self, domain):
         self.state = None
         
+        self.domain = domain
+
         self.last_observed_objects = None
         self.observed_objects = defaultdict(list)
         self.super_foods = []
         self.exploration_map = []
         
-        self.height = len(matrix[0])
-        self.width = len(matrix)
-        self.walls = MatrixOperations.find_ones(matrix)
-        
         self.exploration_path = ExplorationPath(
-            walls=self.walls, 
-            dead_ends=MatrixOperations.find_dead_ends(matrix), 
-            height=self.height, 
-            width=self.width
+            internal_walls=domain.internal_walls, 
+            dead_ends=domain.dead_ends, 
+            height=domain.height, 
+            width=domain.width
         )
         # TODO: change the ignore_objects
         self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
@@ -71,21 +69,15 @@ class Mapping:
         return obj_type in self.observed_objects
         
     def closest_object(self, obj_type):
-        # Usage: new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
-
-        # TODO: implement
-        # for now, random choice
-        # return random.choice(self.observed_objects[obj_type])
-        
-        # Find the closest object
-        head = self.state["body"][0]
+        """Find the closest object based on the heuristic"""
         closest = None
-        min_distance = None
+        min_heuristic = None
 
         for obj in self.observed_objects[obj_type]:
-            distance = abs(head[0] - obj[0]) + abs(head[1] - obj[1])
-            if min_distance is None or distance < min_distance:
-                min_distance = distance
+            heuristic = self.domain.heuristic(self.state, obj)
+            
+            if min_heuristic is None or heuristic < min_heuristic:
+                min_heuristic = heuristic
                 closest = obj
 
         return closest                    

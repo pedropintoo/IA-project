@@ -10,6 +10,8 @@ class MatrixOperations:
     
     @staticmethod
     def find_dead_ends(matrix):
+        # TODO: Implement this method
+        return []
         def is_dead_end(matrix, row_idx, col_idx):
             if matrix[row_idx][col_idx] != 0:
                 return False

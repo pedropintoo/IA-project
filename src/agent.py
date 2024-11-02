@@ -81,16 +81,18 @@ class Agent:
         self.logger.debug(f"Waiting for game information")
         
         map_info = json.loads(await self.websocket.recv())
-        self.mapping = Mapping(matrix=map_info["map"])
-        
         self.fps = map_info["fps"]
         self.timeout = map_info["timeout"]
         
         self.domain = SnakeGame(
-            width=self.mapping.width, 
-            height=self.mapping.height, 
-            internal_walls=self.mapping.walls
+            width=map_info["size"][0], 
+            height=map_info["size"][1], 
+            internal_walls=MatrixOperations.find_ones(map_info),
+            dead_ends=MatrixOperations.find_dead_ends(map_info)
         )
+
+        
+        self.mapping = Mapping(domain=self.domain)
         
     async def play(self):
         """Main loop of the agent, where the game is played"""
@@ -207,24 +209,20 @@ class Agent:
 
         # return random.choice(self.domain.actions(self.mapping.state))
 
-        ## A* heuristic
-        head = self.mapping.state["body"][0]
+        ## If there are no actions available, return None
+        if self.domain.actions(self.mapping.state) == []:
+            print("\33[31mNo actions available!\33[0m")
+            return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
+
+        ## Use heuristics to choose the best action
         goal = self.current_goal["position"]
-        dx = abs(head[0] - goal[0])
-        dy = abs(head[1] - goal[1])
-        if dx > dy:
-            action = "WEST" if head[0] > goal[0] else "EAST"
-        else:
-            action = "NORTH" if head[1] > goal[1] else "SOUTH"
-        
-        ## Check if the action is possible
-        if action in self.domain.actions(self.mapping.state):
-            return action
-        else:
-            
-            if self.domain.actions(self.mapping.state):
-                return random.choice(self.domain.actions(self.mapping.state))
-            else:
-                self.logger.warning(f"Fast action not possible [{action}]")
-                return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
-                
+        min_heuristic = None
+        for action in self.domain.actions(self.mapping.state):
+            next_state = self.domain.result(self.mapping.state, action)
+            heuristic = self.domain.heuristic(next_state, goal)
+            if min_heuristic is None or heuristic < min_heuristic:
+                min_heuristic = heuristic
+                best_action = action
+
+        return best_action
+
