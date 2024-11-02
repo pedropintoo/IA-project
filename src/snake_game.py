@@ -16,10 +16,11 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, width, height, internal_walls):
+    def __init__(self, width, height, internal_walls, dead_ends):
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
+        self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
         return state["range"] >= 5 and state["traverse"]

@@ -67,10 +67,18 @@ class Agent:
     
     # ----- Main Loop -----
     
+    async def close(self):
+        """Close the websocket connection"""
+        await self.websocket.close()
+        self.logger.info("Websocket connection closed")
+    
     async def run(self):
         """Start the execution of the agent"""
-        await self.connect()
-        await self.play()
+        try:
+            await self.connect()
+            await self.play()
+        finally:
+            await self.close()
     
     async def connect(self):
         """Connect to the server via websocket"""
@@ -81,16 +89,18 @@ class Agent:
         self.logger.debug(f"Waiting for game information")
         
         map_info = json.loads(await self.websocket.recv())
-        self.mapping = Mapping(matrix=map_info["map"])
         
         self.fps = map_info["fps"]
         self.timeout = map_info["timeout"]
         
         self.domain = SnakeGame(
-            width=self.mapping.width, 
-            height=self.mapping.height, 
-            internal_walls=self.mapping.walls
+            width=map_info["size"][0], 
+            height=map_info["size"][1], 
+            internal_walls=MatrixOperations.find_ones(map_info['map']),
+            dead_ends=MatrixOperations.find_dead_ends(map_info['map'])
         )
+        
+        self.mapping = Mapping(domain=self.domain)
         
     async def play(self):
         """Main loop of the agent, where the game is played"""
@@ -106,7 +116,7 @@ class Agent:
                 
                 ## --- Main Logic ---
                 self.observe(state)
-                self.think(time_limit=self.ts + timedelta(seconds=1/(self.fps+1)))
+                self.think(time_limit= ( self.ts + timedelta(seconds=1/(self.fps+1)) ))
                 await self.act()
                 ## ------------------
                 
@@ -201,9 +211,24 @@ class Agent:
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
-        # TODO: make an heuristic to choose the best action (non-blocking)
-        if warning:
-            print("\33[31mFast action!\33[0m")
 
-        return random.choice(self.domain.actions(self.mapping.state))
+        if warning:
+            self.logger.critical("Fast action!")
+
+        # If there are no actions available, return None
+        if self.domain.actions(self.mapping.state) == []:
+            self.logger.warning("No actions available!")
+            return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
+
+        ## Use heuristics to choose the best action
+        goal = self.current_goal["position"]
+        min_heuristic = None
+        for action in self.domain.actions(self.mapping.state):
+            next_state = self.domain.result(self.mapping.state, action)
+            heuristic = self.domain.heuristic(next_state, goal)
+            if min_heuristic is None or heuristic < min_heuristic:
+                min_heuristic = heuristic
+                best_action = action
+
+        return best_action
 

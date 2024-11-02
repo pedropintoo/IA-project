@@ -15,6 +15,7 @@ async def agent_loop(server_address="localhost:8000", agent_name="student"):
     agent = Agent(server_address, agent_name)
     await agent.run()
     
+    
 # DO NOT CHANGE THE LINES BELLOW
 # You can change the default values using the command line, example:
 # $ NAME='arrumador' python3 client.py

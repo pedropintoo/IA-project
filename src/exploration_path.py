@@ -2,8 +2,8 @@ import math
 
 class ExplorationPath:
     
-    def __init__(self, walls, dead_ends, height, width):
-        self.walls = walls
+    def __init__(self, internal_walls, dead_ends, height, width):
+        self.internal_walls = internal_walls
         self.dead_ends = dead_ends
         self.height = height
         self.width = width
