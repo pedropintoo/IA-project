@@ -205,5 +205,26 @@ class Agent:
         if warning:
             print("\33[31mFast action!\33[0m")
 
-        return random.choice(self.domain.actions(self.mapping.state))
+        # return random.choice(self.domain.actions(self.mapping.state))
 
+        ## A* heuristic
+        head = self.mapping.state["body"][0]
+        goal = self.current_goal["position"]
+        dx = abs(head[0] - goal[0])
+        dy = abs(head[1] - goal[1])
+        if dx > dy:
+            action = "WEST" if head[0] > goal[0] else "EAST"
+        else:
+            action = "NORTH" if head[1] > goal[1] else "SOUTH"
+        
+        ## Check if the action is possible
+        if action in self.domain.actions(self.mapping.state):
+            return action
+        else:
+            
+            if self.domain.actions(self.mapping.state):
+                return random.choice(self.domain.actions(self.mapping.state))
+            else:
+                self.logger.warning(f"Fast action not possible [{action}]")
+                return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
+                

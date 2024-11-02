@@ -26,6 +26,7 @@ class Mapping:
         )
         # TODO: change the ignore_objects
         self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
+
      
     def next_exploration(self) -> tuple:
         return self.exploration_path.next_exploration_point(
@@ -70,9 +71,22 @@ class Mapping:
         return obj_type in self.observed_objects
         
     def closest_object(self, obj_type):
+        # Usage: new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
+
         # TODO: implement
         # for now, random choice
-        return random.choice(self.observed_objects[obj_type])
+        # return random.choice(self.observed_objects[obj_type])
         
-            
+        # Find the closest object
+        head = self.state["body"][0]
+        closest = None
+        min_distance = None
+
+        for obj in self.observed_objects[obj_type]:
+            distance = abs(head[0] - obj[0]) + abs(head[1] - obj[1])
+            if min_distance is None or distance < min_distance:
+                min_distance = distance
+                closest = obj
+
+        return closest                    
         
