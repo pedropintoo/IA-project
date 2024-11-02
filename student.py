@@ -13,10 +13,8 @@ from src.agent import Agent
 
 async def agent_loop(server_address="localhost:8000", agent_name="student"):
     agent = Agent(server_address, agent_name)
-    try:
-        await agent.run()
-    finally:
-        await agent.close()
+    await agent.run()
+    
     
 # DO NOT CHANGE THE LINES BELLOW
 # You can change the default values using the command line, example:

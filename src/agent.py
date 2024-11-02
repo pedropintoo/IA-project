@@ -74,8 +74,11 @@ class Agent:
     
     async def run(self):
         """Start the execution of the agent"""
-        await self.connect()
-        await self.play()
+        try:
+            await self.connect()
+            await self.play()
+        finally:
+            await self.close()
     
     async def connect(self):
         """Connect to the server via websocket"""
