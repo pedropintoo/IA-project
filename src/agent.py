@@ -116,7 +116,10 @@ class Agent:
                 
                 ## --- Main Logic ---
                 self.observe(state)
-                self.think(time_limit= ( self.ts + timedelta(seconds=1/(self.fps+1)) ))
+
+ 
+                
+                self.think(time_limit= ( self.ts + timedelta(seconds=1/(self.fps+0.5)) ))
                 await self.act()
                 ## ------------------
                 

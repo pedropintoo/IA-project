@@ -91,7 +91,7 @@ class SnakeGame(SearchDomain):
         total_value = (dx + dy)
         
         if self.is_perfect_effects(state) and head in state["observed_objects"].get(Tiles.SUPER.value, []):
-            total_value += 10
+            total_value += 20
 
         return total_value * 10
 
