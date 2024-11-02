@@ -8,8 +8,9 @@
 import heapq
 import datetime
 
-from src.search_node import SearchNode
-from src.search_problem import SearchProblem
+from src.search.search_node import SearchNode
+from src.search.search_problem import SearchProblem
+from src.utils.exceptions import TimeLimitExceeded
 
 class SearchTree:
     """Search Tree"""
@@ -83,10 +84,11 @@ class SearchTree:
             self.non_terminals += 1
             
             if time_limit is not None and datetime.datetime.now() >= time_limit: 
-                return None
+                raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
 
-            if node.cost + node.heuristic > self.max_total_cost:
-                continue
+            # if node.cost + node.heuristic > self.max_total_cost:
+            #     print("\33[33mPruning node with cost {} and heuristic {}\33[0m".format(node.cost, node.heuristic))
+            #     continue
 
             new_lower_nodes = []
             # Iterate over possible actions to generate new nodes

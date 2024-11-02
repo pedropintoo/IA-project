@@ -11,6 +11,7 @@ class ExplorationPath:
         self.exploration_path = []
         
     def next_exploration_point(self, body, range, traverse, super_foods, exploration_map):
+        # TODO: fix the Hilbert curves
         if len(self.exploration_path) == 0:
             self.exploration_path = HilbertCurve.get_curve(self.width, self.height, range)
         
@@ -20,6 +21,7 @@ class HilbertCurve:
     
     @staticmethod
     def get_curve(width, height, sight_range):
+        print("....--",width, height, sight_range)
         order = HilbertCurve.minimum_hilbert_order(width, height, sight_range * 2)  # sight_range * 2 for distance between points
         exploration_path = []  # Initialize the exploration path list
         HilbertCurve.hilbert_curve(0, 0, width, 0, 0, height, order, exploration_path)
@@ -49,3 +51,6 @@ class HilbertCurve:
         # The Hilbert curve of order 'n' can cover a 2^n x 2^n grid
         order = math.ceil(math.log2(max_dimension))
         return order
+
+# if __name__ == "__main__":
+#     HilbertCurve.get_curve(, 10, 2)

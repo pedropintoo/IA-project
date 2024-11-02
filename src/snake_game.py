@@ -5,7 +5,7 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
-from src.search_domain import SearchDomain
+from src.search.search_domain import SearchDomain
 from consts import Tiles
 
 DIRECTIONS = {
