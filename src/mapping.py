@@ -70,6 +70,7 @@ class Mapping:
         
     def closest_object(self, obj_type):
         """Find the closest object based on the heuristic"""
+
         closest = None
         min_heuristic = None
 

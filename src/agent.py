@@ -67,6 +67,11 @@ class Agent:
     
     # ----- Main Loop -----
     
+    async def close(self):
+        """Close the websocket connection"""
+        await self.websocket.close()
+        self.logger.info("Websocket connection closed")
+    
     async def run(self):
         """Start the execution of the agent"""
         await self.connect()
@@ -81,16 +86,16 @@ class Agent:
         self.logger.debug(f"Waiting for game information")
         
         map_info = json.loads(await self.websocket.recv())
+        
         self.fps = map_info["fps"]
         self.timeout = map_info["timeout"]
         
         self.domain = SnakeGame(
             width=map_info["size"][0], 
             height=map_info["size"][1], 
-            internal_walls=MatrixOperations.find_ones(map_info),
-            dead_ends=MatrixOperations.find_dead_ends(map_info)
+            internal_walls=MatrixOperations.find_ones(map_info['map']),
+            dead_ends=MatrixOperations.find_dead_ends(map_info['map'])
         )
-
         
         self.mapping = Mapping(domain=self.domain)
         
@@ -108,7 +113,7 @@ class Agent:
                 
                 ## --- Main Logic ---
                 self.observe(state)
-                self.think(time_limit=self.ts + timedelta(seconds=1/(self.fps+1)))
+                self.think(time_limit= ( self.ts + timedelta(seconds=1/(self.fps+1)) ))
                 await self.act()
                 ## ------------------
                 
@@ -203,15 +208,13 @@ class Agent:
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
-        # TODO: make an heuristic to choose the best action (non-blocking)
+
         if warning:
-            print("\33[31mFast action!\33[0m")
+            self.logger.critical("Fast action!")
 
-        # return random.choice(self.domain.actions(self.mapping.state))
-
-        ## If there are no actions available, return None
+        # If there are no actions available, return None
         if self.domain.actions(self.mapping.state) == []:
-            print("\33[31mNo actions available!\33[0m")
+            self.logger.warning("No actions available!")
             return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
 
         ## Use heuristics to choose the best action
