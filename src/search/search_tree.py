@@ -83,9 +83,6 @@ class SearchTree:
 
             self.non_terminals += 1
             
-            if time_limit is not None and datetime.datetime.now() >= time_limit: 
-                raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
-
             # if node.cost + node.heuristic > self.max_total_cost:
             #     print("\33[33mPruning node with cost {} and heuristic {}\33[0m".format(node.cost, node.heuristic))
             #     continue
@@ -93,6 +90,11 @@ class SearchTree:
             new_lower_nodes = []
             # Iterate over possible actions to generate new nodes
             for act in self.problem.domain.actions(node.state):
+                
+                if time_limit is not None and datetime.datetime.now() >= time_limit: 
+                    print(f"Time limit: {time_limit}")
+                    raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
+
                 new_state = self.problem.domain.result(node.state,act)
                 
                 if node.in_parent(new_state):
@@ -107,7 +109,9 @@ class SearchTree:
                     action=act
                     )
                 new_lower_nodes.append(new_node)
-                            
+
+            
+
             self.add_to_open(new_lower_nodes)
         return None
     
