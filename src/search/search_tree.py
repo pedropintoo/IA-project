@@ -96,7 +96,7 @@ class SearchTree:
                     raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
 
                 new_state = self.problem.domain.result(node.state,act)
-                
+
                 if node.in_parent(new_state):
                     continue
                 

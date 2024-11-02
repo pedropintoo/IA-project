@@ -116,10 +116,7 @@ class Agent:
                 
                 ## --- Main Logic ---
                 self.observe(state)
-
- 
-                
-                self.think(time_limit= ( self.ts + timedelta(seconds=1/(self.fps+0.5)) ))
+                self.think(time_limit = ( self.ts + timedelta(seconds=1/(self.fps+0.5)) ))
                 await self.act()
                 ## ------------------
                 
@@ -159,7 +156,7 @@ class Agent:
     
     def think(self, time_limit):
         ## Follow the action plain (nothing new observed)
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.perfect_effects):
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed():
             self.action = self.actions_plan.pop()
             return
         

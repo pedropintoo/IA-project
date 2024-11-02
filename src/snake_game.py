@@ -59,12 +59,12 @@ class SnakeGame(SearchDomain):
         new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
         
         new_body = [new_head] + body[:-1]
-        
+
         return {
                 "body": new_body,
-                "observed_objects": state["observed_objects"],
                 "range": state["range"],
-                "traverse": state["traverse"]
+                "traverse": state["traverse"],
+                "observed_objects": state["observed_objects"]
                 }
 
     def cost(self, state, action):
