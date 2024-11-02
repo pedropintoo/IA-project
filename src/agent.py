@@ -121,6 +121,7 @@ class Agent:
         self.ts = datetime.fromisoformat(state["ts"])
         self.perfect_effects = self.domain.is_perfect_effects(state)
         
+        ## Update the mapping
         self.mapping.update(state)
     
     # ------- Act --------

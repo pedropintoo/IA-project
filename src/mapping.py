@@ -60,18 +60,11 @@ class Mapping:
         
 
     def nothing_new_observed(self, perfect_effects):
-        if perfect_effects:
-            return all(
-                self.last_observed_objects[obj_type] == self.observed_objects[obj_type] 
-                for obj_type in self.observed_objects
-                if obj_type != Tiles.SUPER
-            )
-            
         return all(
             self.last_observed_objects[obj_type] == self.observed_objects[obj_type] 
             for obj_type in self.observed_objects
+            if not perfect_effects or obj_type != Tiles.SUPER
         )
-        
 
     def observed(self, obj_type):
         return obj_type in self.observed_objects
