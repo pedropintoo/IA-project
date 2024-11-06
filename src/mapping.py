@@ -28,6 +28,12 @@ class Mapping:
         # TODO: change the ignore_objects
         self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
 
+        # Cells mapping: 0 - unseen, 1 - seen
+        self.cells_mapping = {
+            (x, y): (0, None)
+            for x in range(self.domain.width)
+            for y in range(self.domain.height)
+        }
      
     def next_exploration(self) -> tuple:
         return self.exploration_path.next_exploration_point(
@@ -49,6 +55,7 @@ class Mapping:
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
         }
+        self.update_cells_mapping(state["sight"]) 
 
         ## Copy for better readability
         self.observed_objects = self.state["observed_objects"] # as a reference
@@ -92,6 +99,7 @@ class Mapping:
                     if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
                         self.objects_updated = True
         
+        self.print_mapping()
         print("New:", self.observed_objects)
 
     def nothing_new_observed(self):
@@ -114,3 +122,45 @@ class Mapping:
         print(f"Closest {obj_type}: {closest}")
         return list(closest)                    
         
+    def update_cells_mapping(self, sight):
+        for x_str, y_dict in sight.items():
+            x = int(x_str)
+            for y_str, obj_type in y_dict.items():
+                y = int(y_str)
+                seen, timestamp = self.cells_mapping[(x, y)]
+                self.cells_mapping[(x, y)] = (seen + 1, time.time())
+        
+        self.expire_cells_mapping()
+    
+    def expire_cells_mapping(self):
+        duration = 15 / self.state["range"]
+
+        for position, (seen, timestamp) in self.cells_mapping.copy().items():
+            if timestamp is not None and time.time() - timestamp > duration:
+                self.cells_mapping[position] = (0, None)
+
+    def print_mapping(self):
+        for y in range(self.domain.height):
+            row = ""
+            for x in range(self.domain.width):
+                if (x, y) in self.observed_objects:
+                    row += "\033[34mF\033[0m "
+                elif self.cells_mapping[(x, y)][0] == 1:
+                    row += "\033[92m1\033[0m "
+                elif self.cells_mapping[(x, y)][0] == 0:
+                    row += "0 "
+                elif self.cells_mapping[(x, y)][0] == 2:
+                    # 2 is yellow
+                    row += "\033[93m2\033[0m "
+                elif self.cells_mapping[(x, y)][0] == 3:
+                    # 3 is orange
+                    row += "\033[31m3\033[0m "
+                elif self.cells_mapping[(x, y)][0] == 4:
+                    # 4 is red
+                    row += "\033[91m4\033[0m "
+                elif self.cells_mapping[(x, y)][0] >= 5 and self.cells_mapping[(x, y)][0] < 15:
+                    # 5 is pink
+                    row += "\033[95mX\033[0m " 
+                elif self.cells_mapping[(x, y)][0] >= 15:
+                    row += "\033[90mX\033[0m "
+            print(row)
