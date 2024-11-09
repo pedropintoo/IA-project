@@ -133,7 +133,7 @@ class Mapping:
         self.expire_cells_mapping()
     
     def expire_cells_mapping(self):
-        duration = 15 / self.state["range"]
+        duration = 30 / self.state["range"]
 
         for position, (seen, timestamp) in self.cells_mapping.copy().items():
             if timestamp is not None and time.time() - timestamp > duration:
@@ -144,23 +144,15 @@ class Mapping:
             row = ""
             for x in range(self.domain.width):
                 if (x, y) in self.observed_objects:
-                    row += "\033[34mF\033[0m "
-                elif self.cells_mapping[(x, y)][0] == 1:
-                    row += "\033[92m1\033[0m "
-                elif self.cells_mapping[(x, y)][0] == 0:
-                    row += "0 "
-                elif self.cells_mapping[(x, y)][0] == 2:
-                    # 2 is yellow
-                    row += "\033[93m2\033[0m "
-                elif self.cells_mapping[(x, y)][0] == 3:
-                    # 3 is orange
-                    row += "\033[31m3\033[0m "
-                elif self.cells_mapping[(x, y)][0] == 4:
-                    # 4 is red
-                    row += "\033[91m4\033[0m "
-                elif self.cells_mapping[(x, y)][0] >= 5 and self.cells_mapping[(x, y)][0] < 15:
-                    # 5 is pink
-                    row += "\033[95mX\033[0m " 
-                elif self.cells_mapping[(x, y)][0] >= 15:
-                    row += "\033[90mX\033[0m "
+                    row += f"\033[34m{'F':2}\033[0m "
+                else:
+                    seen = self.cells_mapping[(x, y)][0]
+                    if seen == 0:
+                        row += f"{'0':2} "
+                    else:
+                        normalized_seen = min(seen / 20, 1.0)
+                        r = int(255 * normalized_seen)
+                        g = int(255 * (1 - normalized_seen))
+                        b = 0
+                        row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             print(row)
