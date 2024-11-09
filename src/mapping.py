@@ -150,9 +150,18 @@ class Mapping:
                     if seen == 0:
                         row += f"{'0':2} "
                     else:
-                        normalized_seen = min(seen / 20, 1.0)
-                        r = int(255 * normalized_seen)
-                        g = int(255 * (1 - normalized_seen))
-                        b = 0
+                        normalized_seen = min(seen / 30, 1.0)
+                        if normalized_seen <= 0.5:
+                            r = int(255 * (normalized_seen * 2))
+                            g = int(255 * (1 - normalized_seen * 2))
+                            b = 0
+                        elif normalized_seen <= 0.85:
+                            r = 255
+                            g = 0
+                            b = int(255 * ((normalized_seen - 0.5) * 4))
+                        else:
+                            r = int(255 * (1 - (normalized_seen - 0.75) * 4))
+                            g = 0
+                            b = 255
                         row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             print(row)
