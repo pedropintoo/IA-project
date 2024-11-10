@@ -144,11 +144,13 @@ class Mapping:
             row = ""
             for x in range(self.domain.width):
                 if (x, y) in self.observed_objects:
-                    row += f"\033[34m{'F':2}\033[0m "
+                    row += f"\033[34m{' F':2}\033[0m "
                 else:
                     seen = self.cells_mapping[(x, y)][0]
                     if seen == 0:
-                        row += f"{'0':2} "
+                        r = 255
+                        g = 255
+                        b = 255
                     else:
                         normalized_seen = min(seen / 30, 1.0)
                         if normalized_seen <= 0.5:
@@ -163,5 +165,5 @@ class Mapping:
                             r = int(255 * (1 - (normalized_seen - 0.85) * 4))
                             g = 0
                             b = 255
-                        row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
+                    row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             print(row)
