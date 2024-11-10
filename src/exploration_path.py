@@ -17,6 +17,12 @@ class ExplorationPath:
         
         return self.exploration_path.pop(0)
 
+    def peek_exploration_point(self, body, range, traverse, super_foods, exploration_map):
+        if len(self.exploration_path) == 0:
+            self.exploration_path = HilbertCurve.get_curve(self.width, self.height, range)
+        
+        return self.exploration_path[0]
+
 class HilbertCurve:
     
     @staticmethod

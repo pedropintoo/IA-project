@@ -34,10 +34,35 @@ class Mapping:
             (x, y): (0, None)
             for x in range(self.domain.width)
             for y in range(self.domain.height)
-        }
+        }   
+         
+        self.ignored_duration = 3
+        self.temp_ignored_goals = set() # ([x, y], observed_timestamp) 
+
+    @property
+    def ignored_goals(self):
+        for goal, timestamp in self.temp_ignored_goals.copy():
+            if time.time() - timestamp > self.ignored_duration:
+                self.temp_ignored_goals.remove((goal, timestamp))
+        return self.temp_ignored_goals
+
+    def ignore_goal(self, obj_pos):
+        self.temp_ignored_goals.add((tuple(obj_pos), time.time()))
+    
+    def is_ignored_goal(self, obj_pos):
+        return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self) -> tuple:
         return self.exploration_path.next_exploration_point(
+            self.state["body"], 
+            self.state["range"],
+            self.state["traverse"], 
+            self.super_foods,
+            self.exploration_map
+        )
+    
+    def peek_next_exploration(self) -> tuple:
+        return self.exploration_path.peek_exploration_point(
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
@@ -107,7 +132,8 @@ class Mapping:
         return not self.objects_updated
 
     def observed(self, obj_type):
-        return any(obj_type == object_type for [object_type, _] in self.observed_objects.values())
+        return any(obj_type == object_type and not self.is_ignored_goal(position)
+                     for position, [object_type, timestamp] in self.observed_objects.items())
         
     def closest_object(self, obj_type):
         """Find the closest object based on the heuristic"""
@@ -115,6 +141,9 @@ class Mapping:
         min_heuristic = None
 
         for position in self.observed_objects.keys():
+            if self.is_ignored_goal(position):
+                continue
+            
             heuristic = self.domain.heuristic(self.state, position)
             
             if min_heuristic is None or heuristic < min_heuristic:
@@ -146,7 +175,7 @@ class Mapping:
             row = ""
             for x in range(self.domain.width):
                 if (x, y) in self.observed_objects:
-                    row += f"\033[34m{' F':2}\033[0m "
+                    row += f"\033[34m{' F' if self.is_ignored_goal((x,y)) else ' X':2}\033[0m " 
                 else:
                     seen = self.cells_mapping[(x, y)][0]
                     if seen == 0:

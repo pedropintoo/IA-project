@@ -70,28 +70,54 @@ class SnakeGame(SearchDomain):
     def cost(self, state, action):
         return 1
     
+    def count_obstacles_between(self, start_pos, end_pos, body, body_weight, walls_weight):
+        x1, y1 = start_pos
+        x2, y2 = end_pos
+
+        traverse = body["traverse"]
+
+        x_start, x_end = sorted([x1, x2])
+        y_start, y_end = sorted([y1, y2])
+
+        obstacle_count = 0
+        for x in range(x_start, x_end + 1):
+            for y in range(y_start, y_end + 1):
+                position = (x % self.width, y % self.height) if traverse else (x, y)
+                if not traverse and position in self.internal_walls:
+                    obstacle_count += walls_weight
+                elif position in body["body"]:
+                    obstacle_count += body_weight
+
+        return obstacle_count
+    
     def heuristic(self, state, goal_state):
         head = state["body"][0]
         traverse = state["traverse"]
         # Internal walls are not considered
         total_value = 0
         
+        ## Manhattan distance
         dx_no_crossing_walls = abs(head[0] - goal_state[0])
-        if traverse:
-            dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
-        else:
-            dx = dx_no_crossing_walls
-            
-        dy_no_crossing_walls = abs(head[1] - goal_state[1])
-        if traverse:
-            dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
-        else:
-            dy = dy_no_crossing_walls
+        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
-        total_value = (dx + dy)
+        dy_no_crossing_walls = abs(head[1] - goal_state[1])
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+        total_value = dx + dy
+        
+        ## Include wall density in heuristic
+        obstacle_count = self.count_obstacles_between(
+            head, 
+            goal_state, 
+            state, 
+            body_weight=5, 
+            walls_weight=3
+        )
+
+        total_value += obstacle_count
         
         if self.is_perfect_effects(state) and head in state["observed_objects"].get(Tiles.SUPER.value, []):
-            total_value += 20
+            total_value += 500
 
         return total_value * 10
 
