@@ -36,13 +36,15 @@ class Mapping:
         }
      
     def next_exploration(self) -> tuple:
-        return self.exploration_path.next_exploration_point(
+        self.current_goal = self.exploration_path.next_exploration_point(
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
             self.super_foods,
-            self.exploration_map
+            self.cells_mapping
         )
+        return self.current_goal
+        
 
     def update(self, state):
         self.objects_updated = False
@@ -103,7 +105,12 @@ class Mapping:
         print("New:", self.observed_objects)
 
     def nothing_new_observed(self):
-        return not self.objects_updated
+        if not self.objects_updated:
+            x, y = self.current_goal
+            if self.cells_mapping[(x, y)][0] >= self.state["range"]-2:
+                return False
+            return True
+        return False
 
     def observed(self, obj_type):
         return any(obj_type == object_type for [object_type, _] in self.observed_objects.values())
