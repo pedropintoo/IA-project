@@ -1,6 +1,16 @@
 import logging
 import os
 
+# Define a new logging level
+MAPPING_LEVEL = 5
+logging.addLevelName(MAPPING_LEVEL, "MAPPING")
+
+def mapping(self, message, *args, **kws):
+    if self.isEnabledFor(MAPPING_LEVEL):
+        self._log(MAPPING_LEVEL, message, args, **kws)
+
+logging.Logger.mapping = mapping
+
 class Logger:
 
     def __init__(self, identifierName: str, logFile: str = None):
@@ -8,7 +18,6 @@ class Logger:
         CustomFormatter().setup(self.log)
 
         self.log.addHandler(logging.FileHandler(logFile))
-
 
     def error(self, errorMsg):
         self.log.error(errorMsg)
@@ -24,11 +33,14 @@ class Logger:
 
     def critical(self, criticalMsg):
         self.log.critical(criticalMsg)
-            
+
+    def mapping(self, mappingMsg):
+        self.log.mapping(mappingMsg)
 
 class CustomFormatter(logging.Formatter):
 
     colors = {
+        'MAPPING': '\033[94m',      # Blue
         'DEBUG': '\x1b[38;20m',   # Gray
         'INFO': '\033[38;2;33;213;33m',    # Green
         'WARNING': '\033[93m',    # Yellow

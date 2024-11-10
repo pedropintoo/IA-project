@@ -25,7 +25,7 @@ from src.matrix_operations import MatrixOperations
 from src.mapping import Mapping
 
 ## Utils
-from src.utils.logger import Logger
+from src.utils.logger import Logger, MAPPING_LEVEL
 from src.utils.exceptions import TimeLimitExceeded
 from consts import Tiles
 
@@ -39,8 +39,6 @@ DIRECTION_TO_KEY = {
 wslogger = logging.getLogger("websockets")
 wslogger.setLevel(logging.INFO)
 
-
-
 class Agent:
     """Autonomous AI client."""
     
@@ -48,6 +46,10 @@ class Agent:
         
         ## Utils
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
+        
+        ## Activate the mapping level
+        self.logger.log.setLevel(MAPPING_LEVEL)
+        
         self.server_address = server_address
         self.agent_name = agent_name
         self.websocket = None
@@ -99,7 +101,7 @@ class Agent:
             internal_walls=MatrixOperations.find_ones(map_info['map']),
             dead_ends=MatrixOperations.find_dead_ends(map_info['map'])
         )        
-        self.mapping = Mapping(domain=self.domain)
+        self.mapping = Mapping(domain=self.domain, logger=self.logger)
         
     async def play(self):
         """Main loop of the agent, where the game is played"""
@@ -157,6 +159,8 @@ class Agent:
         ## Follow the action plain (nothing new observed)
         if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed():
             self.action = self.actions_plan.pop()
+            self.logger.debug(f"Following action plan: {self.action}")
+            self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
         ## Find a new goal

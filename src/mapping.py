@@ -7,10 +7,11 @@ from src.matrix_operations import MatrixOperations
 from consts import Tiles
 
 class Mapping:
-    def __init__(self, domain):
+    def __init__(self, domain, logger):
         self.state = None
         
         self.domain = domain
+        self.logger = logger
 
         self.objects_updated = False
         self.observed_objects = None
@@ -47,7 +48,7 @@ class Mapping:
     def update(self, state):
         self.objects_updated = False
 
-        print("Old:", self.observed_objects)
+        self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state
         self.state = {
             "body": state["body"] + [state["body"][-1]], # add the tail
@@ -100,7 +101,7 @@ class Mapping:
                         self.objects_updated = True
         
         self.print_mapping()
-        print("New:", self.observed_objects)
+        self.logger.debug(f"New: {self.observed_objects}")
 
     def nothing_new_observed(self):
         return not self.objects_updated
@@ -119,7 +120,8 @@ class Mapping:
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 closest = position
-        print(f"Closest {obj_type}: {closest}")
+        
+        # self.logger.debug(f"Closest {obj_type}: {closest}")
         return list(closest)                    
         
     def update_cells_mapping(self, sight):
@@ -166,4 +168,4 @@ class Mapping:
                             g = 0
                             b = 255
                     row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
-            print(row)
+            self.logger.mapping(row)
