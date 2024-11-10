@@ -160,7 +160,7 @@ class Mapping:
                             g = 0
                             b = int(255 * ((normalized_seen - 0.5) * 4))
                         else:
-                            r = int(255 * (1 - (normalized_seen - 0.75) * 4))
+                            r = int(255 * (1 - (normalized_seen - 0.85) * 4))
                             g = 0
                             b = 255
                         row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
