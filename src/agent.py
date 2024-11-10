@@ -98,8 +98,7 @@ class Agent:
             height=map_info["size"][1], 
             internal_walls=MatrixOperations.find_ones(map_info['map']),
             dead_ends=MatrixOperations.find_dead_ends(map_info['map'])
-        )
-        
+        )        
         self.mapping = Mapping(domain=self.domain)
         
     async def play(self):

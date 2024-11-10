@@ -28,6 +28,12 @@ class Mapping:
         # TODO: change the ignore_objects
         self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
 
+        # Cells mapping: 0 - unseen, 1 - seen
+        self.cells_mapping = {
+            (x, y): (0, None)
+            for x in range(self.domain.width)
+            for y in range(self.domain.height)
+        }
      
     def next_exploration(self) -> tuple:
         return self.exploration_path.next_exploration_point(
@@ -49,6 +55,7 @@ class Mapping:
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
         }
+        self.update_cells_mapping(state["sight"]) 
 
         ## Copy for better readability
         self.observed_objects = self.state["observed_objects"] # as a reference
@@ -92,6 +99,7 @@ class Mapping:
                     if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
                         self.objects_updated = True
         
+        self.print_mapping()
         print("New:", self.observed_objects)
 
     def nothing_new_observed(self):
@@ -114,3 +122,48 @@ class Mapping:
         print(f"Closest {obj_type}: {closest}")
         return list(closest)                    
         
+    def update_cells_mapping(self, sight):
+        for x_str, y_dict in sight.items():
+            x = int(x_str)
+            for y_str, obj_type in y_dict.items():
+                y = int(y_str)
+                seen, timestamp = self.cells_mapping[(x, y)]
+                self.cells_mapping[(x, y)] = (seen + 1, time.time())
+        
+        self.expire_cells_mapping()
+    
+    def expire_cells_mapping(self):
+        duration = 30 / self.state["range"]
+
+        for position, (seen, timestamp) in self.cells_mapping.copy().items():
+            if timestamp is not None and time.time() - timestamp > duration:
+                self.cells_mapping[position] = (0, None)
+
+    def print_mapping(self):
+        for y in range(self.domain.height):
+            row = ""
+            for x in range(self.domain.width):
+                if (x, y) in self.observed_objects:
+                    row += f"\033[34m{' F':2}\033[0m "
+                else:
+                    seen = self.cells_mapping[(x, y)][0]
+                    if seen == 0:
+                        r = 255
+                        g = 255
+                        b = 255
+                    else:
+                        normalized_seen = min(seen / 30, 1.0)
+                        if normalized_seen <= 0.5:
+                            r = int(255 * (normalized_seen * 2))
+                            g = int(255 * (1 - normalized_seen * 2))
+                            b = 0
+                        elif normalized_seen <= 0.85:
+                            r = 255
+                            g = 0
+                            b = int(255 * ((normalized_seen - 0.5) * 4))
+                        else:
+                            r = int(255 * (1 - (normalized_seen - 0.85) * 4))
+                            g = 0
+                            b = 255
+                    row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
+            print(row)
