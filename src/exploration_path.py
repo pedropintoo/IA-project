@@ -13,17 +13,17 @@ class ExplorationPath:
     def next_exploration_point(self, body, sight_range, traverse, super_foods, exploration_map):
         head = body[0]
         if len(self.exploration_path) == 0:
-            unseen_cells = self.get_unseen_cells(exploration_map)
+            unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
             if unseen_cells:
                 target = self.find_best_target(head, sight_range, unseen_cells)
                 self.exploration_path = HilbertCurve.get_curve(self.width, self.height, sight_range, target)
         
-        return self.exploration_path.pop(0) if self.exploration_path else head
+        return self.exploration_path.pop(0)
 
-    def get_unseen_cells(self, exploration_map):
+    def get_unseen_cells(self, exploration_map, traverse, body):
         unseen_cells = []
         for (x, y), value in exploration_map.items():
-            if value[0] == 0:
+            if value[0] == 0 and (traverse or (x, y) not in self.internal_walls) and (x, y) not in body:
                 unseen_cells.append((x, y))
         return unseen_cells
 

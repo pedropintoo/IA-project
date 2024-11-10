@@ -107,7 +107,8 @@ class Mapping:
     def nothing_new_observed(self):
         if not self.objects_updated:
             x, y = self.current_goal
-            if self.cells_mapping[(x, y)][0] >= self.state["range"]-2:
+            threshold = self.state["range"] - 2 if self.state["range"] > 2 else 1
+            if self.cells_mapping[(x, y)][0] >= threshold:
                 return False
             return True
         return False
