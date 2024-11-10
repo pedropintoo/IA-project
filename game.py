@@ -12,7 +12,7 @@ logger.setLevel(logging.DEBUG)
 INITIAL_SCORE = 0
 GAME_SPEED = 10
 MAP_SIZE = (48, 24)
-FOOD_IN_MAP = 2
+FOOD_IN_MAP = 4
 
 class Snake:
     def __init__(self, player_name, x=1, y=1):
@@ -208,6 +208,8 @@ class Game:
     def update_snake(self, name):
         try:
             snake = self._snakes[name]
+            if not snake.alive:
+                return  # if snake is dead, we don't need to update it  
             lastkey = snake.lastkey
 
             assert lastkey in "wasd" or lastkey == ""
@@ -244,7 +246,9 @@ class Game:
                 continue
             # check collisions between snakes
             for name2, snake2 in self._snakes.items():
-                if name1 != name2 and snake2.collision(snake1.head) and snake2.alive:
+                if not snake2.alive:
+                    continue
+                if name1 != name2 and snake2.collision(snake1.head):
                     self.kill_snake(name1)
                     snake2.score += KILL_SNAKE_POINTS
 
@@ -281,9 +285,9 @@ class Game:
                     elif kind == SuperFood.LENGTH:
                         extra = random.randint(-2, 2)
                         snake1.grow(extra)
-                        snake1.score += extra
                     elif kind == SuperFood.RANGE:
-                        snake1.range = random.randint(2, 6)
+                        snake1.range += random.randint(-2, 2)
+                        snake1.range = min(max(snake1.range, 2), 6) # range between 2 and 6
                     elif kind == SuperFood.TRAVERSE:
                         snake1._traverse = not snake1._traverse
 
