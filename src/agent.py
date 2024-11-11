@@ -14,6 +14,7 @@ import logging
 import random
 import heapq
 from datetime import datetime, timedelta
+import sys
 
 ## Search
 from src.search.search_problem import SearchProblem
@@ -127,7 +128,8 @@ class Agent:
                 self.logger.debug(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
                                  
             except websockets.exceptions.ConnectionClosedOK:
-                self.logger.warning("Server has cleanly disconnected us")                  
+                self.logger.warning("Server has cleanly disconnected us")      
+                sys.exit(0)            
     
     # ------ Observe ------
     
