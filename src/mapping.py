@@ -18,7 +18,6 @@ class Mapping:
         self.observation_duration = 15
 
         self.super_foods = []
-        self.exploration_map = []
         
         self.exploration_path = ExplorationPath(
             internal_walls=domain.internal_walls, 
@@ -53,13 +52,14 @@ class Mapping:
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self) -> tuple:
-        return self.exploration_path.next_exploration_point(
+        self.current_goal = self.exploration_path.next_exploration_point(
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
             self.super_foods,
-            self.exploration_map
+            self.cells_mapping
         )
+        return self.current_goal
     
     def peek_next_exploration(self) -> tuple:
         return self.exploration_path.peek_exploration_point(
@@ -67,8 +67,10 @@ class Mapping:
             self.state["range"],
             self.state["traverse"], 
             self.super_foods,
-            self.exploration_map
+            self.cells_mapping
         )
+        
+        
 
     def update(self, state):
         self.objects_updated = False
@@ -129,7 +131,15 @@ class Mapping:
         self.logger.debug(f"New: {self.observed_objects}")
 
     def nothing_new_observed(self):
-        return not self.objects_updated
+        if not self.objects_updated:
+            x, y = self.current_goal
+            threshold = self.state["range"] * 2
+            if self.cells_mapping[(x, y)][0] >= threshold:
+                print(f"Threshold {threshold} reached - clearing the exploration path")
+                self.exploration_path.exploration_path = []
+                return False
+            return True
+        return False
 
     def observed(self, obj_type):
         return any(obj_type == object_type and not self.is_ignored_goal(position)

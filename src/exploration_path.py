@@ -4,34 +4,84 @@ class ExplorationPath:
     
     def __init__(self, internal_walls, dead_ends, height, width):
         self.internal_walls = internal_walls
-        self.dead_ends = dead_ends
         self.height = height
         self.width = width
         
         self.exploration_path = []
         
-    def next_exploration_point(self, body, range, traverse, super_foods, exploration_map):
-        # TODO: fix the Hilbert curves
+    def next_exploration_point(self, body, sight_range, traverse, super_foods, exploration_map):
+        head = body[0]
         if len(self.exploration_path) == 0:
-            self.exploration_path = HilbertCurve.get_curve(self.width, self.height, range)
+            unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
+            if unseen_cells:
+                target = self.find_best_target(head, sight_range, unseen_cells)
+                self.exploration_path = HilbertCurve.get_curve(self.width, self.height, sight_range, target)
         
-        return self.exploration_path.pop(0)
+        #self.print_exploration_path()
+        return list(self.exploration_path.pop(0))
 
-    def peek_exploration_point(self, body, range, traverse, super_foods, exploration_map):
+    def peek_exploration_point(self, body, sight_range, traverse, super_foods, exploration_map):
+        head = body[0]
         if len(self.exploration_path) == 0:
-            self.exploration_path = HilbertCurve.get_curve(self.width, self.height, range)
+            unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
+            if unseen_cells:
+                target = self.find_best_target(head, sight_range, unseen_cells)
+                self.exploration_path = HilbertCurve.get_curve(self.width, self.height, sight_range, target)
         
         return self.exploration_path[0]
+
+    def get_unseen_cells(self, exploration_map, traverse, body):
+        unseen_cells = set()
+        for (x, y), value in exploration_map.items():
+            if value[0] == 0 and (traverse or (x, y) not in self.internal_walls) and (x, y) not in body:
+                unseen_cells.add((x, y))
+        return unseen_cells
+
+    def find_best_target(self, head, sight_range, unseen_cells):
+        max_unseen = 0
+        best_distance = float('inf')
+        best_target = None
+        unseen_counts_cache = {}
+        for cell in unseen_cells:
+            unseen_count = self.count_unseen_from_point(cell, sight_range, unseen_cells, unseen_counts_cache)
+            distance = abs(cell[0] - head[0]) + abs(cell[1] - head[1])
+            if unseen_count > max_unseen or (unseen_count == max_unseen and distance < best_distance):
+                max_unseen = unseen_count
+                best_distance = distance
+                best_target = cell
+        return best_target
+
+    def count_unseen_from_point(self, point, sight_range, unseen_cells, cache):
+        if point in cache:
+            return cache[point]
+        count = 0
+        for dx in range(-sight_range, sight_range + 1):
+            for dy in range(-sight_range, sight_range + 1):
+                if (point[0] + dx, point[1] + dy) in unseen_cells:
+                    count += 1
+        cache[point] = count
+        return count
+
+    def print_exploration_path(self):
+        for y in range(self.height):
+            row = ""
+            for x in range(self.width):
+                if [x, y] in self.exploration_path:
+                    row += "X"
+                else:
+                    row += "."
+            print(row)
+
+    
 
 class HilbertCurve:
     
     @staticmethod
-    def get_curve(width, height, sight_range):
-        print("....--",width, height, sight_range)
-        order = HilbertCurve.minimum_hilbert_order(width, height, sight_range * 2)  # sight_range * 2 for distance between points
-        exploration_path = []  # Initialize the exploration path list
+    def get_curve(width, height, sight_range, target):
+        order = HilbertCurve.minimum_hilbert_order(width, height, sight_range * 2)
+        exploration_path = []
         HilbertCurve.hilbert_curve(0, 0, width, 0, 0, height, order, exploration_path)
-        return exploration_path
+        return HilbertCurve.adjust_path_to_target(exploration_path, target)
     
     @staticmethod
     def hilbert_curve(x0, y0, xi, xj, yi, yj, order, exploration_path):
@@ -57,6 +107,17 @@ class HilbertCurve:
         # The Hilbert curve of order 'n' can cover a 2^n x 2^n grid
         order = math.ceil(math.log2(max_dimension))
         return order
+
+    @staticmethod
+    def adjust_path_to_target(path, target):
+        if target in path:
+            target_index = path.index(target)
+            return path[target_index:] + path[:target_index]
+        else:
+            # Find the closes path in the path to the target
+            closest_point = min(path, key=lambda p: abs(p[0] - target[0]) + abs(p[1] - target[1]))
+            closest_index = path.index(closest_point)
+            return path[closest_index:] + path[:closest_index]
 
 # if __name__ == "__main__":
 #     HilbertCurve.get_curve(, 10, 2)
