@@ -133,7 +133,6 @@ class Mapping:
             x, y = self.current_goal
             threshold = self.state["range"] * 2
             if self.cells_mapping[(x, y)][0] >= threshold:
-                print(f"Threshold {threshold} reached - clearing the exploration path")
                 self.exploration_path.exploration_path = []
                 return False
             return True

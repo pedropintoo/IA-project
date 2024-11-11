@@ -235,13 +235,6 @@ class Agent:
         else:
             new_goal["strategy"] = "exploration"
             new_goal["position"] = self.mapping.next_exploration()
-            
-            if new_goal["position"] == self.mapping.state["body"][0]:
-                new_goal["position"] = self.mapping.next_exploration() # Avoid self-searching
-            elif self.mapping.state["traverse"] and new_goal["position"] in self.mapping.exploration_path.internal_walls:
-                new_goal["position"] = self.mapping.next_exploration() # Avoid walls searching
-            elif new_goal["position"] in self.mapping.state["body"]:
-                new_goal["position"] = self.mapping.next_exploration() # Avoid body searching
         
         return new_goal
 
