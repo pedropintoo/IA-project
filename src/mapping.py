@@ -101,7 +101,7 @@ class Mapping:
                     if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
                         self.objects_updated = True
         
-        self.print_mapping()
+        #self.print_mapping()
         print("New:", self.observed_objects)
 
     def nothing_new_observed(self):
