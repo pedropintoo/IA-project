@@ -40,7 +40,6 @@ class Mapping:
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
-            self.super_foods,
             self.cells_mapping
         )
         return self.current_goal
@@ -101,7 +100,7 @@ class Mapping:
                     if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
                         self.objects_updated = True
         
-        #self.print_mapping()
+        self.print_mapping()
         print("New:", self.observed_objects)
 
     def nothing_new_observed(self):
