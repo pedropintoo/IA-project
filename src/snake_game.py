@@ -23,7 +23,7 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        return state["range"] >= 5 and state["traverse"]
+        return state["range"] >= 4 and state["traverse"]
     
     def _check_collision(self, state, action):
         """Check if the action will result in a collision"""
@@ -110,16 +110,16 @@ class SnakeGame(SearchDomain):
             head, 
             goal_state, 
             state, 
-            body_weight=5, 
-            walls_weight=3
+            body_weight=3, 
+            walls_weight=1
         )
 
         total_value += obstacle_count
         
         if self.is_perfect_effects(state) and head in state["observed_objects"].get(Tiles.SUPER.value, []):
-            total_value += 500
+            total_value += 10
 
-        return total_value * 10
+        return total_value
 
     def satisfies(self, state, goal_state):
         head = state["body"][0]

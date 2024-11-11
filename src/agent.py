@@ -48,11 +48,11 @@ class Agent:
         ## Utils
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
-        ## Activate the mapping level
+        ## Activate the mapping level (comment the next line to disable mapping logging)
         self.logger.log.setLevel(MAPPING_LEVEL)
         
-        ## Disable logging
-        self.logger.log.setLevel(logging.CRITICAL)
+        ## Disable logging (comment the next line to enable logging)
+        # self.logger.log.setLevel(logging.CRITICAL)
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -162,7 +162,7 @@ class Agent:
     
     def think(self, time_limit):
         ## Follow the action plain (nothing new observed)
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed():
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal["strategy"]):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
@@ -238,7 +238,8 @@ class Agent:
             
             while (new_goal["position"] == self.mapping.state["body"][0] or
                 (not self.mapping.state["traverse"] and new_goal["position"] in self.mapping.exploration_path.internal_walls) or
-                new_goal["position"] in self.mapping.state["body"]):
+                new_goal["position"] in self.mapping.state["body"] or 
+                (self.perfect_effects and self.mapping.observed_objects.get(tuple(new_goal["position"]), [0])[0] == Tiles.SUPER)):
                 new_goal["position"] = self.mapping.next_exploration() # Find a new goal position        
         
         return new_goal

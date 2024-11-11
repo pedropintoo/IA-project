@@ -22,7 +22,10 @@ class SearchNode:
     def __hash__(self):
         return hash(str(self.state))
     def __lt__(self, other):
-        return (self.cost + self.heuristic) < (other.cost + other.heuristic)
+        ## A* search
+        # return (self.cost + self.heuristic) < (other.cost + other.heuristic)
+        ## Greedy search
+        return self.heuristic < other.heuristic
     
     def in_parent(self, newstate):
         

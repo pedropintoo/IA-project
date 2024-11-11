@@ -128,8 +128,8 @@ class Mapping:
         self.print_mapping()
         self.logger.debug(f"New: {self.observed_objects}")
 
-    def nothing_new_observed(self):
-        if not self.objects_updated:
+    def nothing_new_observed(self, current_goal_strategy):
+        if not self.objects_updated and current_goal_strategy == "exploration":
             x, y = self.current_goal
             threshold = self.state["range"] * 2
             if self.cells_mapping[(x, y)][0] >= threshold:
