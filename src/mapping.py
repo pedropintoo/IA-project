@@ -56,7 +56,6 @@ class Mapping:
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
-            self.super_foods,
             self.cells_mapping
         )
         return self.current_goal
@@ -66,7 +65,6 @@ class Mapping:
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
-            self.super_foods,
             self.cells_mapping
         )
         

@@ -2,33 +2,34 @@ import math
 
 class ExplorationPath:
     
-    def __init__(self, internal_walls, dead_ends, height, width):
+    def __init__(self, internal_walls, height, width, dead_ends=None):
         self.internal_walls = internal_walls
         self.height = height
         self.width = width
+        self.dead_ends = dead_ends
         
         self.exploration_path = []
         
-    def next_exploration_point(self, body, sight_range, traverse, super_foods, exploration_map):
+    def next_exploration_point(self, body, sight_range, traverse, exploration_map):
         head = body[0]
         if len(self.exploration_path) == 0:
             unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
             if unseen_cells:
                 target = self.find_best_target(head, sight_range, unseen_cells)
-                self.exploration_path = HilbertCurve.get_curve(self.width, self.height, sight_range, target)
+                self.exploration_path = GilbertCurve.get_curve(self.width, self.height, target, sight_range)
         
         #self.print_exploration_path()
         return list(self.exploration_path.pop(0))
 
-    def peek_exploration_point(self, body, sight_range, traverse, super_foods, exploration_map):
+    def peek_exploration_point(self, body, sight_range, traverse, exploration_map):
         head = body[0]
         if len(self.exploration_path) == 0:
             unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
             if unseen_cells:
                 target = self.find_best_target(head, sight_range, unseen_cells)
-                self.exploration_path = HilbertCurve.get_curve(self.width, self.height, sight_range, target)
+                self.exploration_path = GilbertCurve.get_curve(self.width, self.height, target, sight_range)
         
-        return self.exploration_path[0]
+        return list(self.exploration_path[0])
 
     def get_unseen_cells(self, exploration_map, traverse, body):
         unseen_cells = set()
@@ -66,47 +67,81 @@ class ExplorationPath:
         for y in range(self.height):
             row = ""
             for x in range(self.width):
-                if [x, y] in self.exploration_path:
+                if (x, y) in self.exploration_path:
                     row += "X"
                 else:
                     row += "."
             print(row)
 
+class GilbertCurve:
+    def get_curve(width, height, target, sight_range=1):
+        path = list(GilbertCurve.gilbert2d(width, height, sight_range*2))
+        adjusted_path = [(x * sight_range*2, y * sight_range*2) for x, y in path]
+        adjusted_path = GilbertCurve.adjust_path_to_target(adjusted_path, target)
+        return adjusted_path
     
+    @staticmethod
+    def gilbert2d(width, height, sight_range):
+        virtual_width = (width + sight_range - 1) // sight_range
+        virtual_height = (height + sight_range - 1) // sight_range
 
-class HilbertCurve:
-    
-    @staticmethod
-    def get_curve(width, height, sight_range, target):
-        order = HilbertCurve.minimum_hilbert_order(width, height, sight_range * 2)
-        exploration_path = []
-        HilbertCurve.hilbert_curve(0, 0, width, 0, 0, height, order, exploration_path)
-        return HilbertCurve.adjust_path_to_target(exploration_path, target)
-    
-    @staticmethod
-    def hilbert_curve(x0, y0, xi, xj, yi, yj, order, exploration_path):
-        """ Generate a Hilbert curve of a given order """
-        if order <= 0:
-            X = x0 + (xi + yi) // 2
-            Y = y0 + (xj + yj) // 2
-            exploration_path.append([X, Y])
+        if width >= height:
+            yield from GilbertCurve.generate2d(0, 0, virtual_width, 0, 0, virtual_height)
         else:
-            # Recursively generate the four segments of the Hilbert curve
-            HilbertCurve.hilbert_curve(x0, y0, yi // 2, yj // 2, xi // 2, xj // 2, order - 1, exploration_path)
-            HilbertCurve.hilbert_curve(x0 + xi // 2, y0 + xj // 2, xi // 2, xj // 2, yi // 2, yj // 2, order - 1, exploration_path)
-            HilbertCurve.hilbert_curve(x0 + xi // 2 + yi // 2, y0 + xj // 2 + yj // 2, xi // 2, xj // 2, yi // 2, yj // 2, order - 1, exploration_path)
-            HilbertCurve.hilbert_curve(x0 + xi // 2 + yi, y0 + xj // 2 + yj, -yi // 2, -yj // 2, -xi // 2, -xj // 2, order - 1, exploration_path)
+            yield from GilbertCurve.generate2d(0, 0, 0, virtual_height, virtual_width, 0)
+    
+    @staticmethod
+    def sgn(x):
+        return -1 if x < 0 else (1 if x > 0 else 0)
 
     @staticmethod
-    def minimum_hilbert_order(grid_width, grid_height, sight_range):
-        """Calculate the minimum Hilbert curve order to ensure no two points are farther apart than sight_range."""
-        num_cells_width = math.ceil(grid_width / sight_range)
-        num_cells_height = math.ceil(grid_height / sight_range)
-        max_dimension = max(num_cells_width, num_cells_height)
-        
-        # The Hilbert curve of order 'n' can cover a 2^n x 2^n grid
-        order = math.ceil(math.log2(max_dimension))
-        return order
+    def generate2d(x, y, ax, ay, bx, by):
+
+        w = abs(ax + ay)
+        h = abs(bx + by)
+
+        (dax, day) = (GilbertCurve.sgn(ax), GilbertCurve.sgn(ay)) # unit major direction
+        (dbx, dby) = (GilbertCurve.sgn(bx), GilbertCurve.sgn(by)) # unit orthogonal direction
+
+        if h == 1:
+            # trivial row fill
+            for i in range(0, w):
+                yield(x, y)
+                (x, y) = (x + dax, y + day)
+            return
+
+        if w == 1:
+            # trivial column fill
+            for i in range(0, h):
+                yield(x, y)
+                (x, y) = (x + dbx, y + dby)
+            return
+
+        (ax2, ay2) = (ax//2, ay//2)
+        (bx2, by2) = (bx//2, by//2)
+
+        w2 = abs(ax2 + ay2)
+        h2 = abs(bx2 + by2)
+
+        if 2*w > 3*h:
+            if (w2 % 2) and (w > 2):
+                # prefer even steps
+                (ax2, ay2) = (ax2 + dax, ay2 + day)
+
+            # long case: split in two parts only
+            yield from GilbertCurve.generate2d(x, y, ax2, ay2, bx, by)
+            yield from GilbertCurve.generate2d(x+ax2, y+ay2, ax-ax2, ay-ay2, bx, by)
+
+        else:
+            if (h2 % 2) and (h > 2):
+                # prefer even steps
+                (bx2, by2) = (bx2 + dbx, by2 + dby)
+
+            # standard case: one step up, one long horizontal, one step down
+            yield from GilbertCurve.generate2d(x, y, bx2, by2, ax2, ay2)
+            yield from GilbertCurve.generate2d(x+bx2, y+by2, ax, ay, bx-bx2, by-by2)
+            yield from GilbertCurve.generate2d(x+(ax-dax)+(bx2-dbx), y+(ay-day)+(by2-dby),
+                                  -bx2, -by2, -(ax-ax2), -(ay-ay2))
 
     @staticmethod
     def adjust_path_to_target(path, target):
@@ -114,10 +149,12 @@ class HilbertCurve:
             target_index = path.index(target)
             return path[target_index:] + path[:target_index]
         else:
-            # Find the closes path in the path to the target
-            closest_point = min(path, key=lambda p: abs(p[0] - target[0]) + abs(p[1] - target[1]))
-            closest_index = path.index(closest_point)
-            return path[closest_index:] + path[:closest_index]
+            # Find the closest_point in the path to the target
+            closest_point = min(path, key=lambda p: math.dist(p, target))
+            closest_point_index = path.index(closest_point)
+            return path[closest_point_index:] + path[:closest_point_index]
 
-# if __name__ == "__main__":
-#     HilbertCurve.get_curve(, 10, 2)
+if __name__ == "__main__":
+    jorge = GilbertCurve.get_curve(48,24,(10,10), 4)
+    for jorginho in jorge:
+        print(tuple(jorginho))
