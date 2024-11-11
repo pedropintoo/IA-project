@@ -19,7 +19,13 @@ class ExplorationPath:
                 self.exploration_path = GilbertCurve.get_curve(self.width, self.height, target, sight_range)
         
         #self.print_exploration_path()
-        return list(self.exploration_path.pop(0))
+        while self.exploration_path:
+            point = list(self.exploration_path[0])
+            if (traverse or point not in self.internal_walls) and point not in body:
+                return list(self.exploration_path.pop(0))
+            else:
+                self.exploration_path.pop(0)
+        return None
 
     def peek_exploration_point(self, body, sight_range, traverse, exploration_map):
         head = body[0]
@@ -29,7 +35,13 @@ class ExplorationPath:
                 target = self.find_best_target(head, sight_range, unseen_cells)
                 self.exploration_path = GilbertCurve.get_curve(self.width, self.height, target, sight_range)
         
-        return list(self.exploration_path[0])
+        while self.exploration_path:
+            point = list(self.exploration_path[0])
+            if (traverse or point not in self.internal_walls) and point not in body:
+                return point
+            else:
+                self.exploration_path.pop(0)
+        return None
 
     def get_unseen_cells(self, exploration_map, traverse, body):
         unseen_cells = set()

@@ -160,16 +160,13 @@ class Agent:
     # ------ Think -------
     
     def think(self, time_limit):
-        ## Follow the action plain (nothing new observed)
+        ## Follow the action plain (nothing new observed)            
         if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal["strategy"]):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
-        if self.current_goal and self.current_goal["strategy"] != "exploration":
-            print(self.mapping.nothing_new_observed(self.current_goal["strategy"]))
-            print(f"\33[33mThink {self.current_goal}\33[0m")
         solution_is_valid = False
         
         while not solution_is_valid:
@@ -179,6 +176,7 @@ class Agent:
             self.logger.info(f"New goal {self.current_goal}")
             
             ## Create search structures
+            print(self.mapping.state)
             self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
             self.tree = SearchTree(self.problem)
             
@@ -201,7 +199,7 @@ class Agent:
             if self.current_goal["strategy"] == "super":
                 solution[-1]["traverse"] = False # worst case scenario
         
-            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=self.mapping.peek_next_exploration())
+            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=list(self.mapping.peek_next_exploration()))
             self.tree = SearchTree(self.problem)
             
             try:
@@ -238,12 +236,6 @@ class Agent:
         else:
             new_goal["strategy"] = "exploration"
             new_goal["position"] = self.mapping.next_exploration()
-            
-            while (new_goal["position"] == self.mapping.state["body"][0] or
-                (not self.mapping.state["traverse"] and new_goal["position"] in self.mapping.exploration_path.internal_walls) or
-                new_goal["position"] in self.mapping.state["body"] or 
-                (self.perfect_effects and self.mapping.observed_objects.get(tuple(new_goal["position"]), [0])[0] == Tiles.SUPER)):
-                new_goal["position"] = self.mapping.next_exploration() # Find a new goal position        
         
         return new_goal
 

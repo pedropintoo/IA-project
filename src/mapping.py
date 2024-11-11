@@ -15,7 +15,7 @@ class Mapping:
 
         self.objects_updated = False
         self.observed_objects = None
-        self.observation_duration = 30
+        self.observation_duration = 60
 
         self.super_foods = []
         
@@ -103,16 +103,14 @@ class Mapping:
 
         ## Update the observed objects
         for position, [obj_type, timestamp] in currently_observed.items():
-            
+
             # This position has a object
             if position in self.observed_objects:
                 
                 # In case, the object is the same
-                print("type", obj_type == self.observed_objects[position][0], obj_type, self.observed_objects[position][0])
                 if obj_type == self.observed_objects[position][0]:
                     self.observed_objects[position][1] = timestamp # update the timestamp
                 else:
-                    print("ignore", obj_type in self.ignored_objects)
                     if obj_type in self.ignored_objects:
                         del self.observed_objects[position] # ignore the empty space
                     else:
@@ -122,6 +120,7 @@ class Mapping:
             else:
                 # This position is new
                 if obj_type not in self.ignored_objects:
+                    print("NEW - ", obj_type)
                     self.observed_objects[position] = [obj_type, timestamp]
                     self.objects_updated = True
         
@@ -139,9 +138,7 @@ class Mapping:
             x, y = self.current_goal
             threshold = self.state["range"] * 2
             if self.cells_mapping[(x, y)][0] >= threshold:
-                print(f"Threshold {threshold} reached - clearing the exploration path")
                 self.exploration_path.exploration_path = []
-                print("NEW OBJECTS OBSERVED - v2")
                 return False
 
         return True
