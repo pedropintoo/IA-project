@@ -22,7 +22,7 @@ class Mapping:
         self.exploration_path = ExplorationPath(
             internal_walls=domain.internal_walls, 
             dead_ends=domain.dead_ends, 
-            height=domain.height, 
+            height=domain.height,
             width=domain.width
         )
         # TODO: change the ignore_objects
@@ -80,6 +80,7 @@ class Mapping:
             "range": state["range"],
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
+            "step": state["step"] + 1
         }
         self.update_cells_mapping(state["sight"]) 
 

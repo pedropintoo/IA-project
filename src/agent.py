@@ -52,7 +52,7 @@ class Agent:
         self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
-        self.logger.log.setLevel(logging.CRITICAL)
+        # self.logger.log.setLevel(logging.CRITICAL)
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -176,7 +176,6 @@ class Agent:
             self.logger.info(f"New goal {self.current_goal}")
             
             ## Create search structures
-            print(self.mapping.state)
             self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
             self.tree = SearchTree(self.problem)
             

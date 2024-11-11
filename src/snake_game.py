@@ -23,7 +23,10 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        return state["range"] >= 3 and state["traverse"]
+        return (state["range"] >= 4 and state["traverse"]) and not self.has_n_super_observed(state, 7) and not state["step"] > 2700
+    
+    def has_n_super_observed(self, state, n):
+        return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
     
     def _check_collision(self, state, action):
         """Check if the action will result in a collision"""
@@ -64,7 +67,8 @@ class SnakeGame(SearchDomain):
                 "body": new_body,
                 "range": state["range"],
                 "traverse": state["traverse"],
-                "observed_objects": state["observed_objects"]
+                "observed_objects": state["observed_objects"],
+                "step": state["step"] + 1
                 }
 
     def cost(self, state, action):
@@ -117,8 +121,7 @@ class SnakeGame(SearchDomain):
         total_value += obstacle_count
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            print("M A X I M I Z")
-            total_value += 500
+            total_value += 20
 
         return total_value
 
