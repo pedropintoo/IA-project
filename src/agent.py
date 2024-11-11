@@ -52,7 +52,7 @@ class Agent:
         self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.log.setLevel(logging.CRITICAL)
+        self.logger.log.setLevel(logging.CRITICAL)
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -126,7 +126,6 @@ class Agent:
                 ## ------------------
                 
                 self.logger.debug(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
-                                 
             except websockets.exceptions.ConnectionClosedOK:
                 self.logger.warning("Server has cleanly disconnected us")      
                 sys.exit(0)            
@@ -168,6 +167,9 @@ class Agent:
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
+        if self.current_goal and self.current_goal["strategy"] != "exploration":
+            print(self.mapping.nothing_new_observed(self.current_goal["strategy"]))
+            print(f"\33[33mThink {self.current_goal}\33[0m")
         solution_is_valid = False
         
         while not solution_is_valid:
@@ -229,6 +231,7 @@ class Agent:
             new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
+            print(f"\33[33mSuper observed: {self.mapping.observed_objects} {self.perfect_effects} {self.mapping.state["traverse"]} {self.mapping.state["range"]}\33[0m")
             new_goal["strategy"] = "super"
             new_goal["position"] = self.mapping.closest_object(Tiles.SUPER)
             

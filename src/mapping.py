@@ -15,7 +15,7 @@ class Mapping:
 
         self.objects_updated = False
         self.observed_objects = None
-        self.observation_duration = 15
+        self.observation_duration = 30
 
         self.super_foods = []
         
@@ -108,36 +108,43 @@ class Mapping:
             if position in self.observed_objects:
                 
                 # In case, the object is the same
+                print("type", obj_type == self.observed_objects[position][0], obj_type, self.observed_objects[position][0])
                 if obj_type == self.observed_objects[position][0]:
                     self.observed_objects[position][1] = timestamp # update the timestamp
                 else:
+                    print("ignore", obj_type in self.ignored_objects)
                     if obj_type in self.ignored_objects:
                         del self.observed_objects[position] # ignore the empty space
                     else:
                         # Update the object type (and current ts)
                         self.observed_objects[position] = [obj_type, timestamp]
-                        if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
-                            self.objects_updated = True
+                        self.objects_updated = True
             else:
                 # This position is new
                 if obj_type not in self.ignored_objects:
                     self.observed_objects[position] = [obj_type, timestamp]
-                    if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
-                        self.objects_updated = True
+                    self.objects_updated = True
+        
+        if self.objects_updated:
+            print("NEW OBJECTS OBSERVED")
         
         self.print_mapping()
         self.logger.debug(f"New: {self.observed_objects}")
 
     def nothing_new_observed(self, current_goal_strategy):
-        if not self.objects_updated and current_goal_strategy == "exploration":
+        if self.objects_updated:
+            return False
+        
+        if current_goal_strategy == "exploration":
             x, y = self.current_goal
             threshold = self.state["range"] * 2
             if self.cells_mapping[(x, y)][0] >= threshold:
                 print(f"Threshold {threshold} reached - clearing the exploration path")
                 self.exploration_path.exploration_path = []
+                print("NEW OBJECTS OBSERVED - v2")
                 return False
-            return True
-        return False
+
+        return True
 
     def observed(self, obj_type):
         return any(obj_type == object_type and not self.is_ignored_goal(position)
@@ -183,7 +190,7 @@ class Mapping:
             row = ""
             for x in range(self.domain.width):
                 if (x, y) in self.observed_objects:
-                    row += f"\033[34m{' F' if self.is_ignored_goal((x,y)) else ' X':2}\033[0m " 
+                    row += f"\033[34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
                 else:
                     seen = self.cells_mapping[(x, y)][0]
                     if seen == 0:
