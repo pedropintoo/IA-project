@@ -7,6 +7,7 @@
  '''
 from src.search.search_domain import SearchDomain
 from consts import Tiles
+import time
 
 DIRECTIONS = {
     "NORTH": [0, -1],
@@ -23,9 +24,9 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        return (state["range"] >= 4 and state["traverse"]) and not self.has_n_super_observed(state, 7) and not state["step"] > 2700
+        return (state["range"] >= 4 and state["traverse"]) and not self._has_n_super_observed(state, 7) and not state["step"] > 2700
     
-    def has_n_super_observed(self, state, n):
+    def _has_n_super_observed(self, state, n):
         return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
     
     def _check_collision(self, state, action):
@@ -63,13 +64,40 @@ class SnakeGame(SearchDomain):
         
         new_body = [new_head] + body[:-1]
 
+        sight_range = state["range"]
+        cells_mapping = state["cells_mapping"]
+        
+        cells_mapping = self.update_cells_mapping(body[0], cells_mapping, sight_range)
+
         return {
                 "body": new_body,
                 "range": state["range"],
                 "traverse": state["traverse"],
                 "observed_objects": state["observed_objects"],
-                "step": state["step"] + 1
+                "step": state["step"] + 1,
+                "cells_mapping": cells_mapping
                 }
+    
+    def update_cells_mapping(self, head, cells_mapping, sight_range):
+        for x in range(-sight_range, sight_range + 1):
+            for y in range(-sight_range, sight_range + 1):
+                if x + y > sight_range:
+                    continue
+                x_new = (head[0] + x) % self.width
+                y_new = (head[1] + y) % self.height
+                seen, timestamp = cells_mapping[(x_new, y_new)]
+                cells_mapping[(x_new, y_new)] = (seen + 1, time.time())
+        
+        cells_mapping = self.expire_cells_mapping(cells_mapping, sight_range)
+        return cells_mapping
+    
+    def expire_cells_mapping(self, cells_mapping, sight_range):
+        duration = 30 / sight_range
+
+        for position, (seen, timestamp) in cells_mapping.copy().items():
+            if timestamp is not None and time.time() - timestamp > duration:
+                cells_mapping[position] = (0, None)
+        return cells_mapping
 
     def cost(self, state, action):
         return 1
@@ -97,6 +125,7 @@ class SnakeGame(SearchDomain):
     def heuristic(self, state, goal_state):
         head = state["body"][0]
         traverse = state["traverse"]
+        cells_mapping = state["cells_mapping"]
         # Internal walls are not considered
         total_value = 0
         
@@ -123,6 +152,16 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             total_value += 20
 
+        ## Include cells exploration in heuristic
+        unseen = 0
+        for x in range(self.width):
+            for y in range(self.height):
+                seen, _ = cells_mapping[(x, y)]
+                if seen == 0:
+                    unseen += 1
+
+        total_value += int(unseen / state["range"]) # TODO: change this...
+        
         return total_value
 
     def satisfies(self, state, goal_state):

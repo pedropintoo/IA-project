@@ -197,8 +197,13 @@ class Agent:
             ## Check if the solution is valid
             if self.current_goal["strategy"] == "super":
                 solution[-1]["traverse"] = False # worst case scenario
-        
-            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=list(self.mapping.peek_next_exploration()))
+
+            # TODO: check this
+            prox_point=list(self.mapping.peek_next_exploration())
+            if not prox_point:
+                self.logger.critical("NAO TEM PONTO: = null")
+                sys.exit(1)
+            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=prox_point)
             self.tree = SearchTree(self.problem)
             
             try:
