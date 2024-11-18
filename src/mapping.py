@@ -15,15 +15,14 @@ class Mapping:
 
         self.objects_updated = False
         self.observed_objects = None
-        self.observation_duration = 15
+        self.observation_duration = 60
 
         self.super_foods = []
-        self.exploration_map = []
         
         self.exploration_path = ExplorationPath(
             internal_walls=domain.internal_walls, 
             dead_ends=domain.dead_ends, 
-            height=domain.height, 
+            height=domain.height,
             width=domain.width
         )
         # TODO: change the ignore_objects
@@ -34,16 +33,42 @@ class Mapping:
             (x, y): (0, None)
             for x in range(self.domain.width)
             for y in range(self.domain.height)
-        }
+        }   
+         
+        self.ignored_duration = 3
+        self.temp_ignored_goals = set() # ([x, y], observed_timestamp) 
+
+    @property
+    def ignored_goals(self):
+        for goal, timestamp in self.temp_ignored_goals.copy():
+            if time.time() - timestamp > self.ignored_duration:
+                self.temp_ignored_goals.remove((goal, timestamp))
+        return self.temp_ignored_goals
+
+    def ignore_goal(self, obj_pos):
+        self.temp_ignored_goals.add((tuple(obj_pos), time.time()))
+    
+    def is_ignored_goal(self, obj_pos):
+        return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self) -> tuple:
-        return self.exploration_path.next_exploration_point(
+        self.current_goal = self.exploration_path.next_exploration_point(
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
-            self.super_foods,
-            self.exploration_map
+            self.cells_mapping
         )
+        return self.current_goal
+    
+    def peek_next_exploration(self) -> tuple:
+        return self.exploration_path.peek_exploration_point(
+            self.state["body"], 
+            self.state["range"],
+            self.state["traverse"], 
+            self.cells_mapping
+        )
+        
+        
 
     def update(self, state):
         self.objects_updated = False
@@ -55,6 +80,7 @@ class Mapping:
             "range": state["range"],
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
+            "step": state["step"] + 1
         }
         self.update_cells_mapping(state["sight"]) 
 
@@ -78,7 +104,7 @@ class Mapping:
 
         ## Update the observed objects
         for position, [obj_type, timestamp] in currently_observed.items():
-            
+
             # This position has a object
             if position in self.observed_objects:
                 
@@ -91,23 +117,36 @@ class Mapping:
                     else:
                         # Update the object type (and current ts)
                         self.observed_objects[position] = [obj_type, timestamp]
-                        if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
-                            self.objects_updated = True
+                        self.objects_updated = True
             else:
                 # This position is new
                 if obj_type not in self.ignored_objects:
+                    print("NEW - ", obj_type)
                     self.observed_objects[position] = [obj_type, timestamp]
-                    if not (self.domain.is_perfect_effects(self.state) and obj_type == Tiles.SUPER):
-                        self.objects_updated = True
+                    self.objects_updated = True
+        
+        if self.objects_updated:
+            print("NEW OBJECTS OBSERVED")
         
         self.print_mapping()
         self.logger.debug(f"New: {self.observed_objects}")
 
-    def nothing_new_observed(self):
-        return not self.objects_updated
+    def nothing_new_observed(self, current_goal_strategy):
+        if self.objects_updated:
+            return False
+        
+        if current_goal_strategy == "exploration":
+            x, y = self.current_goal
+            threshold = self.state["range"] * 2
+            if self.cells_mapping[(x, y)][0] >= threshold:
+                self.exploration_path.exploration_path = []
+                return False
+
+        return True
 
     def observed(self, obj_type):
-        return any(obj_type == object_type for [object_type, _] in self.observed_objects.values())
+        return any(obj_type == object_type and not self.is_ignored_goal(position)
+                     for position, [object_type, timestamp] in self.observed_objects.items())
         
     def closest_object(self, obj_type):
         """Find the closest object based on the heuristic"""
@@ -115,6 +154,9 @@ class Mapping:
         min_heuristic = None
 
         for position in self.observed_objects.keys():
+            if self.is_ignored_goal(position):
+                continue
+            
             heuristic = self.domain.heuristic(self.state, position)
             
             if min_heuristic is None or heuristic < min_heuristic:
@@ -146,7 +188,7 @@ class Mapping:
             row = ""
             for x in range(self.domain.width):
                 if (x, y) in self.observed_objects:
-                    row += f"\033[34m{' F':2}\033[0m "
+                    row += f"\033[34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
                 else:
                     seen = self.cells_mapping[(x, y)][0]
                     if seen == 0:

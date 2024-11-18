@@ -2,6 +2,7 @@ venv/
 env/
 .idea/
 highscores.json
+server_log.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

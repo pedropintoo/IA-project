@@ -14,6 +14,7 @@ import logging
 import random
 import heapq
 from datetime import datetime, timedelta
+import sys
 
 ## Search
 from src.search.search_problem import SearchProblem
@@ -47,8 +48,11 @@ class Agent:
         ## Utils
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
-        ## Activate the mapping level
+        ## Activate the mapping level (comment the next line to disable mapping logging)
         self.logger.log.setLevel(MAPPING_LEVEL)
+        
+        ## Disable logging (comment the next line to enable logging)
+        # self.logger.log.setLevel(logging.CRITICAL)
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -111,7 +115,7 @@ class Agent:
 
                 if not state.get("body"):
                     self.logger.warning("Game Over!")
-                    break
+                    continue
                 
                 self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
@@ -122,9 +126,9 @@ class Agent:
                 ## ------------------
                 
                 self.logger.debug(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
-                                 
             except websockets.exceptions.ConnectionClosedOK:
-                self.logger.warning("Server has cleanly disconnected us")                  
+                self.logger.warning("Server has cleanly disconnected us")      
+                sys.exit(0)            
     
     # ------ Observe ------
     
@@ -156,42 +160,66 @@ class Agent:
     # ------ Think -------
     
     def think(self, time_limit):
-        ## Follow the action plain (nothing new observed)
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed():
+        ## Follow the action plain (nothing new observed)            
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal["strategy"]):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
-        ## Find a new goal
-        self.current_goal = self._find_goal()
-        self.logger.info(f"New goal {self.current_goal}")
+        solution_is_valid = False
         
-        ## Create search structures
-        self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
-        self.tree = SearchTree(self.problem, 'A*')
+        while not solution_is_valid:
+            
+            ## Find a new goal
+            self.current_goal = self._find_goal()
+            self.logger.info(f"New goal {self.current_goal}")
+            
+            ## Create search structures
+            self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
+            self.tree = SearchTree(self.problem)
+            
+            ## Search for the solution
+            try: 
+                solution = self.tree.search(time_limit=time_limit)
+            except TimeLimitExceeded as e:
+                self.logger.warning(e.args[0])
+                self.action = self._get_fast_action(warning=True)
+                return
+            
+            ## No solution found
+            if not solution:
+                break
         
-        ## Search for the solution
-        try: 
-            solution = self.tree.search(time_limit=time_limit)
-        except TimeLimitExceeded as e:
-            self.logger.warning(e.args[0])
-            self.solution = self._get_fast_action(warning=True)
-            return
+            ## Save the solution as a plan of actions
+            self.actions_plan = self.tree.inverse_plan
+            
+            ## Check if the solution is valid
+            if self.current_goal["strategy"] == "super":
+                solution[-1]["traverse"] = False # worst case scenario
         
-        ## No solution found
-        if not solution:
-            self.logger.warning("No solution found!")
-            self.solution = self._get_fast_action(warning=True)
-            return
-        
-        ## Save the solution as a plan of actions
-        self.actions_plan = self.tree.inverse_plan
-        self.action = self.actions_plan.pop()
+            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=list(self.mapping.peek_next_exploration()))
+            self.tree = SearchTree(self.problem)
+            
+            try:
+                solution = self.tree.search(time_limit=time_limit)
+            except TimeLimitExceeded as e:
+                self.logger.warning(e.args[0])
+                self.action = self._get_fast_action(warning=True)
+                return
+            
+            if not solution:
+                self.logger.warning("Solution is not valid!")
+                self.mapping.ignore_goal(self.current_goal["position"])
+                continue
+                
+            solution_is_valid = True # is possible to reach the goal and return to the current position
+            
+        self.action = self.actions_plan.pop() if len(self.actions_plan) > 0 else self._get_fast_action(warning=True)
         
         self.logger.debug(f"Actions plan founded! avg_branching: {self.tree.avg_branching}")
 
-    def _find_goal(self):
+    def _find_goal(self, ):
         """Find a new goal based on mapping and state"""
         new_goal = {}
         
@@ -200,21 +228,21 @@ class Agent:
             new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
+            print(f"\33[33mSuper observed: {self.mapping.observed_objects} {self.perfect_effects} {self.mapping.state["traverse"]} {self.mapping.state["range"]}\33[0m")
             new_goal["strategy"] = "super"
             new_goal["position"] = self.mapping.closest_object(Tiles.SUPER)
             
         else:
             new_goal["strategy"] = "exploration"
             new_goal["position"] = self.mapping.next_exploration()
-            # Avoid self-searching
-            if new_goal["position"] == self.mapping.state["body"][0]:
-                new_goal["position"] = self.mapping.next_exploration()
         
         return new_goal
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
-
+        self.actions_plan = []
+        self.mapping.ignore_goal(self.current_goal["position"])
+        
         if warning:
             self.logger.critical("Fast action!")
 

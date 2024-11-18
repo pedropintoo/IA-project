@@ -23,7 +23,10 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        return state["range"] >= 5 and state["traverse"]
+        return (state["range"] >= 4 and state["traverse"]) and not self.has_n_super_observed(state, 7) and not state["step"] > 2700
+    
+    def has_n_super_observed(self, state, n):
+        return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
     
     def _check_collision(self, state, action):
         """Check if the action will result in a collision"""
@@ -64,11 +67,32 @@ class SnakeGame(SearchDomain):
                 "body": new_body,
                 "range": state["range"],
                 "traverse": state["traverse"],
-                "observed_objects": state["observed_objects"]
+                "observed_objects": state["observed_objects"],
+                "step": state["step"] + 1
                 }
 
     def cost(self, state, action):
         return 1
+    
+    def count_obstacles_between(self, start_pos, end_pos, body, body_weight, walls_weight):
+        x1, y1 = start_pos
+        x2, y2 = end_pos
+
+        traverse = body["traverse"]
+
+        x_start, x_end = sorted([x1, x2])
+        y_start, y_end = sorted([y1, y2])
+
+        obstacle_count = 0
+        for x in range(x_start, x_end + 1):
+            for y in range(y_start, y_end + 1):
+                position = (x % self.width, y % self.height) if traverse else (x, y)
+                if not traverse and position in self.internal_walls:
+                    obstacle_count += walls_weight
+                elif position in body["body"]:
+                    obstacle_count += body_weight
+
+        return obstacle_count
     
     def heuristic(self, state, goal_state):
         head = state["body"][0]
@@ -76,24 +100,30 @@ class SnakeGame(SearchDomain):
         # Internal walls are not considered
         total_value = 0
         
+        ## Manhattan distance
         dx_no_crossing_walls = abs(head[0] - goal_state[0])
-        if traverse:
-            dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
-        else:
-            dx = dx_no_crossing_walls
-            
-        dy_no_crossing_walls = abs(head[1] - goal_state[1])
-        if traverse:
-            dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
-        else:
-            dy = dy_no_crossing_walls
+        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
-        total_value = (dx + dy)
+        dy_no_crossing_walls = abs(head[1] - goal_state[1])
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+        total_value = dx + dy
         
-        if self.is_perfect_effects(state) and head in state["observed_objects"].get(Tiles.SUPER.value, []):
+        ## Include wall density in heuristic
+        obstacle_count = self.count_obstacles_between(
+            head, 
+            goal_state, 
+            state, 
+            body_weight=3, 
+            walls_weight=1
+        )
+
+        total_value += obstacle_count
+        
+        if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             total_value += 20
 
-        return total_value * 10
+        return total_value
 
     def satisfies(self, state, goal_state):
         head = state["body"][0]
