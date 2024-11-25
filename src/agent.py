@@ -32,9 +32,9 @@ from consts import Tiles
 
 DIRECTION_TO_KEY = {
     "NORTH": "w",
-    "WEST": "a",
+    "WEST":  "a",
     "SOUTH": "s",
-    "EAST": "d"
+    "EAST":  "d"
 }
 
 wslogger = logging.getLogger("websockets")
@@ -160,7 +160,7 @@ class Agent:
     # ------ Think -------
     
     def think(self, time_limit):
-        ## Follow the action plain (nothing new observed)            
+        ## Follow the action plan (nothing new observed)            
         if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal["strategy"]):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")

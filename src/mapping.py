@@ -68,8 +68,6 @@ class Mapping:
             self.cells_mapping
         )
         
-        
-
     def update(self, state):
         self.objects_updated = False
 
