@@ -17,7 +17,8 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, width, height, internal_walls, dead_ends):
+    def __init__(self, logger, width, height, internal_walls, dead_ends):
+        self.logger = logger
         self.width = width
         self.height = height
         self.internal_walls = internal_walls

@@ -7,11 +7,11 @@ from src.matrix_operations import MatrixOperations
 from consts import Tiles
 
 class Mapping:
-    def __init__(self, domain, logger):
+    def __init__(self, logger, domain):
         self.state = None
         
-        self.domain = domain
         self.logger = logger
+        self.domain = domain
 
         self.objects_updated = False
         self.observed_objects = None
