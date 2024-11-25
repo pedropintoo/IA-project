@@ -186,23 +186,21 @@ class Agent:
         
         ## Search for the solution
         try: 
-            solution = self.tree.search(time_limit=time_limit)
+            self.actions_plan = self.tree.search(time_limit=time_limit)
+            self.logger.debug(f"Actions plan founded!")
+            
         except TimeLimitExceeded as e:
             self.logger.warning(e.args[0])
-            solution = e.best_solution
-            self.mapping.ignore_goal(e.ignored_positions)
-            return
-        
-        ## No solution found
-        if not solution:
-            self.logger.warning("Solution is not valid!")
-            self.mapping.ignore_goal(self.current_goal["position"])
-            break
-    
-        ## Save the solution as a plan of actions
-        self.actions_plan = self.tree.inverse_plan
-        self.action = self.actions_plan.pop()
-        self.logger.debug(f"Actions plan founded! avg_branching: {self.tree.avg_branching}")
+            self.mapping.ignore_goal(self.tree.ignored_positions)
+            best_solution = self.tree.best_solution
+            
+            if best_solution:
+                self.actions_plan = self.tree.inverse_plan(best_solution)
+            else:
+                self.actions_plan = []
+                return
+                        
+        self.action = self.actions_plan.pop() # get the next first action
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
@@ -211,15 +209,18 @@ class Agent:
         if self.mapping.observed(Tiles.FOOD):
             new_goal["strategy"] = "food"
             new_goal["visit_range"] = 1
+            new_goal["max_time"] = 0.05 # TODO: change this
             new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal["strategy"] = "super"
+            new_goal["max_time"] = 0.05 # TODO: change this
             new_goal["visit_range"] = 1
             new_goal["position"] = self.mapping.closest_object(Tiles.SUPER)
             
         else:
             new_goal["strategy"] = "exploration"
+            new_goal["max_time"] = 0.05 # TODO: change this
             new_goal["visit_range"] = 2
             new_goal["position"] = self.mapping.next_exploration()
         

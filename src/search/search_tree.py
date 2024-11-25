@@ -20,48 +20,14 @@ class SearchTree:
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
         heapq.heapify(self.open_nodes)
-        self.solution = None
+        self.best_solution = None
         self.non_terminals = 0
-        
-    @property 
-    def avg_branching(self):
-        if self.non_terminals == 0:
-            return 0
-        return (self.terminals + self.non_terminals - 1) / self.non_terminals
-     
-    @property
-    def terminals(self):
-        return len(self.open_nodes) + 1
-    
-    @property
-    def length(self):
-        return self.solution.depth
+        self.ignored_positions
+        self.best_solution
 
-    @property
-    def cost(self):
-        return self.solution.cost
-
-    # Path (sequence of states) from root to node
-    def get_path(self,node):
-        path = []
-        while node is not None:
-            path[:0] = [node.state]
-            node = node.parent
-        return path
-
-    @property
-    def plan(self):
-        n = self.solution
-        _plan = []
-        while n is not None:
-            if n.action:
-                _plan[:0] = [n.action]
-            n = n.parent
-        return _plan
-    
-    @property
-    def inverse_plan(self):
-        n = self.solution
+    # Path from root to node
+    def inverse_plan(self, node):
+        n = node
         _plan = []
         while n is not None:
             if n.action:
@@ -74,20 +40,21 @@ class SearchTree:
         while self.open_nodes is not None and len(self.open_nodes) > 0:
             node = heapq.heappop(self.open_nodes)
 
-            # Goal test
+            ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                # all goals are satisfied
-                self.solution = node
-                return self.get_path(node)            
+                self.best_solution = node
+                return self.inverse_plan(node)            
+            
+            
+            
+            
             
             self.non_terminals += 1
-
             new_lower_nodes = []
-            # Iterate over possible actions to generate new nodes
+            ## Iterate over possible actions to generate new nodes
             for act in self.problem.domain.actions(node.state):
                 
                 if time_limit is not None and datetime.datetime.now() >= time_limit: 
-                    print(f"Time limit: {time_limit}")
                     raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
 
                 new_state = self.problem.domain.result(node.state,act)
