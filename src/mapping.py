@@ -158,7 +158,7 @@ class Mapping:
             if self.is_ignored_goal(position):
                 continue
             
-            heuristic = self.domain.heuristic(self.state, position)
+            heuristic = self.domain.heuristic(self.state, [position]) # change this!
             
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic

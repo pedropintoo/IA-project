@@ -17,7 +17,7 @@ class SearchTree:
     
     def __init__(self, problem: SearchProblem):
         self.problem = problem
-        root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goal))
+        root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
         heapq.heapify(self.open_nodes)
         self.solution = None
@@ -76,9 +76,10 @@ class SearchTree:
 
             # Goal test
             if self.problem.goal_test(node.state):
+                # all goals are satisfied
                 self.solution = node
-                return self.get_path(node)
-
+                return self.get_path(node)            
+            
             self.non_terminals += 1
 
             new_lower_nodes = []
@@ -99,7 +100,7 @@ class SearchTree:
                     new_state, 
                     node, 
                     cost,
-                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goal),
+                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goals),
                     action=act
                     )
                 new_lower_nodes.append(new_node)

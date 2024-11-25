@@ -123,6 +123,7 @@ class SnakeGame(SearchDomain):
         return obstacle_count
     
     def heuristic(self, state, goal_state):
+        goal_state = goal_state[0] # TODO: CHANGE THIS
         head = state["body"][0]
         traverse = state["traverse"]
         cells_mapping = state["cells_mapping"]
@@ -165,6 +166,9 @@ class SnakeGame(SearchDomain):
         return total_value
 
     def satisfies(self, state, goal_state):
+        # TODO: add logic for different types of goals
+        # e.g.: if the goal is of type explore, check if we have passed through the nearby position (maybe with some range defined in the goal)
+        # e.g.: if the goal is of type eat, check if we have passed through the exact position
         head = state["body"][0]
         return head == goal_state
 

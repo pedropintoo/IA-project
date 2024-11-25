@@ -176,7 +176,7 @@ class Agent:
             self.logger.info(f"New goal {self.current_goal}")
             
             ## Create search structures
-            self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
+            self.problem = SearchProblem(self.domain, initial=self.mapping.state, goals=[self.current_goal["position"]])
             self.tree = SearchTree(self.problem)
             
             ## Search for the solution
@@ -203,7 +203,7 @@ class Agent:
             if not prox_point:
                 self.logger.critical("NAO TEM PONTO: = null")
                 sys.exit(1)
-            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=prox_point)
+            self.problem = SearchProblem(self.domain, initial=solution[-1], goals=[prox_point])
             self.tree = SearchTree(self.problem)
             
             try:
@@ -261,7 +261,7 @@ class Agent:
         min_heuristic = None
         for action in self.domain.actions(self.mapping.state):
             next_state = self.domain.result(self.mapping.state, action)
-            heuristic = self.domain.heuristic(next_state, goal)
+            heuristic = self.domain.heuristic(next_state, [goal]) # change this!
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 best_action = action
