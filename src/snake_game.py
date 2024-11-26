@@ -172,18 +172,18 @@ class SnakeGame(SearchDomain):
             # heuristic_value += distance + obstacle_count
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value += 20
+            heuristic_value += 50
 
         ## Include cells exploration in heuristic
         print("1- heuristic_value: ", heuristic_value)
-        # unseen = 0
-        # for x in range(self.width):
-        #     for y in range(self.height):
-        #         seen, _ = cells_mapping[(x, y)]
-        #         if seen == 0:
-        #             unseen += 1
+        unseen = 0
+        for x in range(self.width):
+            for y in range(self.height):
+                seen, _ = cells_mapping[(x, y)]
+                if seen == 0:
+                    unseen += 1
 
-        # heuristic_value += int(unseen / state["range"]) # TODO: change this...
+        heuristic_value += int(unseen / (state["range"]*10)) # TODO: change this...
         print("heuristic_value: ", heuristic_value)
         return heuristic_value
 
