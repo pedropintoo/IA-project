@@ -61,12 +61,13 @@ class Mapping:
         )
         return self.current_goal
     
-    def peek_next_exploration(self) -> tuple:
+    def peek_next_exploration(self, n_points=1) -> list:
         return self.exploration_path.peek_exploration_point(
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
-            self.cells_mapping
+            self.cells_mapping,
+            n_points
         )
         
         

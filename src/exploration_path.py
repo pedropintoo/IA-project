@@ -11,56 +11,59 @@ class ExplorationPath:
         self.exploration_path = []
         self.exploration_generations_cache = {}
     
-    def generate_exploration_path(self, body, sight_range, exploration_map):
+    def generate_exploration_path(self, body, sight_range, exploration_map, exploration_path=None):
         head = body[0]
-        exploration_length_threshold = 20 // sight_range
 
-        if len(self.exploration_path) < exploration_length_threshold:        
-
-            if self.exploration_generations_cache.get(sight_range) is None:
-                new_exploration_path = GilbertCurve.get_curve(self.width, self.height, sight_range)
-                self.exploration_generations_cache[sight_range] = new_exploration_path
-            else:
-                new_exploration_path = self.exploration_generations_cache[sight_range]
-            
-            if len(self.exploration_path) == 0:
-                target = self.find_best_target(head, new_exploration_path, exploration_map)
-            else:
-                target = self.exploration_path.pop(-1)
-            
-            self.exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+        if exploration_path is None:
+            exploration_path = self.exploration_path
+     
+        if self.exploration_generations_cache.get(sight_range) is None:
+            new_exploration_path = GilbertCurve.get_curve(self.width, self.height, sight_range)
+            self.exploration_generations_cache[sight_range] = new_exploration_path
+        else:
+            new_exploration_path = self.exploration_generations_cache[sight_range]
+        
+        if len(exploration_path) == 0:
+            target = self.find_best_target(head, new_exploration_path, exploration_map)
+        else:
+            target = exploration_path.pop(-1)
+        
+        exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
         
     def next_exploration_point(self, body, sight_range, traverse, exploration_map):
-        self.generate_exploration_path(body, sight_range, exploration_map)
+        exploration_length_threshold = 20 // sight_range
+        
+        if len(self.exploration_path) < exploration_length_threshold:
+            self.generate_exploration_path(body, sight_range, exploration_map)
 
         self.print_exploration_path()
         exploration_point_seen_threshold = sight_range * 1.5
         while self.exploration_path:
-            point = list(self.exploration_path[0])
-
-            average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
-
-            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold:
-                return list(self.exploration_path.pop(0))
-            else:
-                self.exploration_path.pop(0)
-            
-
-    def peek_exploration_point(self, body, sight_range, traverse, exploration_map):
-        self.generate_exploration_path(body, sight_range, exploration_map)
-        
-        exploration_point_seen_threshold = sight_range * 1.5
-        while self.exploration_path:
-            point = list(self.exploration_path[0])
+            point = list(self.exploration_path.pop(0))
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
             if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold:
                 return point
+            
+
+    def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points):
+        points_to_return = []
+        exploration_path_to_peek = self.exploration_path.copy()
+
+        while len(points_to_return) < n_points:
+            if len(exploration_path_to_peek) < n_points:
+                self.generate_exploration_path(body, sight_range, exploration_map, exploration_path_to_peek)
+
+            exploration_point_seen_threshold = sight_range * 1.5
+            point = list(exploration_path_to_peek.pop(0))
+            average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
+            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold:
+                points_to_return.append(point)
             else:
                 self.exploration_path.pop(0)
         
-        return point
+        return points_to_return
     
     def calcule_average_seen_density(self, point, sight_range, exploration_map):
         count = 0

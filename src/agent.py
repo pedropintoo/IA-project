@@ -210,35 +210,40 @@ class Agent:
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
             new_goal.max_time = 0.05
-            new_goal.visited_range = 1
+            new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
             new_goal.max_time = 0.05
-            new_goal.visited_range = 1
+            new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
             
         else:
             new_goal.goal_type = "exploration"
             new_goal.max_time = 0.05
-            new_goal.visited_range = 2
+            new_goal.visited_range = 1
             new_goal.priority = 10
             new_goal.position = self.mapping.next_exploration()
         
-        # TODO: make this with a lot of points
-        future_goal = Goal(
-            goal_type="exploration",
-            max_time=0.05, # TODO: change this
-            visited_range=2,
-            priority=1,
-            position=self.mapping.peek_next_exploration()
-        )
-        
-        # TODO: change this, make this function return a list of goals ([present_goal, future_goal1, future_goal2, ...])
-        return [new_goal, future_goal]
+        ## Create the list with future goals
+        goals = [new_goal]
+
+        future_goals = 3
+        for future_position in self.mapping.peek_next_exploration(future_goals):
+            future_goal = Goal(
+                goal_type="exploration",
+                max_time=0.05, # TODO: change this
+                visited_range=3,
+                priority=1,
+                position=future_position
+            )
+            
+            goals.append(future_goal)
+                
+        return goals
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""

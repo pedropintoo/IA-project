@@ -75,7 +75,7 @@ class SnakeGame(SearchDomain):
         visited_goal = state["visited_goals"]
         print("--", visited_goal)
         for goal in goals:
-            if new_head == goal.position:
+            if self.is_goal_visited(new_head, goal):
                 if goal.goal_type == "super":
                     traverse = False # worst case scenario
                 visited_goal.add(tuple(goal.position))
@@ -106,6 +106,7 @@ class SnakeGame(SearchDomain):
         return cells_mapping
     
     def expire_cells_mapping(self, cells_mapping, sight_range):
+        # TODO: must multiply by timestamp and fps (to reach the equivalent duration has in the original mapping)
         duration = 30 / sight_range
 
         for position, (seen, timestamp) in cells_mapping.copy().items():
@@ -141,12 +142,10 @@ class SnakeGame(SearchDomain):
         traverse = state["traverse"]
         cells_mapping = state["cells_mapping"]
         visited_goals = state.get("visited_goals") # check if this is correct
-        print(visited_goals)
         
         heuristic_value = 0        
-        
         for goal in goals: # TODO: change this to consider all goals   
-            print("pos: ",goal.position)
+            print("pos-: ",goal.position)
             goal_position = goal.position
             goal_priority = goal.priority
         
@@ -176,14 +175,16 @@ class SnakeGame(SearchDomain):
 
         ## Include cells exploration in heuristic
         print("1- heuristic_value: ", heuristic_value)
-        unseen = 0
-        for x in range(self.width):
-            for y in range(self.height):
-                seen, _ = cells_mapping[(x, y)]
-                if seen == 0:
-                    unseen += 1
+        # unseen = 0
+        # for x in range(head[0] - state["range"]*2, head[0] + state["range"]*2 + 1):
+        #     for y in range(head[1] - state["range"]*2, head[1] + state["range"]*2 + 1):
+        #         x_mod = x % self.width
+        #         y_mod = y % self.height
+        #         seen, _ = cells_mapping[(x_mod, y_mod)]
+        #         if seen == 0:
+        #             unseen += 1
 
-        heuristic_value += int(unseen / (state["range"]*10)) # TODO: change this...
+        # heuristic_value += unseen # TODO: change this...
         print("heuristic_value: ", heuristic_value)
         return heuristic_value
 
@@ -194,3 +195,15 @@ class SnakeGame(SearchDomain):
         head = state["body"][0]
         return tuple(head) in state["visited_goals"]
 
+    def is_goal_visited(self, head, goal): 
+        print(goal)
+        visited_range = goal.visited_range
+        goal_position = goal.position
+        
+        dx_no_crossing_walls = abs(head[0] - goal_position[0])
+        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
+
+        dy_no_crossing_walls = abs(head[1] - goal_position[1])
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
+
+        return dx <= visited_range and dy <= visited_range

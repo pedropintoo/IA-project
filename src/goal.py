@@ -6,3 +6,6 @@ class Goal:
         self.visited_range = visited_range
         self.priority = priority
         self.position = position
+
+    def __str__(self):
+        return f"Goal({self.goal_type}, {self.position})"
