@@ -17,7 +17,7 @@ class SearchTree:
     
     def __init__(self, problem: SearchProblem):
         self.problem = problem
-        root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals), visited_goals=[])
+        root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
         heapq.heapify(self.open_nodes)
         self.best_solution = None
@@ -41,7 +41,6 @@ class SearchTree:
             node = heapq.heappop(self.open_nodes)
 
             ## Goals test: all goals are satisfied
-            print(self.problem.goals)
             if self.problem.goal_test(node.state):
                 self.best_solution = node
                 return self.inverse_plan(node)            
@@ -57,18 +56,11 @@ class SearchTree:
                 if time_limit is not None and datetime.datetime.now() >= time_limit: 
                     raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
 
-                new_state = self.problem.domain.result(node.state,act)
+                new_state = self.problem.domain.result(node.state, act, self.problem.goals)
 
                 if node.in_parent(new_state):
                     continue
-                
-                for goal in self.problem.goals:
-                    if self.problem.domain.satisfies(new_state, goal):
-                        if goal.goal_type == "super":
-                            new_state["traverse"] = False # worst case scenario
-                        visited_goal = goal
-                        break
-                
+
                 cost = node.cost + self.problem.domain.cost(node.state, act)
                 new_node = SearchNode(
                     new_state, 
@@ -76,7 +68,6 @@ class SearchTree:
                     cost,
                     heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
                     action=act,
-                    visited_goals=node.visited_goals + [visited_goal] if visited_goal else node.visited_goals
                     )
                 new_lower_nodes.append(new_node)
 

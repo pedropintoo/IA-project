@@ -50,7 +50,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.log.setLevel(MAPPING_LEVEL)
+        # self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.log.setLevel(logging.CRITICAL)
@@ -68,7 +68,7 @@ class Agent:
         ## Action controller
         self.actions_plan = []
         self.action = None
-        self.current_goal = None
+        self.current_goals = []
         self.perfect_effects = False
         
     
@@ -166,22 +166,21 @@ class Agent:
     
     def think(self, time_limit):
         ## Follow the action plain (nothing new observed)            
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal.goal_type):
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goals[0].goal_type):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
         ## Find a new goal
-        all_goals = self._find_goals() # including the future goals
-        self.current_goal = all_goals[0]
-        self.logger.info(f"New goal {self.current_goal}")
+        self.current_goals = self._find_goals() # including the future goals
+        self.logger.info(f"New goals {self.current_goals}")
         
         ## Create search structures
         self.problem = SearchProblem(
             domain=self.domain, 
             initial=self.mapping.state, 
-            goals=all_goals
+            goals=self.current_goals
         )
         self.tree = SearchTree(self.problem)
         
@@ -206,41 +205,45 @@ class Agent:
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
-        new_goal = []
+        new_goal = Goal(None, None, None, None, None)
         
         if self.mapping.observed(Tiles.FOOD):
-            new_goal = Goal(
-                goal_type="food",
-                max_time=0.05, # TODO: change this
-                visited_range=1,
-                priority=5,
-                position=self.mapping.closest_object(Tiles.FOOD)
-            )
+            new_goal.goal_type = "food"
+            new_goal.max_time = 0.05
+            new_goal.visited_range = 1
+            new_goal.priority = 10
+            new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
-            new_goal = Goal(
-                goal_type="super",
-                max_time=0.05, # TODO: change this
-                visited_range=1,
-                priority=4,
-                position=self.mapping.closest_object(Tiles.SUPER)
-            )
+            new_goal.goal_type = "super"
+            new_goal.max_time = 0.05
+            new_goal.visited_range = 1
+            new_goal.priority = 10
+            new_goal.position = self.mapping.closest_object(Tiles.SUPER)
             
         else:
-            new_goal = Goal(
-                goal_type="exploration",
-                max_time=0.05, # TODO: change this
-                visited_range=2,
-                priority=3,
-                position=self.mapping.next_exploration()
-            )
+            new_goal.goal_type = "exploration"
+            new_goal.max_time = 0.05
+            new_goal.visited_range = 2
+            new_goal.priority = 10
+            new_goal.position = self.mapping.next_exploration()
         
-        return [new_goal] # TODO: change this, make this function return a list of goals ([present_goal, future_goal1, future_goal2, ...]) 
+        # TODO: make this with a lot of points
+        future_goal = Goal(
+            goal_type="exploration",
+            max_time=0.05, # TODO: change this
+            visited_range=2,
+            priority=1,
+            position=self.mapping.peek_next_exploration()
+        )
+        
+        # TODO: change this, make this function return a list of goals ([present_goal, future_goal1, future_goal2, ...])
+        return [new_goal, future_goal]
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
         self.actions_plan = []
-        self.mapping.ignore_goal(self.current_goal.position)
+        self.mapping.ignore_goal(self.current_goals[0].position)
         
         if warning:
             self.logger.critical("Fast action!")
@@ -253,8 +256,8 @@ class Agent:
         ## Use heuristics to choose the best action
         min_heuristic = None
         for action in self.domain.actions(self.mapping.state):
-            next_state = self.domain.result(self.mapping.state, action)
-            heuristic = self.domain.heuristic(next_state, [self.current_goal]) # change this!
+            next_state = self.domain.result(self.mapping.state, action, self.current_goals)
+            heuristic = self.domain.heuristic(next_state, self.current_goals) # change this!
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 best_action = action

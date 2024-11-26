@@ -20,9 +20,9 @@ class SearchDomain(ABC):
     def actions(self, state):
         pass
 
-    # Result of an action in a state: next state.
+    # Result of an action in a state: next state. (since we are using multiple goals, we need to change state depending on progress)
     @abstractmethod
-    def result(self, state, action):
+    def result(self, state, action, goals):
         pass
 
     # Cost of an action in a state

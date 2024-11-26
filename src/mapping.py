@@ -82,7 +82,8 @@ class Mapping:
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"] + 1,
-            "cells_mapping": self.cells_mapping.copy()
+            "cells_mapping": self.cells_mapping.copy(),
+            "visited_goals": set()
         }
         self.update_cells_mapping(state["sight"]) 
 

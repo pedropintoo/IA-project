@@ -58,7 +58,7 @@ class SnakeGame(SearchDomain):
                 _actlist.append(action)
         return _actlist 
 
-    def result(self, state, action): # Given a state and an action, what is the next state?
+    def result(self, state, action, goals): # Given a state and an action, what is the next state?
         body = state["body"]
         vector = DIRECTIONS[action]
         new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
@@ -68,15 +68,28 @@ class SnakeGame(SearchDomain):
         sight_range = state["range"]
         cells_mapping = state["cells_mapping"]
         
+        # TODO: make a time analysis of this
         cells_mapping = self.update_cells_mapping(body[0], cells_mapping, sight_range)
+        
+        traverse = state["traverse"]
+        visited_goal = state["visited_goals"]
+        print("--", visited_goal)
+        for goal in goals:
+            if new_head == goal.position:
+                if goal.goal_type == "super":
+                    traverse = False # worst case scenario
+                visited_goal.add(tuple(goal.position))
+                break
+        print("$$$", visited_goal)
 
         return {
                 "body": new_body,
                 "range": state["range"],
-                "traverse": state["traverse"],
+                "traverse": traverse,
                 "observed_objects": state["observed_objects"],
                 "step": state["step"] + 1,
-                "cells_mapping": cells_mapping
+                "cells_mapping": cells_mapping,
+                "visited_goals": visited_goal
                 }
     
     def update_cells_mapping(self, head, cells_mapping, sight_range):
@@ -127,11 +140,13 @@ class SnakeGame(SearchDomain):
         head = state["body"][0]
         traverse = state["traverse"]
         cells_mapping = state["cells_mapping"]
-        visited_goals = state.get("visited_goals", []) # check if this is correct
+        visited_goals = state.get("visited_goals") # check if this is correct
+        print(visited_goals)
         
         heuristic_value = 0        
         
-        for goal in goals:           
+        for goal in goals: # TODO: change this to consider all goals   
+            print("pos: ",goal.position)
             goal_position = goal.position
             goal_priority = goal.priority
         
@@ -153,22 +168,23 @@ class SnakeGame(SearchDomain):
                 walls_weight=1
             )
 
-            # heuristic_value += (distance + obstacle_count) * goal_priority
-            heuristic_value += distance + obstacle_count
+            heuristic_value += (distance + obstacle_count) * goal_priority
+            # heuristic_value += distance + obstacle_count
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value += 20
 
         ## Include cells exploration in heuristic
-        unseen = 0
-        for x in range(self.width):
-            for y in range(self.height):
-                seen, _ = cells_mapping[(x, y)]
-                if seen == 0:
-                    unseen += 1
+        print("1- heuristic_value: ", heuristic_value)
+        # unseen = 0
+        # for x in range(self.width):
+        #     for y in range(self.height):
+        #         seen, _ = cells_mapping[(x, y)]
+        #         if seen == 0:
+        #             unseen += 1
 
-        heuristic_value += int(unseen / state["range"]) # TODO: change this...
-        
+        # heuristic_value += int(unseen / state["range"]) # TODO: change this...
+        print("heuristic_value: ", heuristic_value)
         return heuristic_value
 
     def satisfies(self, state, goal):
@@ -176,5 +192,5 @@ class SnakeGame(SearchDomain):
         # e.g.: if the goal is of type explore, check if we have passed through the nearby position (maybe with some range defined in the goal)
         # e.g.: if the goal is of type eat, check if we have passed through the exact position
         head = state["body"][0]
-        return head == goal.position
+        return tuple(head) in state["visited_goals"]
 
