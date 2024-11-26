@@ -50,7 +50,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.log.setLevel(MAPPING_LEVEL)
+        self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.log.setLevel(logging.CRITICAL)
