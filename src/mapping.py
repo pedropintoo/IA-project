@@ -140,7 +140,7 @@ class Mapping:
         
         if current_goal_strategy == "exploration":
             x, y = self.current_goal
-            threshold = self.state["range"] * 2
+            threshold = self.state["range"] * 3
             if self.cells_mapping[(x, y)][0] >= threshold:
                 self.exploration_path.exploration_path = []
                 return False
