@@ -123,36 +123,41 @@ class SnakeGame(SearchDomain):
 
         return obstacle_count
     
-    def heuristic(self, state, goal_state):
-        goal_state = goal_state[0] # TODO: CHANGE THIS
+    def heuristic(self, state, goals):        
         head = state["body"][0]
         traverse = state["traverse"]
         cells_mapping = state["cells_mapping"]
-        # Internal walls are not considered
-        total_value = 0
+        visited_goals = state.get("visited_goals", []) # check if this is correct
         
-        ## Manhattan distance
-        dx_no_crossing_walls = abs(head[0] - goal_state[0])
-        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
-
-        dy_no_crossing_walls = abs(head[1] - goal_state[1])
-        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
-
-        total_value = dx + dy
+        heuristic_value = 0        
         
-        ## Include wall density in heuristic
-        obstacle_count = self.count_obstacles_between(
-            head, 
-            goal_state, 
-            state, 
-            body_weight=3, 
-            walls_weight=1
-        )
+        for goal in goals:           
+            goal_position = goal.position
+            goal_priority = goal.priority
+        
+            ## Manhattan distance (not counting walls)
+            dx_no_crossing_walls = abs(head[0] - goal_position[0])
+            dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
-        total_value += obstacle_count
+            dy_no_crossing_walls = abs(head[1] - goal_position[1])
+            dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+            distance = dx + dy 
+
+            ## Include wall density in heuristic
+            obstacle_count = self.count_obstacles_between(
+                head, 
+                goal_position, 
+                state, 
+                body_weight=3,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
+                walls_weight=1
+            )
+
+            # heuristic_value += (distance + obstacle_count) * goal_priority
+            heuristic_value += distance + obstacle_count
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            total_value += 20
+            heuristic_value += 20
 
         ## Include cells exploration in heuristic
         unseen = 0
@@ -162,14 +167,14 @@ class SnakeGame(SearchDomain):
                 if seen == 0:
                     unseen += 1
 
-        total_value += int(unseen / state["range"]) # TODO: change this...
+        heuristic_value += int(unseen / state["range"]) # TODO: change this...
         
-        return total_value
+        return heuristic_value
 
-    def satisfies(self, state, goal_state):
+    def satisfies(self, state, goal):
         # TODO: add logic for different types of goals
         # e.g.: if the goal is of type explore, check if we have passed through the nearby position (maybe with some range defined in the goal)
         # e.g.: if the goal is of type eat, check if we have passed through the exact position
         head = state["body"][0]
-        return head == goal_state
+        return head == goal.position
 

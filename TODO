@@ -2,3 +2,9 @@
  - embutir no search vários pontos, talvez mais do que 2 no caso de ele ter feito muito rápido a procura
  - melhorar a lógica do ignored_objects
  - limitar o tempo máximo de execução entre [0, 0.5], para ter tempo de fazer outra search
+
+
+
+
+26/11:
+ - fix heuristic. Count with multiple points & multiple goals

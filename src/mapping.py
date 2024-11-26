@@ -4,6 +4,7 @@ import time
 from collections import defaultdict
 from src.exploration_path import ExplorationPath
 from src.matrix_operations import MatrixOperations
+from src.goal import Goal
 from consts import Tiles
 
 class Mapping:
@@ -154,11 +155,20 @@ class Mapping:
         closest = None
         min_heuristic = None
 
+        default_goal = Goal(
+            goal_type=obj_type,
+            max_time=None,
+            visited_range=0,
+            priority=1,
+            position=None
+        )
+
         for position in self.observed_objects.keys():
             if self.is_ignored_goal(position):
                 continue
             
-            heuristic = self.domain.heuristic(self.state, [position]) # change this!
+            default_goal.position = position
+            heuristic = self.domain.heuristic(self.state, [default_goal]) # change this!
             
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic

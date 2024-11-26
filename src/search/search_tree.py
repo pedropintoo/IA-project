@@ -17,13 +17,13 @@ class SearchTree:
     
     def __init__(self, problem: SearchProblem):
         self.problem = problem
-        root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
+        root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals), visited_goals=[])
         self.open_nodes = [root]
         heapq.heapify(self.open_nodes)
         self.best_solution = None
         self.non_terminals = 0
-        self.ignored_positions
-        self.best_solution
+        self.ignored_positions = []
+        self.best_solution = None
 
     # Path from root to node
     def inverse_plan(self, node):
@@ -41,16 +41,16 @@ class SearchTree:
             node = heapq.heappop(self.open_nodes)
 
             ## Goals test: all goals are satisfied
+            print(self.problem.goals)
             if self.problem.goal_test(node.state):
                 self.best_solution = node
                 return self.inverse_plan(node)            
             
-            
-            
-            
+            ## TODO: NO TIMEOUT HERE: FIX IT
             
             self.non_terminals += 1
             new_lower_nodes = []
+            visited_goal = None
             ## Iterate over possible actions to generate new nodes
             for act in self.problem.domain.actions(node.state):
                 
@@ -62,13 +62,21 @@ class SearchTree:
                 if node.in_parent(new_state):
                     continue
                 
+                for goal in self.problem.goals:
+                    if self.problem.domain.satisfies(new_state, goal):
+                        if goal.goal_type == "super":
+                            new_state["traverse"] = False # worst case scenario
+                        visited_goal = goal
+                        break
+                
                 cost = node.cost + self.problem.domain.cost(node.state, act)
                 new_node = SearchNode(
                     new_state, 
                     node, 
                     cost,
-                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goals),
-                    action=act
+                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
+                    action=act,
+                    visited_goals=node.visited_goals + [visited_goal] if visited_goal else node.visited_goals
                     )
                 new_lower_nodes.append(new_node)
 

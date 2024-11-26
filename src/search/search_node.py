@@ -7,13 +7,14 @@
  '''
 
 class SearchNode:
-    def __init__(self, state, parent, cost=0, heuristic=0, action=None): 
+    def __init__(self, state, parent, cost=0, heuristic=0, action=None, visited_goals=[]): 
         self.state = state
         self.parent = parent
         self.depth = parent.depth + 1 if parent != None else 0
         self.cost = cost
         self.heuristic = heuristic
         self.action = action
+        self.visited_goals = visited_goals
 
     def __str__(self):
         return "no(" + str(self.state) + "," + str(self.parent) + ")"

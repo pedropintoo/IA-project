@@ -32,7 +32,7 @@ class SearchDomain(ABC):
 
     # Estimated cost: one state to another
     @abstractmethod
-    def heuristic(self, state, goal):
+    def heuristic(self, state, goals):
         pass
 
     # Test if the given "goal" is satisfied in "state"

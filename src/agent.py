@@ -20,6 +20,7 @@ import sys
 from src.search.search_problem import SearchProblem
 from src.search.search_tree import SearchTree
 from src.snake_game import SnakeGame
+from src.goal import Goal
 
 ## Mapping & Exploration
 from src.matrix_operations import MatrixOperations
@@ -165,7 +166,7 @@ class Agent:
     
     def think(self, time_limit):
         ## Follow the action plain (nothing new observed)            
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal["strategy"]):
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal.goal_type):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
@@ -191,7 +192,8 @@ class Agent:
             
         except TimeLimitExceeded as e:
             self.logger.warning(e.args[0])
-            self.mapping.ignore_goal(self.tree.ignored_positions)
+            for pos in self.tree.ignored_positions:
+                self.mapping.ignore_goal(pos)
             best_solution = self.tree.best_solution
             
             if best_solution:
@@ -204,32 +206,41 @@ class Agent:
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
-        new_goal = {}
+        new_goal = []
         
         if self.mapping.observed(Tiles.FOOD):
-            new_goal["strategy"] = "food"
-            new_goal["visit_range"] = 1
-            new_goal["max_time"] = 0.05 # TODO: change this
-            new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
+            new_goal = Goal(
+                goal_type="food",
+                max_time=0.05, # TODO: change this
+                visited_range=1,
+                priority=5,
+                position=self.mapping.closest_object(Tiles.FOOD)
+            )
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
-            new_goal["strategy"] = "super"
-            new_goal["max_time"] = 0.05 # TODO: change this
-            new_goal["visit_range"] = 1
-            new_goal["position"] = self.mapping.closest_object(Tiles.SUPER)
+            new_goal = Goal(
+                goal_type="super",
+                max_time=0.05, # TODO: change this
+                visited_range=1,
+                priority=4,
+                position=self.mapping.closest_object(Tiles.SUPER)
+            )
             
         else:
-            new_goal["strategy"] = "exploration"
-            new_goal["max_time"] = 0.05 # TODO: change this
-            new_goal["visit_range"] = 2
-            new_goal["position"] = self.mapping.next_exploration()
+            new_goal = Goal(
+                goal_type="exploration",
+                max_time=0.05, # TODO: change this
+                visited_range=2,
+                priority=3,
+                position=self.mapping.next_exploration()
+            )
         
         return [new_goal] # TODO: change this, make this function return a list of goals ([present_goal, future_goal1, future_goal2, ...]) 
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
         self.actions_plan = []
-        self.mapping.ignore_goal(self.current_goal["position"])
+        self.mapping.ignore_goal(self.current_goal.position)
         
         if warning:
             self.logger.critical("Fast action!")
@@ -240,11 +251,10 @@ class Agent:
             return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
 
         ## Use heuristics to choose the best action
-        goal = self.current_goal["position"]
         min_heuristic = None
         for action in self.domain.actions(self.mapping.state):
             next_state = self.domain.result(self.mapping.state, action)
-            heuristic = self.domain.heuristic(next_state, [goal]) # change this!
+            heuristic = self.domain.heuristic(next_state, [self.current_goal]) # change this!
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 best_action = action
