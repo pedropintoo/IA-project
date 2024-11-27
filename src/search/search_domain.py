@@ -39,3 +39,9 @@ class SearchDomain(ABC):
     @abstractmethod
     def satisfies(self, state, goal):
         pass
+
+    # Test if the given "goal" was visited by the "head"
+    @abstractmethod
+    def is_goal_visited(self, head, goal):
+        pass
+    

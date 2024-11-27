@@ -18,3 +18,5 @@ class SearchProblem:
     def goal_test(self, state):
         return all(self.domain.satisfies(state, goal) for goal in self.goals)
     
+    def satisfies_first_goal(self, state):
+        return self.domain.is_goal_visited(head=state["body"][0], goal=self.goals[0])

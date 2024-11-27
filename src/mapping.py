@@ -36,7 +36,7 @@ class Mapping:
             for y in range(self.domain.height)
         }   
          
-        self.ignored_duration = 3
+        self.ignored_duration = 1
         self.temp_ignored_goals = set() # ([x, y], observed_timestamp) 
 
     @property
@@ -87,7 +87,6 @@ class Mapping:
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"] + 1,
-            "cells_mapping": self.cells_mapping.copy(),
             "visited_goals": set()
         }
         self.update_cells_mapping(state["sight"]) 

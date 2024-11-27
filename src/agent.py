@@ -50,7 +50,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.log.setLevel(MAPPING_LEVEL)
+        # self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.log.setLevel(logging.CRITICAL)
@@ -172,51 +172,83 @@ class Agent:
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
+        self.action = None        
+        
         ## Find a new goal
         self.current_goals = self._find_goals() # including the future goals
         self.logger.info(f"New goals {self.current_goals}")
         
-        ## Create search structures
-        self.problem = SearchProblem(
-            domain=self.domain, 
-            initial=self.mapping.state, 
-            goals=self.current_goals
-        )
-        self.tree = SearchTree(self.problem)
-        
         ## Search for the solution
         self.actions_plan = None
-        try: 
-            self.actions_plan = self.tree.search(time_limit=time_limit - timedelta(seconds=0.04)) # total= 0.05s
-            self.logger.debug(f"Actions plan founded!")
-            
-        except TimeLimitExceeded as e:
-            print(e.args[0])
-            print("------")
-            ## First try not found a solution
-            self.mapping.ignore_goal(self.current_goals.pop(0).position)
-            self.current_goals.pop(0)
-            self.actions_plan = self.tree.inverse_plan(self.tree.best_solution) # TODO: recalculate in the next step
+        
+        # Create a temporary search tree
+        temp_tree = None
+        temp_goals = self.current_goals[:]
+        temp_action_plan = None
+        temp_best_solution = None
+        temp_best_solution_goals = None
+        
+        # Try to find an action plan for the current goals
+        while len(temp_goals) > 0 and self.actions_plan == None:
+            current_time = datetime.now()
             try:
-                ## Create search structures
+                ## Search structure
                 self.problem = SearchProblem(
                     domain=self.domain, 
                     initial=self.mapping.state, 
-                    goals=self.current_goals
+                    goals=temp_goals
                 )
-                self.tree = SearchTree(self.problem)
+                temp_tree = SearchTree(self.problem)
                 
-                self.actions_plan = self.tree.search(time_limit=time_limit)
-                self.logger.debug(f"Actions plan founded!")
+                self.logger.debug(f"Searching {self.mapping.state["body"][0]} -> {temp_goals[0]}, ...")
+                
+                ## Search for the given goals
+                self.actions_plan = temp_tree.search(
+                    time_limit=min(datetime.now() + timedelta(seconds=temp_goals[0].max_time), time_limit)
+                )
+
+                if not self.actions_plan or len(self.actions_plan) == 0:
+                    self.logger.warning(f"Full search failed! {temp_goals[0]} {self.actions_plan}")
+                    temp_goals.pop(0)
+                    self.actions_plan = None
+                else:
+                    self.logger.info(f"Done! {self.mapping.state["body"][0]} -> {temp_goals[0]} in {(datetime.now() - current_time).total_seconds()}s")
+                
+                
             except TimeLimitExceeded as e:
-                pass
-                ## Second try not found a solution
-                # self.mapping.ignore_goal(self.current_goals.pop(0).position)
-                # self.current_goals.pop(0)
-                # self.actions_plan = self.tree.inverse_plan(self.tree.best_solution) # TODO: recalculate in the next step
+                self.logger.warning(e.args[0])
+                self.logger.debug(f"Elapsed time: {(datetime.now() - current_time).total_seconds()}s")
+                
+                ## Check max execution time
+                if datetime.now() > time_limit:
+                    break
+                
+                # Store a not perfect solution
+                if not temp_action_plan or temp_best_solution[0] > temp_tree.best_solution[0]:
+                    temp_best_solution = temp_tree.best_solution
+                    temp_best_solution_goals = temp_goals[:]
+                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution[1])
+                
+                temp_goals.pop(0)
         
-        print(self.actions_plan)
-        self.action = self.actions_plan.pop() # get the next first action
+        ## If no solution found. Get not perfect solution
+        if not self.actions_plan or len(self.actions_plan) == 0:
+            if not temp_action_plan or len(temp_best_solution_goals) == 0:
+                self.logger.info("No solution found!")
+                return
+            
+            for goal in self.current_goals[::-1]:
+                if goal in temp_best_solution_goals:
+                    self.logger.info(f"Goal {self.current_goals[0]} ignored")
+                    self.current_goals.remove(goal)
+                    self.mapping.ignore_goal(goal.position)
+                else:
+                    break
+            
+            self.actions_plan = [temp_action_plan.pop()] # first action for a not perfect solution
+        
+        self.action = self.actions_plan.pop()
+            
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
@@ -224,37 +256,39 @@ class Agent:
         
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
-            new_goal.max_time = datetime.now() + timedelta(seconds=0.05)
+            new_goal.max_time = 0.07
             new_goal.visited_range = 0
-            new_goal.priority = 10
+            new_goal.priority = 30
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
-            new_goal.max_time = datetime.now() + timedelta(seconds=0.05)
+            new_goal.max_time = 0.07
             new_goal.visited_range = 0
-            new_goal.priority = 10
+            new_goal.priority = 30
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = datetime.now() + timedelta(seconds=0.05)
-            new_goal.visited_range = 1
-            new_goal.priority = 10
+            new_goal.max_time = 0.02
+            new_goal.visited_range = 1 if self.perfect_effects else 1
+            new_goal.priority = 30
             new_goal.position = self.mapping.next_exploration()
         
         ## Create the list with future goals
         goals = [new_goal]
 
-        future_goals = 3
+        future_goals = 5
+        n = 10
         for future_position in self.mapping.peek_next_exploration(future_goals):
             future_goal = Goal(
                 goal_type="exploration",
-                max_time=datetime.now() + timedelta(seconds=0.01), # TODO: change this
-                visited_range=2,
-                priority=1,
+                max_time=0.02, # TODO: change this
+                visited_range= 1 if self.perfect_effects else 1,
+                priority=n,
                 position=future_position
             )
+            n -= 2
             
             goals.append(future_goal)
                 

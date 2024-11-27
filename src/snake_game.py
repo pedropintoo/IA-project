@@ -67,21 +67,14 @@ class SnakeGame(SearchDomain):
         new_body = [new_head] + body[:-1]
 
         sight_range = state["range"]
-        cells_mapping = state["cells_mapping"]
-        
-        # TODO: make a time analysis of this
-        cells_mapping = self.update_cells_mapping(body[0], cells_mapping, sight_range)
-        
+                
         traverse = state["traverse"]
-        visited_goal = state["visited_goals"]
-        print("--", visited_goal)
+        visited_goals = state["visited_goals"].copy()
         for goal in goals:
             if self.is_goal_visited(new_head, goal):
                 if goal.goal_type == "super":
                     traverse = False # worst case scenario
-                visited_goal.add(tuple(goal.position))
-                break
-        print("$$$", visited_goal)
+                visited_goals.add(tuple(goal.position))
 
         return {
                 "body": new_body,
@@ -89,31 +82,8 @@ class SnakeGame(SearchDomain):
                 "traverse": traverse,
                 "observed_objects": state["observed_objects"],
                 "step": state["step"] + 1,
-                "cells_mapping": cells_mapping,
-                "visited_goals": visited_goal
+                "visited_goals": visited_goals
                 }
-    
-    def update_cells_mapping(self, head, cells_mapping, sight_range):
-        for x in range(-sight_range, sight_range + 1):
-            for y in range(-sight_range, sight_range + 1):
-                if x + y > sight_range:
-                    continue
-                x_new = (head[0] + x) % self.width
-                y_new = (head[1] + y) % self.height
-                seen, timestamp = cells_mapping[(x_new, y_new)]
-                cells_mapping[(x_new, y_new)] = (seen + 1, time.time())
-        
-        cells_mapping = self.expire_cells_mapping(cells_mapping, sight_range)
-        return cells_mapping
-    
-    def expire_cells_mapping(self, cells_mapping, sight_range):
-        # TODO: must multiply by timestamp and fps (to reach the equivalent duration has in the original mapping)
-        duration = 30 / sight_range
-
-        for position, (seen, timestamp) in cells_mapping.copy().items():
-            if timestamp is not None and time.time() - timestamp > duration:
-                cells_mapping[position] = (0, None)
-        return cells_mapping
 
     def cost(self, state, action):
         return 1
@@ -141,12 +111,14 @@ class SnakeGame(SearchDomain):
     def heuristic(self, state, goals):        
         head = state["body"][0]
         traverse = state["traverse"]
-        cells_mapping = state["cells_mapping"]
         visited_goals = state.get("visited_goals") # check if this is correct
         
-        heuristic_value = 0        
+        heuristic_value = 0    
         for goal in goals: # TODO: change this to consider all goals   
-            print("pos-: ",goal.position)
+            if tuple(goal.position) in visited_goals or self.is_goal_visited(head, goal):
+                # print("\33[33mGoal already visited\33[0m")
+                continue
+            
             goal_position = goal.position
             goal_priority = goal.priority
         
@@ -173,31 +145,18 @@ class SnakeGame(SearchDomain):
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value += 50
-
-        ## Include cells exploration in heuristic
-        print("1- heuristic_value: ", heuristic_value)
-        unseen = 0
-        for x in range(head[0] - state["range"]*2, head[0] + state["range"]*2 + 1):
-            for y in range(head[1] - state["range"]*2, head[1] + state["range"]*2 + 1):
-                x_mod = x % self.width
-                y_mod = y % self.height
-                seen, _ = cells_mapping[(x_mod, y_mod)]
-                if seen == 0:
-                    unseen += 1
-
-        heuristic_value += unseen # TODO: change this...
-        print("heuristic_value: ", heuristic_value)
+        
+        # print("heuristic_value: ", heuristic_value)
+        
         return heuristic_value
 
     def satisfies(self, state, goal):
         # TODO: add logic for different types of goals
         # e.g.: if the goal is of type explore, check if we have passed through the nearby position (maybe with some range defined in the goal)
         # e.g.: if the goal is of type eat, check if we have passed through the exact position
-        head = state["body"][0]
-        return tuple(head) in state["visited_goals"]
+        return tuple(goal.position) in state["visited_goals"]
 
     def is_goal_visited(self, head, goal): 
-        print(goal)
         visited_range = goal.visited_range
         goal_position = goal.position
         
