@@ -108,8 +108,8 @@ class GilbertCurve:
     
     @staticmethod
     def gilbert2d(width, height, sight_range):
-        virtual_width = (width + sight_range - 1) // sight_range
-        virtual_height = (height + sight_range - 1) // sight_range
+        virtual_width = (width + sight_range-1) // sight_range
+        virtual_height = (height + sight_range-1) // sight_range
 
         if width >= height:
             yield from GilbertCurve.generate2d(0, 0, virtual_width, 0, 0, virtual_height)
@@ -181,7 +181,7 @@ class GilbertCurve:
             return path[closest_point_index:] + path[:closest_point_index]
 
 if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24,(10,10), 6)
+    jorge = GilbertCurve.get_curve(70,53, 4)
     for jorginho in jorge:
         print(tuple(jorginho))
     print(len(jorge))

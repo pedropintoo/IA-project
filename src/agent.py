@@ -185,22 +185,37 @@ class Agent:
         self.tree = SearchTree(self.problem)
         
         ## Search for the solution
+        self.actions_plan = None
         try: 
-            self.actions_plan = self.tree.search(time_limit=time_limit)
+            self.actions_plan = self.tree.search(time_limit=time_limit - timedelta(seconds=0.04)) # total= 0.05s
             self.logger.debug(f"Actions plan founded!")
             
         except TimeLimitExceeded as e:
-            self.logger.warning(e.args[0])
-            for pos in self.tree.ignored_positions:
-                self.mapping.ignore_goal(pos)
-            best_solution = self.tree.best_solution
-            
-            if best_solution:
-                self.actions_plan = self.tree.inverse_plan(best_solution)
-            else:
-                self.actions_plan = []
-                return
-                        
+            print(e.args[0])
+            print("------")
+            ## First try not found a solution
+            self.mapping.ignore_goal(self.current_goals.pop(0).position)
+            self.current_goals.pop(0)
+            self.actions_plan = self.tree.inverse_plan(self.tree.best_solution) # TODO: recalculate in the next step
+            try:
+                ## Create search structures
+                self.problem = SearchProblem(
+                    domain=self.domain, 
+                    initial=self.mapping.state, 
+                    goals=self.current_goals
+                )
+                self.tree = SearchTree(self.problem)
+                
+                self.actions_plan = self.tree.search(time_limit=time_limit)
+                self.logger.debug(f"Actions plan founded!")
+            except TimeLimitExceeded as e:
+                pass
+                ## Second try not found a solution
+                # self.mapping.ignore_goal(self.current_goals.pop(0).position)
+                # self.current_goals.pop(0)
+                # self.actions_plan = self.tree.inverse_plan(self.tree.best_solution) # TODO: recalculate in the next step
+        
+        print(self.actions_plan)
         self.action = self.actions_plan.pop() # get the next first action
 
     def _find_goals(self, ):
@@ -209,21 +224,21 @@ class Agent:
         
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
-            new_goal.max_time = 0.05
+            new_goal.max_time = datetime.now() + timedelta(seconds=0.05)
             new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
-            new_goal.max_time = 0.05
+            new_goal.max_time = datetime.now() + timedelta(seconds=0.05)
             new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.05
+            new_goal.max_time = datetime.now() + timedelta(seconds=0.05)
             new_goal.visited_range = 1
             new_goal.priority = 10
             new_goal.position = self.mapping.next_exploration()
@@ -235,8 +250,8 @@ class Agent:
         for future_position in self.mapping.peek_next_exploration(future_goals):
             future_goal = Goal(
                 goal_type="exploration",
-                max_time=0.05, # TODO: change this
-                visited_range=3,
+                max_time=datetime.now() + timedelta(seconds=0.01), # TODO: change this
+                visited_range=2,
                 priority=1,
                 position=future_position
             )

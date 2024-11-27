@@ -20,10 +20,12 @@ class SearchTree:
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
         heapq.heapify(self.open_nodes)
-        self.best_solution = None
+        self._best_solution = (root.heuristic, root)
         self.non_terminals = 0
-        self.ignored_positions = []
-        self.best_solution = None
+
+    @property
+    def best_solution(self):
+        return self._best_solution[1]
 
     # Path from root to node
     def inverse_plan(self, node):
@@ -37,15 +39,13 @@ class SearchTree:
 
     # Search solution
     def search(self, time_limit=None):
-        while self.open_nodes is not None and len(self.open_nodes) > 0:
+        while self.open_nodes is not None and len(self.open_nodes) > 0:          
             node = heapq.heappop(self.open_nodes)
 
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                self.best_solution = node
+                self._best_solution = node
                 return self.inverse_plan(node)            
-            
-            ## TODO: NO TIMEOUT HERE: FIX IT
             
             self.non_terminals += 1
             new_lower_nodes = []
@@ -54,6 +54,7 @@ class SearchTree:
             for act in self.problem.domain.actions(node.state):
                 
                 if time_limit is not None and datetime.datetime.now() >= time_limit: 
+                    ## Time limit exceeded
                     raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
 
                 new_state = self.problem.domain.result(node.state, act, self.problem.goals)
@@ -70,6 +71,10 @@ class SearchTree:
                     action=act,
                     )
                 new_lower_nodes.append(new_node)
+                
+                ## Store the best solution
+                if self._best_solution[0] > new_node.heuristic:
+                    self._best_solution = (new_node.heuristic, new_node)
 
             self.add_to_open(new_lower_nodes)
         return None

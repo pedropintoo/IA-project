@@ -77,6 +77,10 @@ class Mapping:
 
         self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state
+        if self.state and self.state["range"] != state["range"]:
+            # Reset the exploration path if the range is changed
+            self.exploration_path.exploration_path = []
+
         self.state = {
             "body": state["body"] + [state["body"][-1]], # add the tail
             "range": state["range"],

@@ -8,6 +8,7 @@
 from src.search.search_domain import SearchDomain
 from consts import Tiles
 import time
+import datetime
 
 DIRECTIONS = {
     "NORTH": [0, -1],
@@ -175,16 +176,16 @@ class SnakeGame(SearchDomain):
 
         ## Include cells exploration in heuristic
         print("1- heuristic_value: ", heuristic_value)
-        # unseen = 0
-        # for x in range(head[0] - state["range"]*2, head[0] + state["range"]*2 + 1):
-        #     for y in range(head[1] - state["range"]*2, head[1] + state["range"]*2 + 1):
-        #         x_mod = x % self.width
-        #         y_mod = y % self.height
-        #         seen, _ = cells_mapping[(x_mod, y_mod)]
-        #         if seen == 0:
-        #             unseen += 1
+        unseen = 0
+        for x in range(head[0] - state["range"]*2, head[0] + state["range"]*2 + 1):
+            for y in range(head[1] - state["range"]*2, head[1] + state["range"]*2 + 1):
+                x_mod = x % self.width
+                y_mod = y % self.height
+                seen, _ = cells_mapping[(x_mod, y_mod)]
+                if seen == 0:
+                    unseen += 1
 
-        # heuristic_value += unseen # TODO: change this...
+        heuristic_value += unseen # TODO: change this...
         print("heuristic_value: ", heuristic_value)
         return heuristic_value
 
@@ -207,3 +208,8 @@ class SnakeGame(SearchDomain):
         dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
 
         return dx <= visited_range and dy <= visited_range
+
+
+    def is_goal_available(self, goal):
+        return datetime.datetime.now() >= goal.max_time
+    
