@@ -240,7 +240,7 @@ class Agent:
             for goal in self.current_goals[::-1]:
                 if goal in temp_best_solution_goals:
                     self.logger.info(f"Goal {self.current_goals[0]} ignored")
-                    self.current_goals.remove(goal)
+                    self.current_goals.pop(0)
                     self.mapping.ignore_goal(goal.position)
                 else:
                     break
@@ -253,34 +253,36 @@ class Agent:
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
         new_goal = Goal(None, None, None, None, None)
+        force_traverse_disabled = False
         
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
             new_goal.max_time = 0.07
             new_goal.visited_range = 0
-            new_goal.priority = 30
+            new_goal.priority = 50
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
             new_goal.max_time = 0.07
             new_goal.visited_range = 0
-            new_goal.priority = 30
+            new_goal.priority = 50
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
+            force_traverse_disabled = True # worst case scenario
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.02
+            new_goal.max_time = 0.07
             new_goal.visited_range = 1 if self.perfect_effects else 1
-            new_goal.priority = 30
+            new_goal.priority = 50
             new_goal.position = self.mapping.next_exploration()
         
         ## Create the list with future goals
         goals = [new_goal]
 
         future_goals = 5
-        n = 10
-        for future_position in self.mapping.peek_next_exploration(future_goals):
+        n = future_goals * 2
+        for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
                 max_time=0.02, # TODO: change this

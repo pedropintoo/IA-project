@@ -37,7 +37,7 @@ class Mapping:
         }   
          
         self.ignored_duration = 1
-        self.temp_ignored_goals = set() # ([x, y], observed_timestamp) 
+        self.temp_ignored_goals = set() # ((x, y), observed_timestamp) 
 
     @property
     def ignored_goals(self):
@@ -61,16 +61,14 @@ class Mapping:
         )
         return self.current_goal
     
-    def peek_next_exploration(self, n_points=1) -> list:
+    def peek_next_exploration(self, n_points=1, force_traverse_disabled=False) -> list:
         return self.exploration_path.peek_exploration_point(
             self.state["body"], 
             self.state["range"],
-            self.state["traverse"], 
+            self.state["traverse"] and not force_traverse_disabled, 
             self.cells_mapping,
             n_points
         )
-        
-        
 
     def update(self, state):
         self.objects_updated = False
