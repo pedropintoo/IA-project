@@ -16,7 +16,7 @@ class Mapping:
 
         self.objects_updated = False
         self.observed_objects = None
-        self.observation_duration = 60
+        self.observation_duration = 90
 
         self.super_foods = []
         

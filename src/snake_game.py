@@ -144,7 +144,7 @@ class SnakeGame(SearchDomain):
             # heuristic_value += distance + obstacle_count
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value += 50
+            heuristic_value += 200
         
         # print("heuristic_value: ", heuristic_value)
         

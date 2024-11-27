@@ -50,7 +50,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.log.setLevel(MAPPING_LEVEL)
+        self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.log.setLevel(logging.CRITICAL)
@@ -204,7 +204,7 @@ class Agent:
                 
                 ## Search for the given goals
                 self.actions_plan = temp_tree.search(
-                    time_limit=min(datetime.now() + timedelta(seconds=temp_goals[0].max_time), time_limit)
+                    time_limit=min(datetime.now() + timedelta(seconds=temp_goals[-1].max_time), time_limit)
                 )
 
                 if not self.actions_plan or len(self.actions_plan) == 0:
@@ -224,10 +224,10 @@ class Agent:
                     break
                 
                 # Store a not perfect solution
-                if not temp_action_plan or temp_best_solution[0] > temp_tree.best_solution[0]:
+                if not temp_action_plan or temp_best_solution["heuristic"] > temp_tree.best_solution["heuristic"]:
                     temp_best_solution = temp_tree.best_solution
                     temp_best_solution_goals = temp_goals[:]
-                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution[1])
+                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["state"])
                 
                 temp_goals.pop(0)
         
@@ -273,7 +273,7 @@ class Agent:
         else:
             new_goal.goal_type = "exploration"
             new_goal.max_time = 0.07
-            new_goal.visited_range = 1 if self.perfect_effects else 1
+            new_goal.visited_range = self.mapping.state["range"] - 2
             new_goal.priority = 50
             new_goal.position = self.mapping.next_exploration()
         
@@ -282,15 +282,17 @@ class Agent:
 
         future_goals = 5
         n = future_goals * 2
+        i = 0
         for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
                 max_time=0.02, # TODO: change this
-                visited_range= 1 if self.perfect_effects else 1,
+                visited_range=i,
                 priority=n,
                 position=future_position
             )
             n -= 2
+            i += 2
             
             goals.append(future_goal)
                 
