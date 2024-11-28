@@ -26,7 +26,10 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        return (state["range"] >= 4 and state["traverse"]) and not self._has_n_super_observed(state, 7) and not state["step"] > 2700
+        return (
+            state["range"] >= 3 
+            # and state["traverse"]
+            ) and not self._has_n_super_observed(state, 8) and not state["step"] > 2900
     
     def _has_n_super_observed(self, state, n):
         return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
@@ -132,21 +135,21 @@ class SnakeGame(SearchDomain):
             distance = dx + dy 
 
             ## Include wall density in heuristic
-            obstacle_count = self.count_obstacles_between(
-                head, 
-                goal_position, 
-                state, 
-                body_weight=3,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
-                walls_weight=1
-            )
+            # obstacle_count = self.count_obstacles_between(
+            #     head, 
+            #     goal_position, 
+            #     state, 
+            #     body_weight=1,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
+            #     walls_weight=1
+            # )
+            # distance += obstacle_count
 
-            heuristic_value += (distance + obstacle_count) * goal_priority
-            # heuristic_value += distance + obstacle_count
+            heuristic_value += distance * goal_priority
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value += 200
+            heuristic_value *= 20
         
-        # print("heuristic_value: ", heuristic_value)
+        print("heuristic_value: ", heuristic_value)
         
         return heuristic_value
 

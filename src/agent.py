@@ -142,7 +142,7 @@ class Agent:
         self.perfect_effects = self.domain.is_perfect_effects(state)
         
         ## Update the mapping
-        self.mapping.update(state)
+        self.mapping.update(state, self.perfect_effects)
     
     # ------- Act --------
 
@@ -204,12 +204,12 @@ class Agent:
                 
                 ## Search for the given goals
                 self.actions_plan = temp_tree.search(
-                    time_limit=min(datetime.now() + timedelta(seconds=temp_goals[-1].max_time), time_limit)
+                    time_limit=min(datetime.now() + timedelta(seconds=temp_goals[0].max_time), time_limit)
                 )
 
                 if not self.actions_plan or len(self.actions_plan) == 0:
                     self.logger.warning(f"Full search failed! {temp_goals[0]} {self.actions_plan}")
-                    temp_goals.pop(-1)
+                    temp_goals.pop(0)
                     self.actions_plan = None
                 else:
                     self.logger.info(f"Done! {self.mapping.state["body"][0]} -> {temp_goals[0]} in {(datetime.now() - current_time).total_seconds()}s")
@@ -229,7 +229,7 @@ class Agent:
                     temp_best_solution_goals = temp_goals[:]
                     temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["state"])
                 
-                temp_goals.pop(-1)
+                temp_goals.pop(0)
         
         ## If no solution found. Get not perfect solution
         if not self.actions_plan or len(self.actions_plan) == 0:
@@ -256,42 +256,42 @@ class Agent:
         
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
-            new_goal.max_time = 0.07
+            new_goal.max_time = 0.04
             new_goal.visited_range = 0
-            new_goal.priority = 50
+            new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
-            new_goal.max_time = 0.07
+            new_goal.max_time = 0.04
             new_goal.visited_range = 0
-            new_goal.priority = 50
+            new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
             force_traverse_disabled = True # worst case scenario
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.07
-            new_goal.visited_range = (self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
-            new_goal.priority = 50
+            new_goal.max_time = 0.04
+            new_goal.visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
+            new_goal.priority = 10
             new_goal.position = self.mapping.next_exploration()
         
         ## Create the list with future goals
         goals = [new_goal]
 
         future_goals = 5
-        n = future_goals
-        i = 2
+        n = 1
+        i = 1
         for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
-                max_time=0.02, # TODO: change this
+                max_time=0.03, # TODO: change this
                 visited_range=i,
                 priority=n,
                 position=future_position
             )
-            n -= 2
             i += 2
+            n -= 0.1
             
             goals.append(future_goal)
                 

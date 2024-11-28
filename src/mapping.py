@@ -36,7 +36,7 @@ class Mapping:
             for y in range(self.domain.height)
         }   
          
-        self.ignored_duration = 1
+        self.ignored_duration = 5
         self.temp_ignored_goals = set() # ((x, y), observed_timestamp) 
 
     @property
@@ -48,6 +48,9 @@ class Mapping:
 
     def ignore_goal(self, obj_pos):
         self.temp_ignored_goals.add((tuple(obj_pos), time.time()))
+        # also remove from the observed objects
+        if tuple(obj_pos) in self.observed_objects:
+            del self.observed_objects[tuple(obj_pos)]
     
     def is_ignored_goal(self, obj_pos):
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
@@ -70,7 +73,7 @@ class Mapping:
             n_points
         )
 
-    def update(self, state):
+    def update(self, state, perfect_state):
         self.objects_updated = False
 
         self.logger.debug(f"Old: {self.observed_objects}")
@@ -122,13 +125,15 @@ class Mapping:
                     else:
                         # Update the object type (and current ts)
                         self.observed_objects[position] = [obj_type, timestamp]
-                        self.objects_updated = True
+                        if not (obj_type == Tiles.SUPER and perfect_state):
+                            self.objects_updated = True
             else:
                 # This position is new
                 if obj_type not in self.ignored_objects:
                     print("NEW - ", obj_type)
                     self.observed_objects[position] = [obj_type, timestamp]
-                    self.objects_updated = True
+                    if not (obj_type == Tiles.SUPER and perfect_state):
+                        self.objects_updated = True
         
         if self.objects_updated:
             print("NEW OBJECTS OBSERVED")
