@@ -50,10 +50,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.log.setLevel(MAPPING_LEVEL)
+        # self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.log.setLevel(logging.CRITICAL)
+        self.logger.log.setLevel(logging.CRITICAL)
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -209,7 +209,7 @@ class Agent:
 
                 if not self.actions_plan or len(self.actions_plan) == 0:
                     self.logger.warning(f"Full search failed! {temp_goals[0]} {self.actions_plan}")
-                    temp_goals.pop(0)
+                    temp_goals.pop(-1)
                     self.actions_plan = None
                 else:
                     self.logger.info(f"Done! {self.mapping.state["body"][0]} -> {temp_goals[0]} in {(datetime.now() - current_time).total_seconds()}s")
@@ -229,7 +229,7 @@ class Agent:
                     temp_best_solution_goals = temp_goals[:]
                     temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["state"])
                 
-                temp_goals.pop(0)
+                temp_goals.pop(-1)
         
         ## If no solution found. Get not perfect solution
         if not self.actions_plan or len(self.actions_plan) == 0:
@@ -237,13 +237,12 @@ class Agent:
                 self.logger.info("No solution found!")
                 return
             
-            for goal in self.current_goals[::-1]:
-                if goal in temp_best_solution_goals:
-                    self.logger.info(f"Goal {self.current_goals[0]} ignored")
-                    self.current_goals.pop(0)
+            for goal in self.current_goals:
+                if goal not in temp_best_solution_goals:
+                    self.logger.info(f"Goal {goal} ignored")
                     self.mapping.ignore_goal(goal.position)
-                else:
-                    break
+                
+            self.current_goals = temp_best_solution_goals[:]
             
             self.actions_plan = [temp_action_plan.pop()] # first action for a not perfect solution
         
