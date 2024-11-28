@@ -140,12 +140,12 @@ class Mapping:
         if self.objects_updated:
             return False
         
-        if current_goal_strategy == "exploration":
-            x, y = self.current_goal
-            threshold = self.state["range"] * 3
-            if self.cells_mapping[(x, y)][0] >= threshold:
-                self.exploration_path.exploration_path = []
-                return False
+        # if current_goal_strategy == "exploration":
+        #     x, y = self.current_goal
+        #     threshold = self.state["range"] * 3
+        #     if self.cells_mapping[(x, y)][0] >= threshold:
+        #         self.exploration_path.exploration_path = []
+        #         return False
 
         return True
 
@@ -201,27 +201,34 @@ class Mapping:
         for y in range(self.domain.height):
             row = ""
             for x in range(self.domain.width):
-                if (x, y) in self.observed_objects:
-                    row += f"\033[34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
+                if (x, y) in self.exploration_path.exploration_path:
+                    row += f"\033[38;2;255;255;0m{' E':2}\033[0m "
+                elif [x, y] in self.state["body"]:
+                    row += f"\033[38;2;0;0;0m{self.state['body'].index([x, y]):2}\033[0m "
+                elif [x, y] in self.domain.internal_walls:
+                    row += f"\033[34m{' W':2}\033[0m "
                 else:
-                    seen = self.cells_mapping[(x, y)][0]
-                    if seen == 0:
-                        r = 255
-                        g = 255
-                        b = 255
+                    if (x, y) in self.observed_objects:
+                        row += f"\033[34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
                     else:
-                        normalized_seen = min(seen / 30, 1.0)
-                        if normalized_seen <= 0.5:
-                            r = int(255 * (normalized_seen * 2))
-                            g = int(255 * (1 - normalized_seen * 2))
-                            b = 0
-                        elif normalized_seen <= 0.85:
+                        seen = self.cells_mapping[(x, y)][0]
+                        if seen == 0:
                             r = 255
-                            g = 0
-                            b = int(255 * ((normalized_seen - 0.5) * 4))
-                        else:
-                            r = int(255 * (1 - (normalized_seen - 0.85) * 4))
-                            g = 0
+                            g = 255
                             b = 255
-                    row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
+                        else:
+                            normalized_seen = min(seen / 30, 1.0)
+                            if normalized_seen <= 0.5:
+                                r = int(255 * (normalized_seen * 2))
+                                g = int(255 * (1 - normalized_seen * 2))
+                                b = 0
+                            elif normalized_seen <= 0.85:
+                                r = 255
+                                g = 0
+                                b = int(255 * ((normalized_seen - 0.5) * 4))
+                            else:
+                                r = int(255 * (1 - (normalized_seen - 0.85) * 4))
+                                g = 0
+                                b = 255
+                        row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             self.logger.mapping(row)

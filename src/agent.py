@@ -50,10 +50,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.log.setLevel(MAPPING_LEVEL)
+        self.logger.log.setLevel(MAPPING_LEVEL)
         
         ## Disable logging (comment the next line to enable logging)
-        self.logger.log.setLevel(logging.CRITICAL)
+        # self.logger.log.setLevel(logging.CRITICAL)
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -272,7 +272,7 @@ class Agent:
         else:
             new_goal.goal_type = "exploration"
             new_goal.max_time = 0.07
-            new_goal.visited_range = self.mapping.state["range"] - 2
+            new_goal.visited_range = (self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
             new_goal.priority = 50
             new_goal.position = self.mapping.next_exploration()
         
@@ -280,8 +280,8 @@ class Agent:
         goals = [new_goal]
 
         future_goals = 5
-        n = future_goals * 2
-        i = 0
+        n = future_goals
+        i = 2
         for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
