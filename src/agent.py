@@ -257,14 +257,14 @@ class Agent:
         
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
-            new_goal.max_time = 0.04
+            new_goal.max_time = 0.07
             new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
-            new_goal.max_time = 0.04
+            new_goal.max_time = 0.07
             new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
@@ -272,7 +272,7 @@ class Agent:
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.04
+            new_goal.max_time = 0.07
             new_goal.visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
             new_goal.priority = 10
             new_goal.position = self.mapping.next_exploration()
@@ -281,18 +281,18 @@ class Agent:
         goals = [new_goal]
 
         future_goals = 5
-        n = 1
-        i = 1
+        future_priority = 1
+        future_range = 1
         for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
-                max_time=0.03, # TODO: change this
-                visited_range=i,
-                priority=n,
+                max_time=0.02, # TODO: change this
+                visited_range=future_range,
+                priority=future_priority,
                 position=future_position
             )
-            i += 2
-            n -= 0.1
+            future_range += 2
+            future_priority -= 0.1
             
             goals.append(future_goal)
                 
