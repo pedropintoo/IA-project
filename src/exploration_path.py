@@ -38,8 +38,8 @@ class ExplorationPath:
         if (len(self.exploration_path) < exploration_length_threshold) or (self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold):
             self.generate_exploration_path(body, sight_range, exploration_map, traverse)
 
-        self.print_exploration_path()
-        exploration_point_seen_threshold = sight_range * 3
+        # self.print_exploration_path()
+        exploration_point_seen_threshold = sight_range #* 3
         while self.exploration_path:
             point = list(self.exploration_path.pop(0))
 
@@ -58,7 +58,7 @@ class ExplorationPath:
             if len(exploration_path_to_peek) < n_points:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
-            exploration_point_seen_threshold = sight_range * 3
+            exploration_point_seen_threshold = sight_range #* 3
             point = list(exploration_path_to_peek.pop(0))
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
             if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold:

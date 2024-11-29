@@ -75,7 +75,7 @@ class Mapping:
             n_points
         )
 
-    def update(self, state, perfect_state):
+    def update(self, state, perfect_state, goals):
         self.objects_updated = False if self.last_step + 1 != state["step"] else True
 
         self.logger.debug(f"Old: {self.observed_objects}")
@@ -140,7 +140,7 @@ class Mapping:
         if self.objects_updated:
             print("NEW OBJECTS OBSERVED")
         
-        self.print_mapping()
+        self.print_mapping([goal.position for goal in goals])
         self.logger.debug(f"New: {self.observed_objects}")
 
     def nothing_new_observed(self, goals):
@@ -155,10 +155,9 @@ class Mapping:
         if first_goal.goal_type == "exploration":
             x, y = first_goal.position
             sight_range = self.state["range"]
-            exploration_point_seen_threshold = sight_range * 3
+            exploration_point_seen_threshold = sight_range #* 3
             average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
             if average_seen_density >= exploration_point_seen_threshold:
-                self.exploration_path.exploration_path = []
                 return False
 
         return True
@@ -211,19 +210,25 @@ class Mapping:
             if timestamp is not None and time.time() - timestamp > duration:
                 self.cells_mapping[position] = (0, None)
 
-    def print_mapping(self):
+    def print_mapping(self, goals):
+        self.logger.mapping("\033[H\033[J") # clear the logger
         for y in range(self.domain.height):
             row = ""
             for x in range(self.domain.width):
-                if (x, y) in self.exploration_path.exploration_path:
-                    row += f"\033[38;2;255;255;0m{' E':2}\033[0m "
-                elif [x, y] in self.state["body"]:
-                    row += f"\033[38;2;0;0;0m{self.state['body'].index([x, y]):2}\033[0m "
-                elif [x, y] in self.domain.internal_walls:
-                    row += f"\033[34m{' W':2}\033[0m "
-                else:
+                if [x, y] in goals:
                     if (x, y) in self.observed_objects:
-                        row += f"\033[34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
+                        row += f"\033[1;35m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
+                    else:
+                        row += f"\033[1;35m\033[1m{goals.index([x, y]):2}\033[0m "
+                elif (x, y) in self.exploration_path.exploration_path:
+                    row += f"\033[1;38;2;255;255;0m{' E':2}\033[0m "
+                elif [x, y] in self.state["body"]:
+                    row += f"\033[1;38;2;0;0;0m{self.state['body'].index([x, y]):2}\033[0m "
+                elif [x, y] in self.domain.internal_walls:
+                    row += f"\033[1;34m{' W':2}\033[0m "
+                else:   
+                    if (x, y) in self.observed_objects:
+                        row += f"\033[1;34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
                     else:
                         seen = self.cells_mapping[(x, y)][0]
                         if seen == 0:
@@ -246,3 +251,4 @@ class Mapping:
                                 b = 255
                         row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             self.logger.mapping(row)
+        

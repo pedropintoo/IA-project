@@ -47,7 +47,8 @@ class Agent:
     def __init__(self, server_address, agent_name):
         
         ## Utils
-        self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
+        print(f"Agent: {agent_name}")
+        self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
         self.logger.log.setLevel(MAPPING_LEVEL)
@@ -143,7 +144,7 @@ class Agent:
         self.perfect_effects = self.domain.is_perfect_effects(state)
         
         ## Update the mapping
-        self.mapping.update(state, self.perfect_effects)
+        self.mapping.update(state, self.perfect_effects, self.current_goals)
     
     # ------- Act --------
 

@@ -54,7 +54,7 @@ class SearchTree:
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
                 self.best_solution = {"total_cost": node.heuristic + node.cost, "node": node}
-                print(node.state["visited_goals"])
+                # print(node.state["visited_goals"])
                 return self.inverse_plan_to_solution(node)
             
             self.non_terminals += 1
@@ -84,7 +84,6 @@ class SearchTree:
                 
                 ## Ignore nodes with heuristic much greater than the best solution
                 if self.best_solution["total_cost"]*2 < new_total_cost:
-                    print("\33[33mIgnoring node\33[0m")
                     continue
                 
                 new_lower_nodes.append(new_node)
