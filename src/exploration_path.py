@@ -1,4 +1,5 @@
 import math
+from src.utils._consts import get_exploration_length_threshold, get_last_exploration_distance_threshold, get_exploration_point_seen_threshold
 
 class ExplorationPath:
     
@@ -32,14 +33,17 @@ class ExplorationPath:
         exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
         
     def next_exploration_point(self, body, sight_range, traverse, exploration_map):
-        exploration_length_threshold = 20 // sight_range
-        last_exploration_distance_threshold = sight_range*3
-
-        if (len(self.exploration_path) < exploration_length_threshold) or (self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold):
+        exploration_length_threshold = get_exploration_length_threshold(sight_range)
+        last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range)
+        
+        if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
+            self.exploration_path = []
+        
+        if len(self.exploration_path) < exploration_length_threshold:
             self.generate_exploration_path(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
-        exploration_point_seen_threshold = sight_range #* 3
+        exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
         while self.exploration_path:
             point = list(self.exploration_path.pop(0))
 
@@ -58,7 +62,7 @@ class ExplorationPath:
             if len(exploration_path_to_peek) < n_points:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
-            exploration_point_seen_threshold = sight_range #* 3
+            exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
             point = list(exploration_path_to_peek.pop(0))
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
             if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold:

@@ -6,6 +6,7 @@ from src.exploration_path import ExplorationPath
 from src.matrix_operations import MatrixOperations
 from src.goal import Goal
 from consts import Tiles
+from src.utils._consts import get_exploration_point_seen_threshold, get_duration_of_expire_cells
 
 class Mapping:
     def __init__(self, logger, domain):
@@ -155,7 +156,7 @@ class Mapping:
         if first_goal.goal_type == "exploration":
             x, y = first_goal.position
             sight_range = self.state["range"]
-            exploration_point_seen_threshold = sight_range #* 3
+            exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
             average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
             if average_seen_density >= exploration_point_seen_threshold:
                 return False
@@ -204,7 +205,7 @@ class Mapping:
         self.expire_cells_mapping()
     
     def expire_cells_mapping(self):
-        duration = 30 / self.state["range"]
+        duration = get_duration_of_expire_cells(self.state["range"])
 
         for position, (seen, timestamp) in self.cells_mapping.copy().items():
             if timestamp is not None and time.time() - timestamp > duration:
