@@ -32,7 +32,7 @@ class ExplorationPath:
         
         exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
         
-    def next_exploration_point(self, body, sight_range, traverse, exploration_map):
+    def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range)
         
@@ -49,12 +49,12 @@ class ExplorationPath:
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
-            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold:
+            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point)):
                 self.last_given_point = point
                 return point
             
 
-    def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points):
+    def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points, is_ignored_goal):
         points_to_return = []
         exploration_path_to_peek = self.exploration_path.copy()
 
@@ -63,7 +63,7 @@ class ExplorationPath:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
             point = list(exploration_path_to_peek.pop(0))
-            if (traverse or point not in self.internal_walls) and point not in body:
+            if (traverse or point not in self.internal_walls) and point not in body and not is_ignored_goal(tuple(point)):
                 points_to_return.append(point)
             # else:
             #     self.exploration_path.pop(0)

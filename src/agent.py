@@ -51,7 +51,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.disable()
@@ -246,7 +246,9 @@ class Agent:
                 
             self.current_goals = temp_best_solution_goals[:]
             
+            print("--------------", temp_action_plan)
             self.actions_plan = [temp_action_plan.pop()] # first action for a not perfect solution
+            print("--------------", self.actions_plan)
         
         self.action = self.actions_plan.pop()
             

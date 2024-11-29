@@ -63,7 +63,8 @@ class Mapping:
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
-            self.cells_mapping
+            self.cells_mapping,
+            self.is_ignored_goal
         )
         return self.current_goal
     
@@ -73,7 +74,8 @@ class Mapping:
             self.state["range"],
             self.state["traverse"] and not force_traverse_disabled, 
             self.cells_mapping,
-            n_points
+            n_points,
+            self.is_ignored_goal
         )
 
     def update(self, state, perfect_state, goals):
@@ -220,9 +222,11 @@ class Mapping:
         for y in range(self.domain.height):
             row = ""
             for x in range(self.domain.width):
-                if [x, y] in goals:
+                if self.is_ignored_goal((x,y)):
+                    row += f"\033[1;35m{' I':2}\033[0m "
+                elif [x, y] in goals:
                     if (x, y) in self.observed_objects:
-                        row += f"\033[1;35m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
+                        row += f"\033[1;35m{' F':2}\033[0m " 
                     else:
                         row += f"\033[1;35m\033[1m{goals.index([x, y]):2}\033[0m "
                 elif (x, y) in self.exploration_path.exploration_path:
@@ -233,7 +237,7 @@ class Mapping:
                     row += f"\033[1;34m{' W':2}\033[0m "
                 else:   
                     if (x, y) in self.observed_objects:
-                        row += f"\033[1;34m{' X' if self.is_ignored_goal((x,y)) else ' F':2}\033[0m " 
+                        row += f"\033[1;34m{' F':2}\033[0m " 
                     else:
                         seen = self.cells_mapping[(x, y)][0]
                         if seen == 0:
