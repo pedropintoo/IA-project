@@ -84,6 +84,10 @@ class Mapping:
         if self.state and self.state["range"] != state["range"]:
             # Reset the exploration path if the range is changed
             self.exploration_path.exploration_path = []
+        
+        if self.state and self.state["traverse"] != state["traverse"]:
+            # Reset the exploration path if the traverse is changed
+            self.exploration_path.exploration_path = []
 
         self.state = {
             "body": state["body"] + [state["body"][-1]], # add the tail
