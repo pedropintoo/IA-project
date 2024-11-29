@@ -20,7 +20,7 @@ class SearchTree:
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
         heapq.heapify(self.open_nodes)
-        self.best_solution = {"heuristic": root.heuristic, "state": root} 
+        self.best_solution = {"total_cost": root.heuristic, "node": root} 
         self.non_terminals = 0
 
     # Path from root to node
@@ -53,7 +53,7 @@ class SearchTree:
 
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                self.best_solution = {"heuristic": node.heuristic, "state": node}
+                self.best_solution = {"total_cost": node.heuristic + node.cost, "node": node}
                 print(node.state["visited_goals"])
                 return self.inverse_plan_to_solution(node)
             
@@ -80,17 +80,18 @@ class SearchTree:
                     heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
                     action=act,
                     )
+                new_total_cost = new_node.heuristic + new_node.cost
                 
                 ## Ignore nodes with heuristic much greater than the best solution
-                if self.best_solution["heuristic"]*2 < new_node.heuristic:
+                if self.best_solution["total_cost"]*2 < new_total_cost:
                     print("\33[33mIgnoring node\33[0m")
                     continue
                 
                 new_lower_nodes.append(new_node)
                 
                 ## Store the best solution
-                if self.best_solution["heuristic"] > new_node.heuristic:
-                    self.best_solution = {"heuristic": new_node.heuristic, "state": new_node}
+                if self.best_solution["total_cost"] > new_total_cost:
+                    self.best_solution = {"total_cost": new_total_cost, "node": new_node}
 
             self.add_to_open(new_lower_nodes)
         return None

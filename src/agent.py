@@ -225,10 +225,10 @@ class Agent:
                     break
                 
                 # Store a not perfect solution
-                if not temp_action_plan or temp_best_solution["heuristic"] > temp_tree.best_solution["heuristic"]:
+                if not temp_action_plan or temp_best_solution["total_cost"] > temp_tree.best_solution["total_cost"]:
                     temp_best_solution = temp_tree.best_solution
                     temp_best_solution_goals = temp_goals[:]
-                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["state"])
+                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["node"])
                 
                 temp_goals.pop(0)
         

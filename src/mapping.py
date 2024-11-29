@@ -76,7 +76,7 @@ class Mapping:
         )
 
     def update(self, state, perfect_state):
-        self.objects_updated = False if self.last_step + 1 == state["step"] else True
+        self.objects_updated = False if self.last_step + 1 != state["step"] else True
 
         self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state
@@ -154,8 +154,9 @@ class Mapping:
         # TODO: check this!
         if first_goal.goal_type == "exploration":
             x, y = first_goal.position
+            sight_range = self.state["range"]
             exploration_point_seen_threshold = sight_range * 3
-            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], self.state["range"], self.cells_mapping)
+            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
             if average_seen_density >= exploration_point_seen_threshold:
                 self.exploration_path.exploration_path = []
                 return False
