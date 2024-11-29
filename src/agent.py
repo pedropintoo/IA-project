@@ -66,6 +66,7 @@ class Agent:
         self.domain = None
         
         ## Action controller
+        self.ts = None
         self.actions_plan = []
         self.action = None
         self.current_goals = []
@@ -166,7 +167,7 @@ class Agent:
     
     def think(self, time_limit):
         ## Follow the action plain (nothing new observed)            
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goals[0].goal_type):
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goals):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
@@ -176,7 +177,7 @@ class Agent:
         
         ## Find a new goal
         self.current_goals = self._find_goals() # including the future goals
-        self.logger.info(f"New goals {self.current_goals}")
+        self.logger.info(f"New goals {[goal.position for goal in self.current_goals]}")
         
         ## Search for the solution
         self.actions_plan = None

@@ -26,6 +26,7 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
+        # TODO: study this function
         return (
             state["range"] >= 3 
             # and state["traverse"]

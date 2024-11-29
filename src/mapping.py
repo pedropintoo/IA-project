@@ -38,6 +38,8 @@ class Mapping:
          
         self.ignored_duration = 5
         self.temp_ignored_goals = set() # ((x, y), observed_timestamp) 
+        
+        self.last_step = 0
 
     @property
     def ignored_goals(self):
@@ -74,7 +76,7 @@ class Mapping:
         )
 
     def update(self, state, perfect_state):
-        self.objects_updated = False
+        self.objects_updated = False if self.last_step + 1 == state["step"] else True
 
         self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state
@@ -87,7 +89,7 @@ class Mapping:
             "range": state["range"],
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
-            "step": state["step"] + 1,
+            "step": state["step"],
             "visited_goals": set()
         }
         self.update_cells_mapping(state["sight"]) 
@@ -141,16 +143,22 @@ class Mapping:
         self.print_mapping()
         self.logger.debug(f"New: {self.observed_objects}")
 
-    def nothing_new_observed(self, current_goal_strategy):
+    def nothing_new_observed(self, goals):
         if self.objects_updated:
             return False
+      
+        # TODO: check if the goal has disappeared
         
-        # if current_goal_strategy == "exploration":
-        #     x, y = self.current_goal
-        #     threshold = self.state["range"] * 3
-        #     if self.cells_mapping[(x, y)][0] >= threshold:
-        #         self.exploration_path.exploration_path = []
-        #         return False
+        first_goal = goals[0]
+        
+        # TODO: check this!
+        if first_goal.goal_type == "exploration":
+            x, y = first_goal.position
+            exploration_point_seen_threshold = sight_range * 3
+            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], self.state["range"], self.cells_mapping)
+            if average_seen_density >= exploration_point_seen_threshold:
+                self.exploration_path.exploration_path = []
+                return False
 
         return True
 
