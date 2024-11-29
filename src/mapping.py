@@ -187,7 +187,9 @@ class Mapping:
         )
 
         for position in self.observed_objects.keys():
+            print(position, self.is_ignored_goal(position), self.ignored_goals)
             if self.is_ignored_goal(position):
+                print("IGNORED")
                 continue
             
             default_goal.position = position
@@ -197,7 +199,7 @@ class Mapping:
                 min_heuristic = heuristic
                 closest = position
         
-        # self.logger.debug(f"Closest {obj_type}: {closest}")
+        self.logger.debug(f"Closest {obj_type}: {closest}")
         return list(closest)                    
         
     def update_cells_mapping(self, sight):

@@ -51,7 +51,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.disable()
@@ -275,7 +275,7 @@ class Agent:
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.07
+            new_goal.max_time = 0.04
             new_goal.visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
             new_goal.priority = 10
             new_goal.position = self.mapping.next_exploration()
@@ -298,7 +298,8 @@ class Agent:
             future_priority -= 0.1
             
             goals.append(future_goal)
-                
+        
+        self.logger.debug(f"New goal: {new_goal.goal_type}")
         return goals
 
     def _get_fast_action(self, warning=True):

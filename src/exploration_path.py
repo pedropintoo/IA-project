@@ -52,6 +52,8 @@ class ExplorationPath:
             if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point)):
                 self.last_given_point = point
                 return point
+        
+        print("CORREU MAL:............................................")
             
 
     def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points, is_ignored_goal):
@@ -63,6 +65,8 @@ class ExplorationPath:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
             point = list(exploration_path_to_peek.pop(0))
+            if is_ignored_goal(point):
+                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             if (traverse or point not in self.internal_walls) and point not in body and not is_ignored_goal(tuple(point)):
                 points_to_return.append(point)
             # else:
