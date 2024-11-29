@@ -5,7 +5,8 @@
    - Use the **sight data** to locate the body of the opponent (`SNAKE = 4` in our sight).
    - **Determine the head**:
     - Part of the snake that moves into previously unoccupied spaces (PASSAGE = 0).
-   - **Determine the tail**:
+
+   - **Determine the tail (advanced)**:
     - Part of the snake that moves to the position previously occupied by the second-to-last part of the body.
 
 #### 2. **Generate Possible Moves**
@@ -15,51 +16,47 @@
    - Filter out moves that lead to **immediate collision**:
      - Collision with walls (`STONE = 1`).
      - Collision with its own body (`SNAKE = 4`).
+   - There is already a function that does this. We can use it for the opponent snake.  
 
-#### 3. **Evaluate the Best Move**
+#### 3. **Evaluate the Best Move from the Possible Moves**
    Since we do not know the rules the opponent uses, consider these heuristics:
-   - **Priority 1: Move towards food (we should assume this is True by default)**:
-     - If there is food (`FOOD` or `SUPER`) in the sight range, calculate the distance to each food and prioritise moves that minimise this distance.
- 
-   - **Priority 2: Default behaviour**:
+   - **Priority 1: Default behaviour**:
      - If no food is nearby, assume the opponent will move straight unless forced to turn.
 
-#### 4. **Predict Based on Observed Patterns**
-   - As the game progresses, observe how the opponent reacts to various situations:
-     - **Does it always move towards the nearest food?** 
-      If true, if we have a `lenght > NUMBER`, we could be on circles around the food. The goal would be the other snake to touch in our body and die. If we do not have a `lenght > NUMBER`, I think it would be too risky to do this because we are missing out on foods while doing this and the opponent have a high probability to touch our head and we may die. Should be a balance between attack and defense.
-
-     - **Does it avoid risky paths or favour open spaces (advanced)?**
-      I think this would be more difficult to infer from the opponent behaviour. However, could be a good idea to try to understand what type of exploration path the opponent have. We use a curve but I think the majority of our oppponents will do a simple movement: go up and down until they find a food. If that's the case we can take advantage and try to get the foods first.
-   - Goal: Use this information to refine our prediction model dynamically during the game.
-
-#### 5. **Handling Wrapping**
+   - **Priority 2 (advanced) : Move towards food (we should assume this is True by default)**:
+     - If there is food (`FOOD` or `SUPER`) in the sight range, calculate the distance to each food and prioritise moves that minimise this distance.
+ 
+#### 4. **Handling Wrapping (advanced)**
+   - Note: In the beginning assume always `self.traverse=True` because this inference is complicated.
    
    - Opponent possible moves depends on (`self.traverse`):
      - **Traverse = True**: Include wraparound moves in possible directions.
      - **Traverse = False**: Exclude wraparound moves.
-   - Adjust based on observed behaviour during the game.
-
    - We can have 2 different approaches:
 1. **Secure Approach (assume always `self.traverse=True`)**:
    - **Pros**: Simple and avoids misjudgments; ensures robust predictions.
    - **Cons**: Misses opportunities to exploit the opponent's inability to wrap. Exploiting `self.traverse=False` can yield high rewards (e.g., forcing opponents into traps or beating them to food). 
-   However, it’s riskier and should be balanced with the game context (e.g., proximity to walls). Because the opponent may have `self.traverse=True` and wrap into the wall to go to the other side to kill us.
 
 2. **Dynamic Adjustment Based on Observed Behaviour**:
    - **Worth It?**: Yes, if your strategy values exploiting weaknesses.
    - **Which indicators to look on?**: For instance, if the opponent does not have any food in his sight and is only doing exploration, if he avoid a internal wall this fact is a strong indicator of `self.traverse=False`. We should try to estimate his sight based on our sight and how close we are from the opponent.
-
-3. **Conclusion**
-- **Duration to Maintain `self.traverse=True`**:
    - Start with `self.traverse=True` by default because it's more secure.
    - If the opponent behaves as if `self.traverse=False` (e.g., avoids edges), assume `self.traverse=False` but revert to `self.traverse=True` if they suddenly wrap.
    - A **few steps (~5-10)** is reasonable to mantain the `self.traverse=False`, after that we should have a more secure approach and assume `self.traverse=True`. Food and poison effects can alter the opponent's traverse state.
+   
 
-#### 6. **Attack the Opponent**
-   - If you want to attack the opponent, position your snake to:
-     - Block their likely paths to food. Like I have mentioned before if we know the opponent always move towards the nearest food we can be on circles around the food (see explanation above).
-     - Force them into risky areas or collisions.
+#### 5. **Attack the Opponent (start by doing this)**
+   - Create dead ends on fruits when you notice the opponent will try to eat some specific fruit. The majority of opponents won't have algorithms to deal with this. Notice that this only works when we are a extremely big (`lenght > NUMBER`). The goal would be to the other snake to touch in our body and die. To do this we can define two points that the agent must pass through. The food must be considered as a `ìgnored_goal` in this case, to be severe penalized. See the image below:
+
+   ![Example Image](utils/simpleTrap.png)
+
+   - If the agent survive three times to this trap we conclude that he has algorithms to deal with this and we can try to do a more advanced trap. See the image below:
+
+   ![Example Image](utils/advancedTrap.png)
+
+   Other option would be:
+   If true, if we have a `lenght > NUMBER`, we could try to go on circles around the food. The goal would be the other snake to touch in our body and die. 
+   If we do not have a `lenght > NUMBER`, I think it would be too risky to do this because we are missing out on foods while doing this and the opponent have a high probability to touch our head and we may die. Should be a balance between attack and defense.
 
 #### 7. **Number of Players**
 
@@ -69,14 +66,13 @@
 #### Conclusion and key ideas
 
 - We should try to do first the `Class OpponentMapping` (see below) where we store all the data we know. 
-Then we should start by evaluating the opponent next move, initially we could assume that the opponent move towards food. If our action, would make us die due to the opponent next move, that action should be huge penalized. This is crucial for survival-oriented planning. At first I think this is enough because our agent follow a very strange exploration path and if the opponent try to kill us if we have a considerable lenght, the probability of the opponent die is huge.
-However, after this is implemented we should adress the other points mentioned.
+Then we should start by evaluating the opponent next move. If our action, would make us die due to the opponent next move, that action should be huge penalized. 
+Start by doing the **Attack the Opponent** section. After this think about the `advanced` sections.
 ---
 
 ### Class OpponentMapping
 
 This class should have all the data that we know about the opponent and should be updated dinamically based on observed behaviour.
-Ensure the class is modular so it can handle multiple opponents by instantiating one `OpponentMapping` per opponent.
 
 ---
 
@@ -90,11 +86,12 @@ Ensure the class is modular so it can handle multiple opponents by instantiating
 
 1. **Position Tracking**
    These values should be based on current observations in `sight` and inferred strategy.
+   - **`direction`**: Corresponds to the previous_predicted_direction
    - **`head_position`**: Coordinates `(x, y)` of the opponent's head.
-   - **`tail_position`**: Coordinates `(x, y)` of the opponent's tail.
-   - **`last_positions`**: A list of the last 10 positions `(x, y)` the opponent's head occupied.
+   - **`tail_position (advanced)`**: Coordinates `(x, y)` of the opponent's tail.
+   - **`last_positions (advanced)`**: A list of the last 10 positions `(x, y)` the opponent's head occupied.
 
-2. **Behavioural Analysis**
+2. **Behavioural Analysis (advanced)**
    - **`moving_towards_food`**: Boolean value indicating whether the opponent is prioritising food based on its observed trajectory. By default should start = `True`
    - **`self_traverse`**: Opponent's wrapping ability (`True` or `False`), dynamically updated.
 
@@ -102,6 +99,7 @@ Ensure the class is modular so it can handle multiple opponents by instantiating
    - **`target_food`**: Coordinates `(x, y)` of the food the opponent is likely targeting.
 
 4. **Prediction**
-   - **`predicted_next_move`**: The expected next position `(x, y)` of the opponent's head based on current observations and inferred strategy.
+   - **`predicted_direction`**: Estimated opponent direction. Can be inferred from the `head_position` and `predicted_head_position`.
+   - **`predicted_head_position`**: The expected next position `(x, y)` of the opponent's head based on current observations and inferred strategy.
 
 ---
