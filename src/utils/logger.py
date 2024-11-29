@@ -2,7 +2,7 @@ import logging
 import os
 
 # Define a new logging level
-MAPPING_LEVEL = logging.CRITICAL + 1
+MAPPING_LEVEL = 1
 logging.addLevelName(MAPPING_LEVEL, "MAPPING")
 
 def mapping(self, message, *args, **kws):
@@ -16,6 +16,7 @@ class Logger:
     def __init__(self, identifierName: str, logFile: str = None):
         self.log = logging.getLogger(identifierName)
         CustomFormatter().setup(self.log)
+        self.log.setLevel(logging.DEBUG)  # Set default logging level to DEBUG
 
     def error(self, errorMsg):
         self.log.error(errorMsg)
@@ -34,6 +35,12 @@ class Logger:
 
     def mapping(self, mappingMsg):
         self.log.mapping(mappingMsg)
+
+    def activate_mapping(self):
+        self.log.setLevel(MAPPING_LEVEL)
+
+    def disable(self):
+        self.log.setLevel(logging.CRITICAL + 1)
 
 class CustomFormatter(logging.Formatter):
 
@@ -60,5 +67,4 @@ class CustomFormatter(logging.Formatter):
         if not any(isinstance(handler, logging.StreamHandler) for handler in logger.handlers):
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(self)
-            logger.setLevel(logging.DEBUG)
             logger.addHandler(console_handler)
