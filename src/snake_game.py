@@ -9,6 +9,7 @@ from src.search.search_domain import SearchDomain
 from consts import Tiles
 import time
 import datetime
+from src.utils._consts import is_snake_in_perfect_effects
 
 DIRECTIONS = {
     "NORTH": [0, -1],
@@ -26,30 +27,7 @@ class SnakeGame(SearchDomain):
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        # TODO: study this function
-        
-        if state["step"] > 2900:
-            return False
-        
-        if state["range"] == 3:
-            supers_required = 8
-            
-        elif state["range"] == 4:
-            supers_required = 6
-            
-        elif state["range"] == 5:
-            supers_required = 4
-            
-        else:
-            supers_required = 3
-            
-        if not state["traverse"]:
-            supers_required += 2
-            
-        return not self._has_n_super_observed(state, supers_required)
-    
-    def _has_n_super_observed(self, state, n):
-        return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
+        return is_snake_in_perfect_effects(state)
     
     def _check_collision(self, state, action):
         """Check if the action will result in a collision"""
@@ -182,7 +160,7 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value += 50
         
-        print("heuristic_value: ", heuristic_value)
+        self.logger.debug(f"heuristic_value: {heuristic_value}")
         
         return heuristic_value
 

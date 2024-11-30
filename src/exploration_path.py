@@ -49,7 +49,7 @@ class ExplorationPath:
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
-            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point)):
+            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(point):
                 self.last_given_point = point
                 return point
         
@@ -60,17 +60,16 @@ class ExplorationPath:
         points_to_return = []
         exploration_path_to_peek = self.exploration_path.copy()
 
+        limit_iterations = 10
         while len(points_to_return) < n_points:
             if len(exploration_path_to_peek) < n_points:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
             point = list(exploration_path_to_peek.pop(0))
-            if is_ignored_goal(point):
-                print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-            if (traverse or point not in self.internal_walls) and point not in body and not is_ignored_goal(tuple(point)):
-                points_to_return.append(point)
-            # else:
-            #     self.exploration_path.pop(0)
+            #if (traverse or point not in self.internal_walls) and point not in body and (not is_ignored_goal(point) or limit_iterations <= 0):
+            points_to_return.append(point)
+            
+            limit_iterations -= 1 # Avoid infinite loop
         
         return points_to_return
     

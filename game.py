@@ -11,7 +11,7 @@ logger.setLevel(logging.DEBUG)
 
 INITIAL_SCORE = 0
 GAME_SPEED = 10
-MAP_SIZE = (18, 14)
+MAP_SIZE = (48, 24)
 FOOD_IN_MAP = 4
 
 class Snake:
@@ -26,7 +26,7 @@ class Snake:
         self._alive = True
         self.lastkey = ""
         self.to_grow = 1
-        self.range = 3
+        self.range = 5
 
     def sight(self, mapa, snakes):
         in_range = mapa.get_zone(self.head, self.range)

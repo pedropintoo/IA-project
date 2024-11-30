@@ -2,6 +2,7 @@ import heapq
 import random
 import time
 from collections import defaultdict
+from src.opponent_mapping import OpponentMapping
 from src.exploration_path import ExplorationPath
 from src.matrix_operations import MatrixOperations
 from src.goal import Goal
@@ -37,10 +38,12 @@ class Mapping:
             for y in range(self.domain.height)
         }   
          
-        self.ignored_duration = 10
+        self.ignored_duration = 5
         self.temp_ignored_goals = set() # ((x, y), observed_timestamp) 
         
         self.last_step = 0
+
+        self.opponent = OpponentMapping(logger, domain.width, domain.height)
 
     @property
     def ignored_goals(self):
@@ -80,6 +83,8 @@ class Mapping:
 
     def update(self, state, perfect_state, goals):
         self.objects_updated = False if self.last_step + 1 != state["step"] else True
+
+        self.opponent.update(state)
 
         self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state
@@ -220,7 +225,9 @@ class Mapping:
                 self.cells_mapping[position] = (0, None)
 
     def print_mapping(self, goals):
-        self.logger.mapping("\033[H\033[J") # clear the logger
+        self.logger.mapping("\033[2J") # clear the screen
+        self.logger.mapping("\033[H") # move cursor to the top
+        
         for y in range(self.domain.height):
             row = ""
             for x in range(self.domain.width):
@@ -228,7 +235,7 @@ class Mapping:
                     row += f"\033[1;35m{' I':2}\033[0m "
                 elif [x, y] in goals:
                     if (x, y) in self.observed_objects:
-                        row += f"\033[1;35m{' F':2}\033[0m " 
+                        row += f"\033[1;35m{' F' if self.observed_objects[(x, y)][0] == Tiles.FOOD else ' S':2}\033[0m "
                     else:
                         row += f"\033[1;35m\033[1m{goals.index([x, y]):2}\033[0m "
                 elif (x, y) in self.exploration_path.exploration_path:
@@ -239,7 +246,7 @@ class Mapping:
                     row += f"\033[1;34m{' W':2}\033[0m "
                 else:   
                     if (x, y) in self.observed_objects:
-                        row += f"\033[1;34m{' F':2}\033[0m " 
+                        row += f"\033[1;34m{' F' if self.observed_objects[(x, y)][0] == Tiles.FOOD else ' S':2}\033[0m "
                     else:
                         seen = self.cells_mapping[(x, y)][0]
                         if seen == 0:
@@ -247,7 +254,7 @@ class Mapping:
                             g = 255
                             b = 255
                         else:
-                            normalized_seen = min(seen / 30, 1.0)
+                            normalized_seen = min(seen / (10*self.state["range"]), 1.0)
                             if normalized_seen <= 0.5:
                                 r = int(255 * (normalized_seen * 2))
                                 g = int(255 * (1 - normalized_seen * 2))
@@ -260,6 +267,7 @@ class Mapping:
                                 r = int(255 * (1 - (normalized_seen - 0.85) * 4))
                                 g = 0
                                 b = 255
+                                
                         row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             self.logger.mapping(row)
         

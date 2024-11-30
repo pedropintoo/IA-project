@@ -14,6 +14,7 @@ import logging
 import random
 import heapq
 from datetime import datetime, timedelta
+from src.utils._consts import get_num_future_goals, get_future_goals_priority, get_future_goals_range
 import sys
 
 ## Search
@@ -33,9 +34,9 @@ from consts import Tiles
 
 DIRECTION_TO_KEY = {
     "NORTH": "w",
-    "WEST": "a",
+    "WEST":  "a",
     "SOUTH": "s",
-    "EAST": "d"
+    "EAST":  "d"
 }
 
 wslogger = logging.getLogger("websockets")
@@ -253,51 +254,59 @@ class Agent:
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
-        new_goal = Goal(None, None, None, None, None)
+        goals = []
         force_traverse_disabled = False
         
-        if self.mapping.observed(Tiles.FOOD):
-            new_goal.goal_type = "food"
-            new_goal.max_time = 0.05
-            new_goal.visited_range = 0
-            new_goal.priority = 10
-            new_goal.position = self.mapping.closest_object(Tiles.FOOD)
+        if self.mapping.opponent.is_to_attack():
+            for attack_position in self.mapping.opponent.attack():
+                goals.append(Goal(None, None, None, None, None))
+                goals[-1].goal_type = "attack"
+                goals[-1].max_time = 0.07
+                goals[-1].visited_range = 0
+                goals[-1].priority = 10
+                goals[-1].position = attack_position
+
+        elif self.mapping.observed(Tiles.FOOD):
+            goals.append(Goal(None, None, None, None, None))
+            goals[0].goal_type = "food"
+            goals[0].max_time = 0.07
+            goals[0].visited_range = 0
+            goals[0].priority = 10
+            goals[0].position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
-            new_goal.goal_type = "super"
-            new_goal.max_time = 0.05
-            new_goal.visited_range = 0
-            new_goal.priority = 10
-            new_goal.position = self.mapping.closest_object(Tiles.SUPER)
+            goals.append(Goal(None, None, None, None, None))
+            goals[0].goal_type = "super"
+            goals[0].max_time = 0.07
+            goals[0].visited_range = 0
+            goals[0].priority = 10
+            goals[0].position = self.mapping.closest_object(Tiles.SUPER)
             force_traverse_disabled = True # worst case scenario
             
         else:
-            new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.05
-            new_goal.visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
-            new_goal.priority = 10
-            new_goal.position = self.mapping.next_exploration()
+            goals.append(Goal(None, None, None, None, None))
+            goals[0].goal_type = "exploration"
+            goals[0].max_time = 0.07
+            goals[0].visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
+            goals[0].priority = 10
+            goals[0].position = self.mapping.next_exploration()
         
         ## Create the list with future goals
-        goals = [new_goal]
-
-        future_goals = 0
-        future_priority = 1
-        future_range = 2
-        for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
+        num_future_goals = get_num_future_goals(goals, self.mapping.state["range"])
+        future_priority = get_future_goals_priority(goals)
+        future_range = get_future_goals_range(goals, self.mapping.state["range"])
+        idx = 0
+        for future_position in self.mapping.peek_next_exploration(num_future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
                 max_time=0.04, # TODO: change this
-                visited_range=future_range,
-                priority=future_priority,
+                visited_range=future_range[idx],
+                priority=future_priority[idx],
                 position=future_position
             )
-            future_range += 2
-            future_priority -= 0.1
-            
+            idx += 1
             goals.append(future_goal)
         
-        self.logger.debug(f"New goal: {new_goal.goal_type}")
         return goals
 
     def _get_fast_action(self, warning=True):
