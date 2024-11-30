@@ -10,10 +10,13 @@ from src.search.search_domain import SearchDomain
 class SearchProblem:
     """Search Problem"""
     
-    def __init__(self, domain: SearchDomain, initial, goal):
+    def __init__(self, domain: SearchDomain, initial, goals):
         self.domain = domain
         self.initial = initial
-        self.goal = goal
+        self.goals = goals
     
     def goal_test(self, state):
-        return self.domain.satisfies(state,self.goal)
+        return all(self.domain.satisfies(state, goal) for goal in self.goals)
+    
+    def satisfies_first_goal(self, state):
+        return self.domain.is_goal_visited(head=state["body"][0], goal=self.goals[0])

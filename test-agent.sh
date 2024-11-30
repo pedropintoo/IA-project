@@ -77,6 +77,17 @@ do
         echo "Score not found or invalid."
     fi
 
+    # Extract the last value in a line that is between [xxxx]
+    steps=$(grep --text -o '\[[0-9]*\]' server_log.txt | tail -n 1 | awk -F'[][]' '{print $2}')
+
+    # Check if the value was found
+    if [[ -n "$steps" ]]; then
+        echo "Steps: $steps"
+    else
+        echo "No value found in brackets."
+    fi
+
+
     # Clean up the log file for the next run
     > server_log.txt
 

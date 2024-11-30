@@ -1,4 +1,5 @@
 import math
+from src.utils._consts import get_exploration_length_threshold, get_last_exploration_distance_threshold, get_exploration_point_seen_threshold
 
 class ExplorationPath:
     
@@ -9,83 +10,105 @@ class ExplorationPath:
         self.dead_ends = dead_ends
         
         self.exploration_path = []
+        self.exploration_generations_cache = {}
+        self.last_given_point = None
+
+    def generate_exploration_path(self, body, sight_range, exploration_map, traverse, exploration_path=None):
+        head = body[0]
+
+        if exploration_path is None:
+            exploration_path = self.exploration_path
+     
+        if self.exploration_generations_cache.get(sight_range) is None:
+            new_exploration_path = GilbertCurve.get_curve(self.width, self.height, sight_range, traverse)
+            self.exploration_generations_cache[sight_range] = new_exploration_path
+        else:
+            new_exploration_path = self.exploration_generations_cache[sight_range]
+
+        if len(exploration_path) == 0:
+            target = self.find_best_target(head, new_exploration_path, exploration_map)
+        else:
+            target = exploration_path.pop(-1)
         
-    def next_exploration_point(self, body, sight_range, traverse, exploration_map):
-        point = None
+        exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+        
+    def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
+        exploration_length_threshold = get_exploration_length_threshold(sight_range)
+        last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range)
+        
+        if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
+            self.exploration_path = []
+        
+        if len(self.exploration_path) < exploration_length_threshold:
+            self.generate_exploration_path(body, sight_range, exploration_map, traverse)
+
+        # self.print_exploration_path()
+        exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
+        while self.exploration_path:
+            point = list(self.exploration_path.pop(0))
+
+            average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
+
+            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point)):
+                self.last_given_point = point
+                return point
+            
+
+    def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points, is_ignored_goal):
+        points_to_return = []
+        exploration_path_to_peek = self.exploration_path.copy()
+
+        while len(points_to_return) < n_points:
+            if len(exploration_path_to_peek) < n_points:
+                self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
+
+            point = list(exploration_path_to_peek.pop(0))
+            if (traverse or point not in self.internal_walls) and point not in body and not is_ignored_goal(tuple(point)):
+                points_to_return.append(point)
+            # else:
+            #     self.exploration_path.pop(0)
+        
+        return points_to_return
+    
+    def calcule_average_seen_density(self, point, sight_range, exploration_map):
         count = 0
-        while not point and count < 2:
-            head = body[0]
-            if len(self.exploration_path) == 0:
-                unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
-                if unseen_cells:
-                    target = self.find_best_target(head, sight_range, unseen_cells)
-                    self.exploration_path = GilbertCurve.get_curve(self.width, self.height, target, sight_range)
-            
-            self.print_exploration_path()
-            while self.exploration_path:
-                point = list(self.exploration_path[0])
-                if (traverse or point not in self.internal_walls) and point not in body:
-                    return list(self.exploration_path.pop(0))
-                else:
-                    self.exploration_path.pop(0)
-            
-            count += 1
-        return point
-
-    def peek_exploration_point(self, body, sight_range, traverse, exploration_map):
-        point = None
-        count = 0
-        while not point and count < 2:
-            head = body[0]
-            if len(self.exploration_path) == 0:
-                unseen_cells = self.get_unseen_cells(exploration_map, traverse, body)
-                if unseen_cells:
-                    target = self.find_best_target(head, sight_range, unseen_cells)
-                    self.exploration_path = GilbertCurve.get_curve(self.width, self.height, target, sight_range)
-            
-            while self.exploration_path:
-                point = list(self.exploration_path[0])
-                if (traverse or point not in self.internal_walls) and point not in body:
-                    return point
-                else:
-                    self.exploration_path.pop(0)
-            
-            count += 1
-        return point
-
-    def get_unseen_cells(self, exploration_map, traverse, body):
-        unseen_cells = set()
-        for (x, y), value in exploration_map.items():
-            if value[0] == 0 and (traverse or (x, y) not in self.internal_walls) and (x, y) not in body:
-                unseen_cells.add((x, y))
-        return unseen_cells
-
-    def find_best_target(self, head, sight_range, unseen_cells):
-        max_unseen = 0
-        best_distance = float('inf')
-        best_target = None
-        unseen_counts_cache = {}
-        for cell in unseen_cells:
-            unseen_count = self.count_unseen_from_point(cell, sight_range, unseen_cells, unseen_counts_cache)
-            distance = abs(cell[0] - head[0]) + abs(cell[1] - head[1])
-            if unseen_count > max_unseen or (unseen_count == max_unseen and distance < best_distance):
-                max_unseen = unseen_count
-                best_distance = distance
-                best_target = cell
-        return best_target
-
-    def count_unseen_from_point(self, point, sight_range, unseen_cells, cache):
-        if point in cache:
-            return cache[point]
-        count = 0
+        n_points = 0
         for dx in range(-sight_range, sight_range + 1):
             for dy in range(-sight_range, sight_range + 1):
-                if (point[0] + dx, point[1] + dy) in unseen_cells:
-                    count += 1
-        cache[point] = count
-        return count
+                if abs(dx) + abs(dy) <= sight_range:
+                    if (point[0] + dx, point[1] + dy) in exploration_map:
+                        count += exploration_map[(point[0] + dx, point[1] + dy)][0]
+                        n_points += 1
+        return count / n_points
+    
+    def calcule_distance(self, traverse, a, b):
+        dx = 0
+        dy = 0
+        if b is not None:
+            dx_no_crossing_walls = abs(a[0] - b[0])
+            dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
+            dy_no_crossing_walls = abs(a[1] - b[1])
+            dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+        return dx + dy
+            
+
+
+    def find_best_target(self, head, exploration_path, exploration_map):
+        best_distance = float('inf')
+        best_target = None
+        for (x, y) in exploration_path:
+            distance = math.dist((x, y), head)
+            if distance < best_distance:
+                if exploration_map[(x, y)][0] == 0:
+                    best_distance = distance
+                    best_target = (x, y)
+        
+        return best_target
+
 
     def print_exploration_path(self):
+        print("EXPLORATION PATH")
         for y in range(self.height):
             row = ""
             for x in range(self.width):
@@ -96,16 +119,48 @@ class ExplorationPath:
             print(row)
 
 class GilbertCurve:
-    def get_curve(width, height, target, sight_range=1):
+    def get_curve(width, height, sight_range=1, traverse=True):
         path = list(GilbertCurve.gilbert2d(width, height, sight_range*2))
-        adjusted_path = [(x * sight_range*2, y * sight_range*2) for x, y in path]
-        adjusted_path = GilbertCurve.adjust_path_to_target(adjusted_path, target)
+        adjusted_path = [(x * sight_range*2 + 1, y * sight_range*2 + 1) for x, y in path]
+        
+        if not traverse:
+            start_point = adjusted_path[0]
+            end_point = adjusted_path[-1]
+            
+            return_path = GilbertCurve.linear_path(end_point, start_point, sight_range * 2)
+            
+            for point in return_path:
+                if point not in adjusted_path:
+                    adjusted_path.append(point)
+        
         return adjusted_path
+    
+    def linear_path(start, end, step_size):
+        x0, y0 = start
+        x1, y1 = end
+        points = []
+        
+        x0 -=1
+        y0 -=1
+        x1 -=1
+        y1 -=1
+
+        dx = x1 - x0
+        dy = y1 - y0
+        distance = (dx ** 2 + dy ** 2) ** 0.5
+        steps = max(1, int(distance // step_size))
+        
+        for i in range(1, steps + 1):
+            x = int(x0 + dx * i / steps)
+            y = int(y0 + dy * i / steps)
+            points.append((x, y))
+        
+        return points
     
     @staticmethod
     def gilbert2d(width, height, sight_range):
-        virtual_width = (width + sight_range - 1) // sight_range
-        virtual_height = (height + sight_range - 1) // sight_range
+        virtual_width = (width + sight_range-1) // sight_range
+        virtual_height = (height + sight_range-1) // sight_range
 
         if width >= height:
             yield from GilbertCurve.generate2d(0, 0, virtual_width, 0, 0, virtual_height)
@@ -177,6 +232,7 @@ class GilbertCurve:
             return path[closest_point_index:] + path[:closest_point_index]
 
 if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24,(10,10), 4)
+    jorge = GilbertCurve.get_curve(48,24, 3, False)
     for jorginho in jorge:
         print(tuple(jorginho))
+    print(len(jorge))

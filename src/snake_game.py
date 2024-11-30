@@ -8,6 +8,7 @@
 from src.search.search_domain import SearchDomain
 from consts import Tiles
 import time
+import datetime
 
 DIRECTIONS = {
     "NORTH": [0, -1],
@@ -17,14 +18,19 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, width, height, internal_walls, dead_ends):
+    def __init__(self, logger, width, height, internal_walls, dead_ends):
+        self.logger = logger
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
         self.dead_ends = dead_ends
     
     def is_perfect_effects(self, state):
-        return (state["range"] >= 4 and state["traverse"]) and not self._has_n_super_observed(state, 7) and not state["step"] > 2700
+        # TODO: study this function
+        return (
+            state["range"] >= 3 
+            # and state["traverse"]
+            ) and not self._has_n_super_observed(state, 8) and not state["step"] > 2900
     
     def _has_n_super_observed(self, state, n):
         return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
@@ -57,7 +63,7 @@ class SnakeGame(SearchDomain):
                 _actlist.append(action)
         return _actlist 
 
-    def result(self, state, action): # Given a state and an action, what is the next state?
+    def result(self, state, action, goals): # Given a state and an action, what is the next state?
         body = state["body"]
         vector = DIRECTIONS[action]
         new_head = [(body[0][0] + vector[0]) % self.width, (body[0][1] + vector[1]) % self.height]
@@ -65,39 +71,23 @@ class SnakeGame(SearchDomain):
         new_body = [new_head] + body[:-1]
 
         sight_range = state["range"]
-        cells_mapping = state["cells_mapping"]
-        
-        cells_mapping = self.update_cells_mapping(body[0], cells_mapping, sight_range)
+                
+        traverse = state["traverse"]
+        visited_goals = state["visited_goals"].copy()
+        for goal in goals:
+            if self.is_goal_visited(new_head, goal):
+                if goal.goal_type == "super":
+                    traverse = False # worst case scenario
+                visited_goals.add(tuple(goal.position))
 
         return {
                 "body": new_body,
                 "range": state["range"],
-                "traverse": state["traverse"],
+                "traverse": traverse,
                 "observed_objects": state["observed_objects"],
                 "step": state["step"] + 1,
-                "cells_mapping": cells_mapping
+                "visited_goals": visited_goals
                 }
-    
-    def update_cells_mapping(self, head, cells_mapping, sight_range):
-        for x in range(-sight_range, sight_range + 1):
-            for y in range(-sight_range, sight_range + 1):
-                if x + y > sight_range:
-                    continue
-                x_new = (head[0] + x) % self.width
-                y_new = (head[1] + y) % self.height
-                seen, timestamp = cells_mapping[(x_new, y_new)]
-                cells_mapping[(x_new, y_new)] = (seen + 1, time.time())
-        
-        cells_mapping = self.expire_cells_mapping(cells_mapping, sight_range)
-        return cells_mapping
-    
-    def expire_cells_mapping(self, cells_mapping, sight_range):
-        duration = 30 / sight_range
-
-        for position, (seen, timestamp) in cells_mapping.copy().items():
-            if timestamp is not None and time.time() - timestamp > duration:
-                cells_mapping[position] = (0, None)
-        return cells_mapping
 
     def cost(self, state, action):
         return 1
@@ -122,49 +112,67 @@ class SnakeGame(SearchDomain):
 
         return obstacle_count
     
-    def heuristic(self, state, goal_state):
+    def heuristic(self, state, goals):        
         head = state["body"][0]
         traverse = state["traverse"]
-        cells_mapping = state["cells_mapping"]
-        # Internal walls are not considered
-        total_value = 0
+        visited_goals = state.get("visited_goals") # check if this is correct
         
-        ## Manhattan distance
-        dx_no_crossing_walls = abs(head[0] - goal_state[0])
-        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
-
-        dy_no_crossing_walls = abs(head[1] - goal_state[1])
-        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
-
-        total_value = dx + dy
+        heuristic_value = 0    
+        for goal in goals: # TODO: change this to consider all goals   
+            if tuple(goal.position) in visited_goals or self.is_goal_visited(head, goal):
+                # print("\33[33mGoal already visited\33[0m")
+                continue
+            
+            goal_position = goal.position
+            goal_priority = goal.priority
         
-        ## Include wall density in heuristic
-        obstacle_count = self.count_obstacles_between(
-            head, 
-            goal_state, 
-            state, 
-            body_weight=3, 
-            walls_weight=1
-        )
+            ## Manhattan distance (not counting walls)
+            dx_no_crossing_walls = abs(head[0] - goal_position[0])
+            dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
-        total_value += obstacle_count
+            dy_no_crossing_walls = abs(head[1] - goal_position[1])
+            dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+            distance = dx + dy 
+
+            ## Include wall density in heuristic
+            obstacle_count = self.count_obstacles_between(
+                head, 
+                goal_position, 
+                state, 
+                body_weight=3,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
+                walls_weight=1  
+            )
+            distance += obstacle_count
+
+            heuristic_value += distance * goal_priority
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            total_value += 20
-
-        ## Include cells exploration in heuristic
-        unseen = 0
-        for x in range(self.width):
-            for y in range(self.height):
-                seen, _ = cells_mapping[(x, y)]
-                if seen == 0:
-                    unseen += 1
-
-        total_value += int(unseen / state["range"]) # TODO: change this...
+            heuristic_value += 50
         
-        return total_value
+        # print("heuristic_value: ", heuristic_value)
+        
+        return heuristic_value
 
-    def satisfies(self, state, goal_state):
-        head = state["body"][0]
-        return head == goal_state
+    def satisfies(self, state, goal):
+        # TODO: add logic for different types of goals
+        # e.g.: if the goal is of type explore, check if we have passed through the nearby position (maybe with some range defined in the goal)
+        # e.g.: if the goal is of type eat, check if we have passed through the exact position
+        return tuple(goal.position) in state["visited_goals"]
 
+    def is_goal_visited(self, head, goal): 
+        visited_range = goal.visited_range
+        goal_position = goal.position
+        
+        dx_no_crossing_walls = abs(head[0] - goal_position[0])
+        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
+
+        dy_no_crossing_walls = abs(head[1] - goal_position[1])
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
+
+        return dx <= visited_range and dy <= visited_range
+
+
+    def is_goal_available(self, goal):
+        return datetime.datetime.now() >= goal.max_time
+    

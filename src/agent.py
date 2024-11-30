@@ -20,6 +20,7 @@ import sys
 from src.search.search_problem import SearchProblem
 from src.search.search_tree import SearchTree
 from src.snake_game import SnakeGame
+from src.goal import Goal
 
 ## Mapping & Exploration
 from src.matrix_operations import MatrixOperations
@@ -46,13 +47,14 @@ class Agent:
     def __init__(self, server_address, agent_name):
         
         ## Utils
-        self.logger = Logger(f"[{agent_name}]", f"logs/{agent_name}.log")
+        print(f"Agent: {agent_name}")
+        self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.log.setLevel(MAPPING_LEVEL)
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.log.setLevel(logging.CRITICAL)
+        # self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -65,9 +67,10 @@ class Agent:
         self.domain = None
         
         ## Action controller
+        self.ts = None
         self.actions_plan = []
         self.action = None
-        self.current_goal = None
+        self.current_goals = []
         self.perfect_effects = False
         
     
@@ -100,12 +103,16 @@ class Agent:
         self.timeout = map_info["timeout"]
         
         self.domain = SnakeGame(
+            logger=self.logger,
             width=map_info["size"][0], 
             height=map_info["size"][1], 
             internal_walls=MatrixOperations.find_ones(map_info['map']),
             dead_ends=MatrixOperations.find_dead_ends(map_info['map'])
         )        
-        self.mapping = Mapping(domain=self.domain, logger=self.logger)
+        self.mapping = Mapping(
+            logger=self.logger,
+            domain=self.domain
+        )
         
     async def play(self):
         """Main loop of the agent, where the game is played"""
@@ -125,7 +132,7 @@ class Agent:
                 await self.act()
                 ## ------------------
                 
-                self.logger.debug(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+                self.logger.info(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
             except websockets.exceptions.ConnectionClosedOK:
                 self.logger.warning("Server has cleanly disconnected us")      
                 sys.exit(0)            
@@ -137,7 +144,7 @@ class Agent:
         self.perfect_effects = self.domain.is_perfect_effects(state)
         
         ## Update the mapping
-        self.mapping.update(state)
+        self.mapping.update(state, self.perfect_effects, self.current_goals)
     
     # ------- Act --------
 
@@ -148,7 +155,7 @@ class Agent:
         if self._action_not_possible():
             # Big problem, because the agent is trying to do something that is not possible
             # Can happen if the sync between the agent and the server is not perfect
-            # TODO: handle this situation
+            # TODO: understand why this is happening. Maybe is masking some bigger problem
             self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
             self.action = self._get_fast_action(warning=True)
         
@@ -160,108 +167,158 @@ class Agent:
     # ------ Think -------
     
     def think(self, time_limit):
-        ## Follow the action plan (nothing new observed)            
-        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goal["strategy"]):
+        ## Follow the action plain (nothing new observed)            
+        if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goals):
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
-        solution_is_valid = False
+        self.action = None        
         
-        while not solution_is_valid:
-            
-            ## Find a new goal
-            self.current_goal = self._find_goal()
-            self.logger.info(f"New goal {self.current_goal}")
-            
-            ## Create search structures
-            self.problem = SearchProblem(self.domain, initial=self.mapping.state, goal=self.current_goal["position"])
-            self.tree = SearchTree(self.problem)
-            
-            ## Search for the solution
-            try: 
-                solution = self.tree.search(time_limit=time_limit)
-            except TimeLimitExceeded as e:
-                self.logger.warning(e.args[0])
-                self.action = self._get_fast_action(warning=True)
-                return
-            
-            ## No solution found
-            if not solution:
-                break
+        ## Find a new goal
+        self.current_goals = self._find_goals() # including the future goals
+        self.logger.info(f"New goals {[goal.position for goal in self.current_goals]}")
         
-            ## Save the solution as a plan of actions
-            self.actions_plan = self.tree.inverse_plan
-            
-            ## Check if the solution is valid
-            if self.current_goal["strategy"] == "super":
-                solution[-1]["traverse"] = False # worst case scenario
-
-            # TODO: check this
-            prox_point=list(self.mapping.peek_next_exploration())
-            if not prox_point:
-                self.logger.critical("NAO TEM PONTO: = null")
-                sys.exit(1)
-            self.problem = SearchProblem(self.domain, initial=solution[-1], goal=prox_point)
-            self.tree = SearchTree(self.problem)
-            
+        ## Search for the solution
+        self.actions_plan = None
+        
+        # Create a temporary search tree
+        temp_tree = None
+        temp_goals = self.current_goals[:]
+        temp_action_plan = None
+        temp_best_solution = None
+        temp_best_solution_goals = None
+        
+        # Try to find an action plan for the current goals
+        while len(temp_goals) > 0 and self.actions_plan == None:
+            current_time = datetime.now()
             try:
-                solution = self.tree.search(time_limit=time_limit)
+                ## Search structure
+                self.problem = SearchProblem(
+                    domain=self.domain, 
+                    initial=self.mapping.state, 
+                    goals=temp_goals
+                )
+                temp_tree = SearchTree(self.problem)
+                
+                self.logger.debug(f"Searching {self.mapping.state["body"][0]} -> {temp_goals[0]}, ...")
+                
+                ## Search for the given goals
+                self.actions_plan = temp_tree.search(
+                    time_limit=min(datetime.now() + timedelta(seconds=temp_goals[0].max_time), time_limit)
+                )
+
+                if not self.actions_plan or len(self.actions_plan) == 0:
+                    self.logger.warning(f"Full search failed! {temp_goals[0]} {self.actions_plan}")
+                    temp_goals.pop(0)
+                    self.actions_plan = None
+                else:
+                    self.logger.info(f"Done! {self.mapping.state["body"][0]} -> {temp_goals[0]} in {(datetime.now() - current_time).total_seconds()}s")
+                
+                
             except TimeLimitExceeded as e:
                 self.logger.warning(e.args[0])
-                self.action = self._get_fast_action(warning=True)
+                self.logger.debug(f"Elapsed time: {(datetime.now() - current_time).total_seconds()}s")
+                
+                ## Check max execution time
+                if datetime.now() > time_limit:
+                    break
+                
+                # Store a not perfect solution
+                if not temp_action_plan or temp_best_solution["total_cost"] > temp_tree.best_solution["total_cost"]:
+                    temp_best_solution = temp_tree.best_solution
+                    temp_best_solution_goals = temp_goals[:]
+                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["node"])
+                
+                temp_goals.pop(0)
+        
+        ## If no solution found. Get not perfect solution
+        if not self.actions_plan or len(self.actions_plan) == 0:
+            if not temp_action_plan or len(temp_best_solution_goals) == 0:
+                self.logger.info("No solution found!")
                 return
             
-            if not solution:
-                self.logger.warning("Solution is not valid!")
-                self.mapping.ignore_goal(self.current_goal["position"])
-                continue
+            for goal in self.current_goals:
+                if goal not in temp_best_solution_goals:
+                    self.logger.info(f"Goal {goal} ignored")
+                    self.mapping.ignore_goal(goal.position)
                 
-            solution_is_valid = True # is possible to reach the goal and return to the current position
+            self.current_goals = temp_best_solution_goals[:]
             
-        self.action = self.actions_plan.pop() if len(self.actions_plan) > 0 else self._get_fast_action(warning=True)
+            print("--------------", temp_action_plan)
+            self.actions_plan = [temp_action_plan.pop()] # first action for a not perfect solution
+            print("--------------", self.actions_plan)
         
-        self.logger.debug(f"Actions plan founded! avg_branching: {self.tree.avg_branching}")
+        self.action = self.actions_plan.pop()
+            
 
-    def _find_goal(self, ):
+    def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
-        new_goal = {}
+        new_goal = Goal(None, None, None, None, None)
+        force_traverse_disabled = False
         
         if self.mapping.observed(Tiles.FOOD):
-            new_goal["strategy"] = "food"
-            new_goal["position"] = self.mapping.closest_object(Tiles.FOOD)
+            new_goal.goal_type = "food"
+            new_goal.max_time = 0.07
+            new_goal.visited_range = 0
+            new_goal.priority = 10
+            new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
-            print(f"\33[33mSuper observed: {self.mapping.observed_objects} {self.perfect_effects} {self.mapping.state["traverse"]} {self.mapping.state["range"]}\33[0m")
-            new_goal["strategy"] = "super"
-            new_goal["position"] = self.mapping.closest_object(Tiles.SUPER)
+            new_goal.goal_type = "super"
+            new_goal.max_time = 0.07
+            new_goal.visited_range = 0
+            new_goal.priority = 10
+            new_goal.position = self.mapping.closest_object(Tiles.SUPER)
+            force_traverse_disabled = True # worst case scenario
             
         else:
-            new_goal["strategy"] = "exploration"
-            new_goal["position"] = self.mapping.next_exploration()
+            new_goal.goal_type = "exploration"
+            new_goal.max_time = 0.07
+            new_goal.visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
+            new_goal.priority = 10
+            new_goal.position = self.mapping.next_exploration()
         
-        return new_goal
+        ## Create the list with future goals
+        goals = [new_goal]
+
+        future_goals = 5
+        future_priority = 1
+        future_range = 1
+        for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
+            future_goal = Goal(
+                goal_type="exploration",
+                max_time=0.02, # TODO: change this
+                visited_range=future_range,
+                priority=future_priority,
+                position=future_position
+            )
+            future_range += 2
+            future_priority -= 0.1
+            
+            goals.append(future_goal)
+                
+        return goals
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
         self.actions_plan = []
-        self.mapping.ignore_goal(self.current_goal["position"])
+        self.mapping.ignore_goal(self.current_goals[0].position)
         
         if warning:
             self.logger.critical("Fast action!")
 
-        # If there are no actions available, return None
+        ## If there are no actions available, return None
         if self.domain.actions(self.mapping.state) == []:
-            self.logger.warning("No actions available!")
+            self.logger.warning("No actions available!") # you're dead ;(
             return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
 
         ## Use heuristics to choose the best action
-        goal = self.current_goal["position"]
         min_heuristic = None
         for action in self.domain.actions(self.mapping.state):
-            next_state = self.domain.result(self.mapping.state, action)
-            heuristic = self.domain.heuristic(next_state, goal)
+            next_state = self.domain.result(self.mapping.state, action, self.current_goals)
+            heuristic = self.domain.heuristic(next_state, self.current_goals) # change this!
             if min_heuristic is None or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 best_action = action

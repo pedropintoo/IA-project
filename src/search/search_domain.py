@@ -20,9 +20,9 @@ class SearchDomain(ABC):
     def actions(self, state):
         pass
 
-    # Result of an action in a state: next state.
+    # Result of an action in a state: next state. (since we are using multiple goals, we need to change state depending on progress)
     @abstractmethod
-    def result(self, state, action):
+    def result(self, state, action, goals):
         pass
 
     # Cost of an action in a state
@@ -32,10 +32,16 @@ class SearchDomain(ABC):
 
     # Estimated cost: one state to another
     @abstractmethod
-    def heuristic(self, state, goal):
+    def heuristic(self, state, goals):
         pass
 
     # Test if the given "goal" is satisfied in "state"
     @abstractmethod
     def satisfies(self, state, goal):
         pass
+
+    # Test if the given "goal" was visited by the "head"
+    @abstractmethod
+    def is_goal_visited(self, head, goal):
+        pass
+    
