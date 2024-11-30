@@ -55,7 +55,7 @@ class Agent:
         # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.disable()
+        #self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name

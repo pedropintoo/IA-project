@@ -13,11 +13,12 @@ class ExplorationPath:
         self.exploration_generations_cache = {}
         self.last_given_point = None
 
-    def generate_exploration_path(self, body, sight_range, exploration_map, traverse, exploration_path=None):
-        head = body[0]
-
-        if exploration_path is None:
+    def generate_exploration_path(self, head, sight_range, exploration_map, traverse, peek):
+        
+        if not peek:
             exploration_path = self.exploration_path
+        else:
+            exploration_path = []
      
         if self.exploration_generations_cache.get(sight_range) is None:
             new_exploration_path = GilbertCurve.get_curve(self.width, self.height, sight_range, traverse)
@@ -26,12 +27,15 @@ class ExplorationPath:
             new_exploration_path = self.exploration_generations_cache[sight_range]
 
         if len(exploration_path) == 0:
-            target = self.find_best_target(head, new_exploration_path, exploration_map)
+            target = self.find_best_target(head, new_exploration_path, exploration_map, traverse, peek, sight_range)
         else:
             target = exploration_path.pop(-1)
         
-        exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
-        
+        if not peek:
+            self.exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+        else:
+            return GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+    
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
@@ -40,34 +44,34 @@ class ExplorationPath:
             self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            self.generate_exploration_path(body, sight_range, exploration_map, traverse)
+            self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
         limit_iterations = 10
         while self.exploration_path:
-            if len(self.exploration_path) < 1 or limit_iterations <= 0:
-                self.generate_exploration_path(body, sight_range, exploration_map, traverse)
+            
+            if len(self.exploration_path) < exploration_length_threshold or limit_iterations <= 0:
+                self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
             
             point = list(self.exploration_path.pop(0))
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
-            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and (not is_ignored_goal(point) or limit_iterations <= 0):
+            if self.is_valid_point(point, body, traverse, is_ignored_goal, average_seen_density, exploration_point_seen_threshold) or limit_iterations <= 0:
                 self.last_given_point = point
                 return point
-            
-            limit_iterations -= 1 # Avoid infinite loop
-        
-        print("CORREU MAL:............................................")
-            
 
-    def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points, is_ignored_goal):
+        print("EXPLORATION POINT IS NONE")            
+
+    def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
-        exploration_path_to_peek = self.exploration_path.copy()
+        sight_range = 2
+        exploration_path_to_peek = self.generate_exploration_path(goal_position, sight_range, exploration_map, traverse, True)
 
         limit_iterations = 10
         while len(points_to_return) < n_points:
+            
             if len(exploration_path_to_peek) < n_points or limit_iterations <= 0:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
@@ -79,6 +83,13 @@ class ExplorationPath:
             limit_iterations -= 1 # Avoid infinite loop
         
         return points_to_return
+    
+    def is_valid_point(self, point, body, traverse, is_ignored_goal, average_seen_density=None, exploration_point_seen_threshold=None):
+        if average_seen_density is None or exploration_point_seen_threshold is None:
+            return (traverse or point not in self.internal_walls) and point not in body and not is_ignored_goal(tuple(point))
+        else:
+            return (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point))
+            
     
     def calcule_average_seen_density(self, point, sight_range, exploration_map):
         count = 0
@@ -94,7 +105,7 @@ class ExplorationPath:
     def calcule_distance(self, traverse, a, b):
         dx = 0
         dy = 0
-        if b is not None:
+        if a is not None and b is not None:
             dx_no_crossing_walls = abs(a[0] - b[0])
             dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
             dy_no_crossing_walls = abs(a[1] - b[1])
@@ -104,17 +115,40 @@ class ExplorationPath:
             
 
 
-    def find_best_target(self, head, exploration_path, exploration_map):
-        best_distance = float('inf')
-        best_target = None
-        for (x, y) in exploration_path:
-            distance = math.dist((x, y), head)
-            if distance < best_distance:
-                if exploration_map[(x, y)][0] == 0:
+    def find_best_target(self, head, exploration_path, exploration_map, traverse, peek, sight_range):
+        if peek:
+            best_distance = float('inf')
+            best_target = None
+            for (x, y) in exploration_path:
+                distance = self.calcule_distance(traverse, head, (x, y))
+                if distance < best_distance:
                     best_distance = distance
                     best_target = (x, y)
-        
-        return best_target
+            return best_target
+        else:
+            max_unseen_cells = -1
+            best_distance = float('inf')
+            best_target = None
+            for (x, y) in exploration_path:
+                if exploration_map.get((x, y), [0])[0] == 0:
+                    unseen_cells_count = self.count_unseen_cells((x, y), sight_range, exploration_map)
+                    distance = self.calcule_distance(traverse, head, (x, y))
+                    if unseen_cells_count > max_unseen_cells or (unseen_cells_count == max_unseen_cells and distance < best_distance):
+                        max_unseen_cells = unseen_cells_count
+                        best_distance = distance
+                        best_target = (x, y)
+            return best_target
+
+    def count_unseen_cells(self, point, sight_range, exploration_map):
+        count = 0
+        x, y = point
+        for dx in range(-sight_range, sight_range + 1):
+            for dy in range(-sight_range, sight_range + 1):
+                if abs(dx) + abs(dy) <= sight_range:
+                    cell = (x + dx, y + dy)
+                    if exploration_map.get(cell, [0])[0] == 0:
+                        count += 1
+        return count
 
 
     def print_exploration_path(self):

@@ -77,11 +77,11 @@ class Mapping:
     def peek_next_exploration(self, n_points=1, force_traverse_disabled=False) -> list:
         return self.exploration_path.peek_exploration_point(
             self.state["body"], 
-            self.state["range"],
             self.state["traverse"] and not force_traverse_disabled, 
             self.cells_mapping,
             n_points,
-            self.is_ignored_goal
+            self.is_ignored_goal,
+            self.current_goal
         )
 
     def update(self, state, perfect_state, goals):
@@ -222,6 +222,7 @@ class Mapping:
                 closest = position
         
         self.logger.debug(f"Closest {obj_type}: {closest}")
+        self.current_goal = closest
         return list(closest)                    
         
     def update_cells_mapping(self, sight):
