@@ -240,12 +240,12 @@ class Agent:
                 return
             
             for goal in self.current_goals:
-                if goal not in temp_best_solution_goals:
+                if goal not in temp_goals:
                     self.logger.info(f"Goal {goal} ignored")
                     self.mapping.ignore_goal(goal.position)
                 
             self.current_goals = temp_best_solution_goals[:]
-            self.actions_plan = temp_action_plan
+            self.actions_plan = [temp_action_plan.pop()]
         
         self.action = self.actions_plan.pop()
             
@@ -291,8 +291,8 @@ class Agent:
         
         ## Create the list with future goals
         num_future_goals = get_num_future_goals(goals, self.mapping.state["range"])
-        future_priority = get_future_goals_priority(goals)
-        future_range = get_future_goals_range(goals, self.mapping.state["range"])
+        future_priority = get_future_goals_priority(num_future_goals)
+        future_range = get_future_goals_range(num_future_goals, self.mapping.state["range"])
         idx = 0
         for future_position in self.mapping.peek_next_exploration(num_future_goals, force_traverse_disabled):
             future_goal = Goal(

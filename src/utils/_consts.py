@@ -9,13 +9,15 @@ def get_exploration_length_threshold(sight_range):
     """
     return 20 // sight_range
 
-def get_last_exploration_distance_threshold(sign_range):
+def get_last_exploration_distance_threshold(sign_range, head, width):
     """
     This is the threshold used to reset and regenerate the exploration path.
     If the last given point in the exploration path is further than this threshold, the path will be reset and regenerated.
     Goal: So the snake always goes to the closest point in the exploration path.
     """
-    return sign_range * 3
+    if head[0] > width - sign_range * 5:
+        return float("inf")
+    return sign_range * 5
 
 def get_exploration_point_seen_threshold(sight_range):
     """
@@ -33,7 +35,24 @@ def get_exploration_point_seen_threshold(sight_range):
         return 9
     else:
         return 15
-
+    
+def get_food_seen_threshold(sight_range):
+    """
+    This is the threshold used to determine if a food is valid.
+    If the average seen density of the food is higher than this threshold, the food is not valid.
+    Goal: So the snake doesn't go to points in previously seen areas.
+    """
+    if sight_range == 2:
+        return 6
+    elif sight_range == 3:
+        return 12
+    elif sight_range == 4:
+        return 18
+    elif sight_range == 5:
+        return 27
+    else:
+        return 45
+        
 def get_duration_of_expire_cells(sight_range):
     """
     This is the duration of the cells in the exploration map.
@@ -79,24 +98,23 @@ def get_num_future_goals(goals, current_range):
     This function is used to determine the number of future goals.
     Goal: So the snake goes for the future goals.
     """
-    return len(goals) 
+    return 3 - len(goals) 
     
-def get_future_goals_priority(goals):
+def get_future_goals_priority(num_goals):
     """
     This function is used to determine the priority of the future goals.
     Goal: So the snake goes for the future goals.
     """
     inicial_range = 1
     base_decrement = 0.2
-    return [inicial_range - base_decrement * i for i in range(len(goals))]
+    return [inicial_range - base_decrement * i for i in range(num_goals)]
     
-def get_future_goals_range(goals, current_range):
+def get_future_goals_range(num_goals, current_range):
     """
     This function is used to determine the range of the future goals.
     Goal: So the snake goes for the future goals.
     """
     inicial_range = 1
     base_increment = current_range - 1
-    num_goals = len(goals)
     return [inicial_range + base_increment * i for i in range(num_goals)]
     
