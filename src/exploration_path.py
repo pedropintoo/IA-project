@@ -25,7 +25,7 @@ class ExplorationPath:
             self.exploration_generations_cache[sight_range] = new_exploration_path
         else:
             new_exploration_path = self.exploration_generations_cache[sight_range]
-
+        
         if len(exploration_path) == 0:
             target = self.find_best_target(head, new_exploration_path, exploration_map, traverse, peek, sight_range)
         else:
@@ -36,6 +36,15 @@ class ExplorationPath:
         else:
             return GilbertCurve.adjust_path_to_target(new_exploration_path, target)
     
+    def generate_exploration_path_v2(self, body, sight_range, exploration_map, traverse):
+        density_threshold = get_exploration_point_seen_threshold(sight_range)
+        
+        cluster_centers = self.cluster_unseen_cells(sight_range, density_threshold, exploration_map, traverse, body)
+
+        ordered_points = self.order_cluster_centers(cluster_centers, body[0], traverse)
+        
+        self.exploration_path = ordered_points
+
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
@@ -44,7 +53,8 @@ class ExplorationPath:
             self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+            # self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+            self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
@@ -52,7 +62,8 @@ class ExplorationPath:
         while self.exploration_path:
             
             if len(self.exploration_path) < exploration_length_threshold or limit_iterations <= 0:
-                self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+                # self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+                self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
             
             point = list(self.exploration_path.pop(0))
 
@@ -60,9 +71,7 @@ class ExplorationPath:
 
             if self.is_valid_point(point, body, traverse, is_ignored_goal, average_seen_density, exploration_point_seen_threshold) or limit_iterations <= 0:
                 self.last_given_point = point
-                return point
-
-        print("EXPLORATION POINT IS NONE")            
+                return point           
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
@@ -100,7 +109,7 @@ class ExplorationPath:
                     if (point[0] + dx, point[1] + dy) in exploration_map:
                         count += exploration_map[(point[0] + dx, point[1] + dy)][0]
                         n_points += 1
-        return count / n_points
+        return count / n_points if n_points > 0 else 0
     
     def calcule_distance(self, traverse, a, b):
         dx = 0
@@ -113,13 +122,11 @@ class ExplorationPath:
 
         return dx + dy
             
-
-
     def find_best_target(self, head, exploration_path, exploration_map, traverse, peek, sight_range):
         if peek:
             best_distance = float('inf')
             best_target = None
-            for (x, y) in exploration_path:
+            for (x, y) in exploration_path[::-1]:
                 distance = self.calcule_distance(traverse, head, (x, y))
                 if distance < best_distance:
                     best_distance = distance
@@ -129,7 +136,7 @@ class ExplorationPath:
             max_unseen_cells = -1
             best_distance = float('inf')
             best_target = None
-            for (x, y) in exploration_path:
+            for (x, y) in exploration_path[::-1]:
                 if exploration_map.get((x, y), [0])[0] == 0:
                     unseen_cells_count = self.count_unseen_cells((x, y), sight_range, exploration_map)
                     distance = self.calcule_distance(traverse, head, (x, y))
@@ -150,6 +157,46 @@ class ExplorationPath:
                         count += 1
         return count
 
+    def get_low_density_unseen_cells(self, exploration_map, density_threshold, sight_range, traverse, body):
+        unseen_cells = []
+        for (x,y), (seen_value, _) in exploration_map.items():
+            if (traverse or [x, y] not in self.internal_walls) and seen_value == 0 and [x, y] not in body:
+                density = self.calcule_average_seen_density((x, y), sight_range, exploration_map)
+                if density < density_threshold:
+                    unseen_cells.append((x, y))
+        
+        sorted_cells = sorted(
+            unseen_cells,
+            key=lambda cell: self.calcule_average_seen_density(cell, sight_range, exploration_map)
+        )
+
+        return sorted_cells
+    
+    def cluster_unseen_cells(self, sight_range, density_threshold, exploration_map, traverse, body):
+        low_density_cells = self.get_low_density_unseen_cells(exploration_map, density_threshold, sight_range, traverse, body)
+
+        cluster_centers = []
+        min_distance = 2 * sight_range * 0.8
+
+        for cell in low_density_cells:
+            if all(self.calcule_distance(traverse, cell, center) > min_distance for center in cluster_centers):
+                cluster_centers.append(cell)
+
+        return cluster_centers
+    
+    def order_cluster_centers(self, cluster_centers, start_position, traverse):
+        ordered_points = []
+        unvisited = set(cluster_centers)
+        current_position = start_position
+
+        while unvisited:
+            #TODO: Implement with traverse variable
+            next_point = min(unvisited, key=lambda p: self.calcule_distance(traverse, current_position, p))
+            ordered_points.append(next_point)
+            unvisited.remove(next_point)
+            current_position = next_point
+        
+        return ordered_points
 
     def print_exploration_path(self):
         print("EXPLORATION PATH")
@@ -276,7 +323,7 @@ class GilbertCurve:
             return path[closest_point_index:] + path[:closest_point_index]
 
 if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24, 3, False)
+    jorge = GilbertCurve.get_curve(48,24, 3, True)
     for jorginho in jorge:
         print(tuple(jorginho))
     print(len(jorge))
