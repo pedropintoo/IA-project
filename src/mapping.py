@@ -2,6 +2,7 @@ import heapq
 import random
 import time
 from collections import defaultdict
+from opponent_mapping import OpponentMapping
 from src.exploration_path import ExplorationPath
 from src.matrix_operations import MatrixOperations
 from src.goal import Goal
@@ -42,6 +43,8 @@ class Mapping:
         
         self.last_step = 0
 
+        self.opponent = OpponentMapping(logger)
+
     @property
     def ignored_goals(self):
         for goal, timestamp in self.temp_ignored_goals.copy():
@@ -80,6 +83,8 @@ class Mapping:
 
     def update(self, state, perfect_state, goals):
         self.objects_updated = False if self.last_step + 1 != state["step"] else True
+
+        self.opponent.update(state)
 
         self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state
