@@ -11,52 +11,16 @@ class OpponentMapping:
 
         # Opponent Information
         self.opponent_name = data['players'][1] if data['players'][0] == 'joao' else data['players'][0]
-        
         self.opponent_direction = random.choice(['up', 'down', 'left', 'right']) # TODO...
         self.opponent_head_position = (0, 0) # TODO...
         self.opponent_target_food = (0, 0) # TODO...
         
-        # Previous Opponent Information
         self.previous_opponent_body = [] # TODO...
 
-        # Predicted Opponent Information
         self.predicted_head_position = (0, 0) # TODO...
 
         # Number of times the agent survived to the simpleTrap
         self.simple_trap_survival = 0
-
-    def determinate_current_head_position(self, opponent_body):     
-        # Part of the snake that moves into previously unoccupied spaces (PASSAGE = 0).
-        for [x, y] in opponent_body:
-            if [x,y] not in self.previous_opponent_body:
-                # Update the previous opponent body
-                self.previous_opponent_body = opponent_body
-                return [x, y]
-
-    def determine_predicted_head_position(self, opponent_head_position, direction, target_food):
-        # If no food is nearby, assume the opponent will move straight unless forced to turn.
-        
-        if self.opponent_target_food == (0, 0):
-            # will move straight
-            if direction == 'up':
-                return [opponent_head_position[0], opponent_head_position[1] + 1]
-            elif direction == 'down':
-                return [opponent_head_position[0], opponent_head_position[1] - 1]
-            elif direction == 'left':
-                return [opponent_head_position[0] - 1, opponent_head_position[1]]
-            elif direction == 'right':
-                return [opponent_head_position[0] + 1, opponent_head_position[1]]
-        
-        # If food is nearby, assume the opponent will move towards the food.
-        else:
-            if opponent_head_position[0] < target_food[0]:
-                return [opponent_head_position[0] + 1, opponent_head_position[1]]
-            elif opponent_head_position[0] > target_food[0]:
-                return [opponent_head_position[0] - 1, opponent_head_position[1]]
-            elif opponent_head_position[1] < target_food[1]:
-                return [opponent_head_position[0], opponent_head_position[1] + 1]
-            elif opponent_head_position[1] > target_food[1]:
-                return [opponent_head_position[0], opponent_head_position[1] - 1]
 
     def update(self, data):
         
@@ -113,9 +77,16 @@ class OpponentMapping:
 
         return
     
-    def isToAttack(self, own_head_position):
+    def isToAttack(self, data):
         # Check if the opponent is in a position to be attacked.
         # The opponent can be attacked if it is moving towards the food and the food is closer to the agent than to the opponent.
+
+        # Own Information
+        own_body = data['body']
+        own_head_position = own_body[0]
+
+        # Update the opponent mapping
+        self.update(data)
 
         # Check if the opponent is moving towards the food
         if self.opponent_target_food == (0, 0):
@@ -137,7 +108,42 @@ class OpponentMapping:
             return self.simpleTrap()
         
         return self.advancedTrap()
+    
+    # Auxiliar functions
+    def determinate_current_head_position(self, opponent_body):     
+        # Part of the snake that moves into previously unoccupied spaces (PASSAGE = 0).
+        for [x, y] in opponent_body:
+            if [x,y] not in self.previous_opponent_body:
+                # Update the previous opponent body
+                self.previous_opponent_body = opponent_body
+                return [x, y]
+
+    def determine_predicted_head_position(self, opponent_head_position, direction, target_food):
+        # If no food is nearby, assume the opponent will move straight unless forced to turn.
         
+        if self.opponent_target_food == (0, 0):
+            # will move straight
+            if direction == 'up':
+                return [opponent_head_position[0], opponent_head_position[1] + 1]
+            elif direction == 'down':
+                return [opponent_head_position[0], opponent_head_position[1] - 1]
+            elif direction == 'left':
+                return [opponent_head_position[0] - 1, opponent_head_position[1]]
+            elif direction == 'right':
+                return [opponent_head_position[0] + 1, opponent_head_position[1]]
+        
+        # If food is nearby, assume the opponent will move towards the food.
+        else:
+            if opponent_head_position[0] < target_food[0]:
+                return [opponent_head_position[0] + 1, opponent_head_position[1]]
+            elif opponent_head_position[0] > target_food[0]:
+                return [opponent_head_position[0] - 1, opponent_head_position[1]]
+            elif opponent_head_position[1] < target_food[1]:
+                return [opponent_head_position[0], opponent_head_position[1] + 1]
+            elif opponent_head_position[1] > target_food[1]:
+                return [opponent_head_position[0], opponent_head_position[1] - 1]
+
+    # Traps
     def simpleTrap(self):
         # Return the two points that the agent must pass through to set a trap
         first_point = [self.opponent_target_food[0]-1, self.opponent_target_food[1]]
