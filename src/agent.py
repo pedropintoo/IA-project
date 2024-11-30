@@ -227,10 +227,9 @@ class Agent:
                     break
                 
                 # Store a not perfect solution
-                if not temp_action_plan or temp_best_solution["total_cost"] > temp_tree.best_solution["total_cost"]:
-                    temp_best_solution = temp_tree.best_solution
-                    temp_best_solution_goals = temp_goals[:]
-                    temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["node"])
+                temp_best_solution = temp_tree.best_solution
+                temp_best_solution_goals = temp_goals[:]
+                temp_action_plan = temp_tree.inverse_plan(temp_tree.best_solution["node"])
                 
                 temp_goals.pop(0)
         
@@ -246,8 +245,7 @@ class Agent:
                     self.mapping.ignore_goal(goal.position)
                 
             self.current_goals = temp_best_solution_goals[:]
-            
-            self.actions_plan = [temp_action_plan.pop()] # first action for a not perfect solution
+            self.actions_plan = temp_action_plan
         
         self.action = self.actions_plan.pop()
             
