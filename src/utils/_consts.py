@@ -12,7 +12,7 @@ def get_last_exploration_distance_threshold(sign_range):
     If the last given point in the exploration path is further than this threshold, the path will be reset and regenerated.
     Goal: So the snake always goes to the closest point in the exploration path.
     """
-    return sign_range * 3
+    return sign_range * 5#3
 
 def get_exploration_point_seen_threshold(sight_range):
     """
@@ -20,7 +20,16 @@ def get_exploration_point_seen_threshold(sight_range):
     If the average seen density of the point is higher than this threshold, the point is not valid.
     Goal: So the snake doesn't go to points in previously seen areas.
     """
-    return sight_range
+    if sight_range == 2:
+        return 4
+    elif sight_range == 3:
+        return 8
+    elif sight_range == 4:
+        return 16
+    elif sight_range == 5:
+        return 32
+    else:
+        return 64
 
 def get_duration_of_expire_cells(sight_range):
     """
@@ -29,3 +38,32 @@ def get_duration_of_expire_cells(sight_range):
     """
     return 30 / sight_range
 
+def is_perfect_effects(self, state):
+    """
+    This function is used to determine if the snake should go for the super food.
+    Goal: So the snake goes for the super food if it's required.
+    """
+    # TODO: study this function
+    
+    if state["step"] > 2900:
+        return False
+    
+    if state["range"] == 3:
+        supers_required = 8
+        
+    elif state["range"] == 4:
+        supers_required = 6
+        
+    elif state["range"] == 5:
+        supers_required = 4
+        
+    elif state["range"] == 6:
+        supers_required = 3
+        
+    else:
+        return False # range < 3
+        
+    if not state["traverse"]:
+        supers_required += 2
+        
+    return not self._has_n_super_observed(state, supers_required)

@@ -27,10 +27,26 @@ class SnakeGame(SearchDomain):
     
     def is_perfect_effects(self, state):
         # TODO: study this function
-        return (
-            state["range"] >= 3 
-            # and state["traverse"]
-            ) and not self._has_n_super_observed(state, 8) and not state["step"] > 2900
+        
+        if state["step"] > 2900:
+            return False
+        
+        if state["range"] == 3:
+            supers_required = 8
+            
+        elif state["range"] == 4:
+            supers_required = 6
+            
+        elif state["range"] == 5:
+            supers_required = 4
+            
+        else:
+            supers_required = 3
+            
+        if not state["traverse"]:
+            supers_required += 2
+            
+        return not self._has_n_super_observed(state, supers_required)
     
     def _has_n_super_observed(self, state, n):
         return len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= n
@@ -147,10 +163,26 @@ class SnakeGame(SearchDomain):
 
             heuristic_value += distance * goal_priority
         
+        ## Count how many walls or body rounded by the snake
+        rounded_obstacles = 0 
+        for x in range(-1, 2):
+            for y in range(-1, 2):
+                if (x, y) == (0, 0):
+                    continue # skip the head
+                neighbor_x = (head[0] + x) % self.width if traverse else head[0] + x
+                neighbor_y = (head[1] + y) % self.height if traverse else head[1] + y
+                if [neighbor_x, neighbor_y] in state["body"]:
+                    rounded_obstacles += 1 # at least one body part is in the neighborhood
+                if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
+                    rounded_obstacles += 1
+        
+        heuristic_value += rounded_obstacles * 3
+        
+        
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value += 50
         
-        # print("heuristic_value: ", heuristic_value)
+        print("heuristic_value: ", heuristic_value)
         
         return heuristic_value
 

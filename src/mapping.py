@@ -37,7 +37,7 @@ class Mapping:
             for y in range(self.domain.height)
         }   
          
-        self.ignored_duration = 5
+        self.ignored_duration = 10
         self.temp_ignored_goals = set() # ((x, y), observed_timestamp) 
         
         self.last_step = 0

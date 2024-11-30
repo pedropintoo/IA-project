@@ -128,7 +128,7 @@ class Agent:
                 
                 ## --- Main Logic ---
                 self.observe(state)
-                self.think(time_limit = ( self.ts + timedelta(seconds=1/(self.fps+0.5)) ))
+                self.think(time_limit = ( self.ts + timedelta(seconds=1/(self.fps+0.6)) ))
                 await self.act()
                 ## ------------------
                 
@@ -246,9 +246,7 @@ class Agent:
                 
             self.current_goals = temp_best_solution_goals[:]
             
-            print("--------------", temp_action_plan)
             self.actions_plan = [temp_action_plan.pop()] # first action for a not perfect solution
-            print("--------------", self.actions_plan)
         
         self.action = self.actions_plan.pop()
             
@@ -260,14 +258,14 @@ class Agent:
         
         if self.mapping.observed(Tiles.FOOD):
             new_goal.goal_type = "food"
-            new_goal.max_time = 0.07
+            new_goal.max_time = 0.05
             new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.FOOD)
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
             new_goal.goal_type = "super"
-            new_goal.max_time = 0.07
+            new_goal.max_time = 0.05
             new_goal.visited_range = 0
             new_goal.priority = 10
             new_goal.position = self.mapping.closest_object(Tiles.SUPER)
@@ -275,7 +273,7 @@ class Agent:
             
         else:
             new_goal.goal_type = "exploration"
-            new_goal.max_time = 0.04
+            new_goal.max_time = 0.05
             new_goal.visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
             new_goal.priority = 10
             new_goal.position = self.mapping.next_exploration()
@@ -283,13 +281,13 @@ class Agent:
         ## Create the list with future goals
         goals = [new_goal]
 
-        future_goals = 5
+        future_goals = 0
         future_priority = 1
-        future_range = 1
+        future_range = 2
         for future_position in self.mapping.peek_next_exploration(future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
-                max_time=0.02, # TODO: change this
+                max_time=0.04, # TODO: change this
                 visited_range=future_range,
                 priority=future_priority,
                 position=future_position
