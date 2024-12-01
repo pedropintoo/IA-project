@@ -20,8 +20,9 @@ class OpponentMapping:
 
         # Opponent Information
         self.opponent_name = ''
-        self.opponent_direction = 'up' # TODO...
+        self.opponent_direction = 0 # TODO...
         self.opponent_head_position = 0 # TODO...
+        self.previous_head_position = 0 # TODO...
         self.opponent_target_food = 0 # TODO...
         self.previous_opponent_body = [] # TODO...
         self.predicted_head_position = 0 # TODO...
@@ -50,6 +51,7 @@ class OpponentMapping:
         self.own_traverse = state['traverse']
 
         our_sight_state = state['sight']
+        self.sight_state = []
         
         # Check if the opponent or foods are visible
         opponent_body = []
@@ -70,59 +72,69 @@ class OpponentMapping:
         # If the opponent is not visible, return
         if len(opponent_body) == 0:
             self.logger.critical('OPPONENT NOT VISIBLE')
+            self.opponent_head_position = 0
+            self.previous_head_position = 0
+            self.predicted_head_position = 0
+            self.previous_sight_state = self.sight_state
             return
 
-        self.logger.info(f'OPPONENT BODY: {opponent_body}')
         self.logger.info('OPPONENT VISIBLE')
 
         # Update the opponent head position
         self.opponent_head_position = self.determinate_current_head_position()
-        self.previous_sight_state = self.sight_state
+
+        if self.predicted_head_position != 0:
+            if self.opponent_head_position != self.predicted_head_position:
+                self.logger.critical(f"PREDICTION ERROR: opponent_head_position = {self.opponent_head_position} != predicted_head_position = {self.predicted_head_position}")
+            else:
+                self.logger.info(f"PREDICTION SUCCESS: opponent_head_position = {self.opponent_head_position} == predicted_head_position = {self.predicted_head_position}")
         
         # Update the opponent mapping only if we are sure about the opponent head position
         if self.opponent_head_position == 0:
+            self.previous_head_position = 0
+            self.predicted_head_position = 0
             return 
         
         if len(targets_food) == 0:
-            self.logger.info('NO TARGETS FOOD')
             self.opponent_target_food = 0
-            return
-        
-        # Update the target food position
-        self.logger.info(f'TARGETS FOOD: {targets_food}')
-        previous_distance = self.width + self.height
+        else:
+            # Update the target food position
+            previous_distance = self.width + self.height
 
-        # Find the closest food to the opponent head position considering self.own_traverse
-        for food in targets_food:
-            opponent_dx_no_crossing_walls = abs(food[0] - self.opponent_head_position[0])
-            opponent_dx = min(opponent_dx_no_crossing_walls, self.width - opponent_dx_no_crossing_walls) if self.opponent_traverse else opponent_dx_no_crossing_walls
-            opponent_dy_no_crossing_walls = abs(food[1] - self.opponent_head_position[1])
-            opponent_dy = min(opponent_dy_no_crossing_walls, self.height - opponent_dy_no_crossing_walls) if self.opponent_traverse else opponent_dy_no_crossing_walls
-            food_distance = opponent_dx + opponent_dy
+            # Find the closest food to the opponent head position considering self.own_traverse
+            for food in targets_food:
+                opponent_dx_no_crossing_walls = abs(food[0] - self.opponent_head_position[0])
+                opponent_dx = min(opponent_dx_no_crossing_walls, self.width - opponent_dx_no_crossing_walls) if self.opponent_traverse else opponent_dx_no_crossing_walls
+                opponent_dy_no_crossing_walls = abs(food[1] - self.opponent_head_position[1])
+                opponent_dy = min(opponent_dy_no_crossing_walls, self.height - opponent_dy_no_crossing_walls) if self.opponent_traverse else opponent_dy_no_crossing_walls
+                food_distance = opponent_dx + opponent_dy
 
-            # food_distance = abs(food[0] - self.opponent_head_position[0]) + abs(food[1] - self.opponent_head_position[1])
-            if food_distance < previous_distance:
-                self.opponent_target_food = food
-                previous_distance = food_distance
+                # food_distance = abs(food[0] - self.opponent_head_position[0]) + abs(food[1] - self.opponent_head_position[1])
+                if food_distance < previous_distance:
+                    self.opponent_target_food = food
+                    previous_distance = food_distance
 
-        self.logger.critical(f'TARGET FOOD: {self.opponent_target_food}')
+            self.logger.critical(f'TARGET FOOD: {self.opponent_target_food}')
     
-        # Update the predicted head position
+        # Update the predicted head position # TODO... preciso primeiro estimar a direção do oponente
+        self.opponent_direction = self.determine_opponent_direction(self.previous_head_position, self.opponent_head_position)
         self.predicted_head_position = self.determine_predicted_head_position(self.opponent_head_position, self.opponent_direction, self.opponent_target_food)
-
-        # Update the opponent direction: can be inferred from the head position and the predicted head position
-        if self.predicted_head_position[0] > self.opponent_head_position[0]:
-            self.opponent_direction = 'right'
-        elif self.predicted_head_position[0] < self.opponent_head_position[0]:
-            self.opponent_direction = 'left'
-        elif self.predicted_head_position[1] > self.opponent_head_position[1]:
-            self.opponent_direction = 'down'
-        elif self.predicted_head_position[1] < self.opponent_head_position[1]:
-            self.opponent_direction = 'up'
         
+        self.previous_head_position = self.opponent_head_position
+        self.logger.info(f'Previous head position assigned the current head position: {self.previous_head_position}')
         self.opponent_head_position = self.predicted_head_position
+        self.logger.info(f'Next (predicted) head position: {self.predicted_head_position}')
 
-    def is_to_attack(self):
+    def is_to_attack_opponent(self):
+        # return self.opponent_head_position if it is not 0 
+        self.logger.critical(f'IS TO ATTACK OPPONENT?')
+        if self.opponent_head_position != 0 and self.opponent_direction != 0:
+            return True
+        else:
+            self.logger.critical('NO OPPONENT HEAD POSITION')
+            return False
+        
+    def is_to_attack_food(self):
         # Check if the opponent is not moving towards the food 
         if self.opponent_target_food == 0:
             return False
@@ -164,7 +176,28 @@ class OpponentMapping:
         else:
             return False
         
-    def attack(self):
+    def attack_opponent(self):
+        # Predict the future position of the opponent in five steps from the current position if the opponent is moving straight using self.opponent_direction
+
+        i = 0
+        opponent_future_position = self.opponent_head_position
+        while i < 5:
+            if self.opponent_direction == 'up':
+                opponent_future_position = self.go_up(opponent_future_position)
+            elif self.opponent_direction == 'down':
+                opponent_future_position = self.go_down(opponent_future_position)
+            elif self.opponent_direction == 'left':
+                opponent_future_position = self.go_left(opponent_future_position)
+            elif self.opponent_direction == 'right':
+                opponent_future_position = self.go_right(opponent_future_position)
+            i += 1                                        
+
+        self.logger.info(f"Opponent Direction: {self.opponent_direction} ; Opponent Head Position: {self.opponent_head_position}")
+        self.logger.info(f'Colliding with opponent in position : {opponent_future_position}')
+        goal = Goal(goal_type='opponent', max_time=0.07, visited_range=0, priority=10, position=opponent_future_position, num_required_goals=1)
+        return [goal]
+
+    def attack_food(self):
         # This function returns the points that the agent must pass through to set a trap for the opponent.
         # If the agent survived three times to the simpleTrap we conclude that he has algorithms to deal with dead ends and we try to do a more advanced trap, advancedTrap.
         if self.simple_trap_survival < 3:
@@ -188,38 +221,72 @@ class OpponentMapping:
         # Part of the snake that moves into previously unoccupied spaces (PASSAGE = 0).
         # Compare the self.sight_state with the previous_sight_state to determine the head position
         # If in the same position (x,y) the value is different than the previous value and is 4, then the head is in that position
+        if len(self.previous_sight_state) == 0:
+            self.logger.info('we dont have previous sight state')
+            return 0
 
         for [x, y, value] in self.sight_state:
             for [x_previous, y_previous, value_previous] in self.previous_sight_state:
                 if x == x_previous and y == y_previous:
                     if value == 4 and value_previous != 4:
                         self.logger.info(f'Head position: [{x}, {y}]')
+                        self.previous_sight_state = self.sight_state
                         return [x, y]
         return 0
 
     def determine_predicted_head_position(self, opponent_head_position, direction, target_food):
         # If no food is nearby, assume the opponent will move straight unless forced to turn.
-        if self.opponent_target_food == 0:
-            # will move straight
-            if direction == 'up':
-                return opponent_head_position + UP
-            elif direction == 'down':
-                return opponent_head_position + DOWN
-            elif direction == 'left':
-                return opponent_head_position + LEFT
-            elif direction == 'right':
-                return opponent_head_position + RIGHT
+        self.logger.info(f'Opponent Direction: {direction}')
+        if direction == 0:
+            return 0
+        # if self.opponent_target_food == 0:
+        
+        # will move straight
+        if direction == 'up':
+            return self.go_up(opponent_head_position)
+        elif direction == 'down':
+            return self.go_down(opponent_head_position)
+        elif direction == 'left':
+            return self.go_left(opponent_head_position)
+        elif direction == 'right':
+            return self.go_right(opponent_head_position)
         
         # If food is nearby, assume the opponent will move towards the food.
-        else:
-            if opponent_head_position[0] < target_food[0]:
-                return opponent_head_position + RIGHT
-            elif opponent_head_position[0] > target_food[0]:
-                return opponent_head_position + LEFT
-            elif opponent_head_position[1] < target_food[1]:
-                return opponent_head_position + DOWN
-            elif opponent_head_position[1] > target_food[1]:
-                return opponent_head_position + UP
+        # else:
+            # if opponent_head_position[0] < target_food[0]:
+                # return self.go_right(opponent_head_position)
+            # elif opponent_head_position[0] > target_food[0]:
+                # return self.go_left(opponent_head_position)
+            # elif opponent_head_position[1] < target_food[1]:
+                # return self.go_down(opponent_head_position)
+            # elif opponent_head_position[1] > target_food[1]:
+                # return self.go_up(opponent_head_position)
+
+    def determine_opponent_direction(self, previous_head_position, current_head_position):
+        # Determine the direction of the opponent
+        self.logger.info(f'Previous head position: {previous_head_position} ; Current head position: {current_head_position}')
+        if previous_head_position == 0:
+            return 0
+        if current_head_position[0] > previous_head_position[0]:
+            return 'right'
+        elif current_head_position[0] < previous_head_position[0]:
+            return 'left'
+        elif current_head_position[1] > previous_head_position[1]:
+            return 'down'
+        elif current_head_position[1] < previous_head_position[1]:
+            return 'up'
+
+    def go_up(self, position):
+        return [(position[0] + UP[0]) % self.width, (position[1] + UP[1]) % self.height]
+
+    def go_down(self, position):
+        return [(position[0] + DOWN[0]) % self.width, (position[1] + DOWN[1]) % self.height]
+    
+    def go_left(self, position):
+        return [(position[0] + LEFT[0]) % self.width, (position[1] + LEFT[1]) % self.height]
+    
+    def go_right(self, position):
+        return [(position[0] + RIGHT[0]) % self.width, (position[1] + RIGHT[1]) % self.height]
 
     # Traps
     def simpleTrap(self):

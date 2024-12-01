@@ -1,4 +1,4 @@
-c"""Example client."""
+"""Example client."""
 import asyncio
 import getpass
 import json

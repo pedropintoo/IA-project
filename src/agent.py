@@ -52,7 +52,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.disable()
@@ -255,14 +255,9 @@ class Agent:
         goals = []
         force_traverse_disabled = False
         
-        if self.mapping.opponent.is_to_attack():
-            for attack_position in self.mapping.opponent.attack():
-                goals.append(Goal(None, None, None, None, None))
-                goals[-1].goal_type = "attack"
-                goals[-1].max_time = 0.07
-                goals[-1].visited_range = 0
-                goals[-1].priority = 10
-                goals[-1].position = attack_position
+        if self.mapping.opponent.is_to_attack_opponent():
+            for goal in self.mapping.opponent.attack_opponent():
+                goals.append(goal)
 
         elif self.mapping.observed(Tiles.FOOD):
             goals.append(Goal(None, None, None, None, None))
