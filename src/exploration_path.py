@@ -53,8 +53,8 @@ class ExplorationPath:
             self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            # self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
-            self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
+            self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+            #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
@@ -62,8 +62,8 @@ class ExplorationPath:
         while self.exploration_path:
             
             if len(self.exploration_path) < exploration_length_threshold or limit_iterations <= 0:
-                # self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
-                self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
+                self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+                #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
             
             point = list(self.exploration_path.pop(0))
 
@@ -77,7 +77,7 @@ class ExplorationPath:
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
-        sight_range = 2
+        sight_range = 3
         exploration_path_to_peek = self.generate_exploration_path(goal_position, sight_range, exploration_map, traverse, True)
 
         limit_iterations = 10

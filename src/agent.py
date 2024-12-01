@@ -52,7 +52,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         #self.logger.disable()
@@ -72,6 +72,7 @@ class Agent:
         self.actions_plan = []
         self.action = None
         self.current_goals = []
+        self.future_goals = []
         self.perfect_effects = False
         
     
@@ -146,7 +147,7 @@ class Agent:
         self.perfect_effects = self.domain.is_perfect_effects(state)
         
         ## Update the mapping
-        self.mapping.update(state, self.perfect_effects, self.current_goals)
+        self.mapping.update(state, self.perfect_effects, self.current_goals + self.future_goals)
     
     # ------- Act --------
 
@@ -214,6 +215,8 @@ class Agent:
                 future_goals.pop(0)
             else:
                 self.logger.info(f"Safe path to {future_goals[0]} found!")
+        
+        self.future_goals = future_goals
         
         ## If no safe path found, get a fast action
         if len(safe_path) == 0:
@@ -321,6 +324,8 @@ class Agent:
             goals[0].visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
             goals[0].priority = 10
             goals[0].position = self.mapping.next_exploration()
+        
+        self.mapping.current_goal = goals[0].position
         
         return goals, force_traverse_disabled
 

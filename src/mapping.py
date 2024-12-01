@@ -86,7 +86,7 @@ class Mapping:
 
     def update(self, state, perfect_state, goals):
         self.objects_updated = False if self.last_step + 1 != state["step"] else True
-
+        
         self.opponent.update(state)
 
         head = state["body"][0]
@@ -222,7 +222,7 @@ class Mapping:
                 closest = position
         
         self.logger.debug(f"Closest {obj_type}: {closest}")
-        self.current_goal = closest
+        
         return list(closest)                    
         
     def update_cells_mapping(self, sight):
