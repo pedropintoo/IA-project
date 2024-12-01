@@ -7,7 +7,7 @@ def get_exploration_length_threshold(sight_range):
     If the exploration path is shorter than this threshold, the path will be regenerated.
     Goal: So the exploration path is never empty.
     """
-    return 20 // sight_range
+    return 25 // sight_range
 
 def get_last_exploration_distance_threshold(sign_range, head, width):
     """

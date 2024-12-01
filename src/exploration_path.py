@@ -48,7 +48,7 @@ class ExplorationPath:
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
-        
+
         if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
             self.exploration_path = []
         
@@ -71,7 +71,9 @@ class ExplorationPath:
 
             if self.is_valid_point(point, body, traverse, is_ignored_goal, average_seen_density, exploration_point_seen_threshold) or limit_iterations <= 0:
                 self.last_given_point = point
-                return point           
+                return point          
+
+            limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
@@ -128,7 +130,7 @@ class ExplorationPath:
             best_target = None
             for (x, y) in exploration_path[::-1]:
                 distance = self.calcule_distance(traverse, head, (x, y))
-                if distance < best_distance:
+                if distance < best_distance and distance >= 4 * sight_range:
                     best_distance = distance
                     best_target = (x, y)
             return best_target
@@ -176,7 +178,7 @@ class ExplorationPath:
         low_density_cells = self.get_low_density_unseen_cells(exploration_map, density_threshold, sight_range, traverse, body)
 
         cluster_centers = []
-        min_distance = 2 * sight_range * 0.8
+        min_distance = 2 * sight_range 
 
         for cell in low_density_cells:
             if all(self.calcule_distance(traverse, cell, center) > min_distance for center in cluster_centers):
