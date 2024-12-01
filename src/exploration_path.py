@@ -87,7 +87,7 @@ class ExplorationPath:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
             point = list(exploration_path_to_peek.pop(0))
-            if self.is_valid_point(point, body, traverse) and (not is_ignored_goal(point) or limit_iterations <= 0):
+            if self.is_valid_point(point, body, traverse) and (not is_ignored_goal(point) or limit_iterations <= 0) and point != goal_position:
                 points_to_return.append(point)
             
             limit_iterations -= 1 # Avoid infinite loop
@@ -96,7 +96,7 @@ class ExplorationPath:
     
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
         if average_seen_density is None or exploration_point_seen_threshold is None:
-            return (traverse or point not in self.internal_walls) and point not in body 
+            return (traverse or point not in self.internal_walls) and point not in body
         else:
             return (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold
             
@@ -129,7 +129,7 @@ class ExplorationPath:
             best_target = None
             for (x, y) in exploration_path[::-1]:
                 distance = self.calcule_distance(traverse, head, (x, y))
-                if distance < best_distance and distance >= 2 * sight_range:
+                if distance < best_distance and self.last_given_point != [x, y]: #and distance >= 4 * sight_range:
                     best_distance = distance
                     best_target = (x, y)
             return best_target

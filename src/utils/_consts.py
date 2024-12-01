@@ -114,7 +114,7 @@ def get_future_goals_range(num_goals, current_range):
     This function is used to determine the range of the future goals.
     Goal: So the snake goes for the future goals.
     """
-    inicial_range = 3
-    base_increment = current_range - 1
+    inicial_range = 1
+    base_increment = 2
     return [inicial_range + base_increment * i for i in range(num_goals)]
     

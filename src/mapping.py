@@ -85,7 +85,7 @@ class Mapping:
             self.current_goal
         )
 
-    def update(self, state, perfect_state, goals):
+    def update(self, state, perfect_state, goals, actions_plan):
         self.objects_updated = False if self.last_step + 1 != state["step"] else True
         
         self.opponent.update(state)
@@ -159,7 +159,7 @@ class Mapping:
         if self.objects_updated:
             print("NEW OBJECTS OBSERVED")
         
-        self.print_mapping([goal.position for goal in goals])
+        self.print_mapping([goal.position for goal in goals], actions_plan)
         self.logger.debug(f"New: {self.observed_objects}")
 
     def nothing_new_observed(self, goals):
@@ -170,24 +170,24 @@ class Mapping:
         
         first_goal = goals[0]
         
-        # # TODO: check this!
-        # if first_goal.goal_type == "exploration":
-        #     x, y = first_goal.position
-        #     sight_range = self.state["range"]
-        #     exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
-        #     average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-        #     if average_seen_density >= exploration_point_seen_threshold:
-        #         return False
-        # elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
-        #     x, y = first_goal.position
-        #     if (x, y) not in self.observed_objects:
-        #         return False
-        #     sight_range = self.state["range"]
-        #     food_seen_threshold = get_food_seen_threshold(self.state["range"])
-        #     average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-        #     if average_seen_density >= food_seen_threshold:
-        #         self.ignore_goal([x, y])
-        #         return False
+        # TODO: check this!
+        if first_goal.goal_type == "exploration":
+            x, y = first_goal.position
+            sight_range = self.state["range"]
+            exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
+            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
+            if average_seen_density >= exploration_point_seen_threshold:
+                return False
+        elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
+            x, y = first_goal.position
+            if (x, y) not in self.observed_objects:
+                return False
+            sight_range = self.state["range"]
+            food_seen_threshold = get_food_seen_threshold(self.state["range"])
+            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
+            if average_seen_density >= food_seen_threshold:
+                self.ignore_goal([x, y])
+                return False
             
 
         return True
@@ -243,7 +243,7 @@ class Mapping:
             if timestamp is not None and time.time() - timestamp > duration:
                 self.cells_mapping[position] = (0, None)
 
-    def print_mapping(self, goals):
+    def print_mapping(self, goals, actions_plan):
         self.logger.mapping("\033[2J") # clear the screen
         self.logger.mapping("\033[H") # move cursor to the top
         
@@ -289,4 +289,6 @@ class Mapping:
                                 
                         row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
             self.logger.mapping(row)
-        
+        self.logger.mapping("Goals: " + str([g for g in goals]))
+        self.logger.mapping("Body: " + str(self.state["body"]))
+        self.logger.mapping("Action plan: " + str(actions_plan))
