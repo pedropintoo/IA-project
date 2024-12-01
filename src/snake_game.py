@@ -70,7 +70,7 @@ class SnakeGame(SearchDomain):
         traverse = state["traverse"]
         visited_goals = state["visited_goals"].copy()
         for goal in goals:
-            if self.is_goal_visited(new_head, goal):
+            if self.is_goal_visited(new_head, goal, traverse):
                 if goal.goal_type == "super":
                     traverse = False # worst case scenario
                 visited_goals.add(tuple(goal.position))
@@ -114,7 +114,7 @@ class SnakeGame(SearchDomain):
         
         heuristic_value = 0    
         for goal in goals: # TODO: change this to consider all goals   
-            if tuple(goal.position) in visited_goals or self.is_goal_visited(head, goal):
+            if tuple(goal.position) in visited_goals or self.is_goal_visited(head, goal, traverse):
                 # print("\33[33mGoal already visited\33[0m")
                 continue
             
@@ -171,15 +171,16 @@ class SnakeGame(SearchDomain):
         # e.g.: if the goal is of type eat, check if we have passed through the exact position
         return tuple(goal.position) in state["visited_goals"]
 
-    def is_goal_visited(self, head, goal): 
+    def is_goal_visited(self, head, goal, traverse): 
         visited_range = goal.visited_range
         goal_position = goal.position
+        traverse 
         
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
-        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls)
+        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
         dy_no_crossing_walls = abs(head[1] - goal_position[1])
-        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dx_no_crossing_walls
 
         print(f"dx: {dx}, dy: {dy}, visited_range: {visited_range}")
         return dx + dy <= (visited_range)

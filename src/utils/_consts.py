@@ -83,13 +83,13 @@ def is_snake_in_perfect_effects(state, max_steps):
         supers_required = 8
         
     elif state["range"] == 4:
-        supers_required = 6
+        supers_required = 2
         
     elif state["range"] == 5:
-        supers_required = 4
+        return True
         
     elif state["range"] == 6:
-        supers_required = 3
+        return True
         
     return not len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= supers_required
     

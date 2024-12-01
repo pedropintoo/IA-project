@@ -283,7 +283,27 @@ class Agent:
             idx += 1
             future_goals.append(future_goal)
         
-        return [goal for goal in future_goals if goal.position not in [g.position for g in goals]]      
+        tail = self.mapping.state["body"][-1]
+        head = self.mapping.state["body"][0]
+        traverse = self.mapping.state["traverse"]
+        
+        ## Manhattan distance (not counting walls)
+        dx_no_crossing_walls = abs(head[0] - tail[0])
+        dx = min(dx_no_crossing_walls, self.mapping.exploration_path.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
+
+        dy_no_crossing_walls = abs(head[1] - tail[1])
+        dy = min(dy_no_crossing_walls, self.mapping.exploration_path.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+        distance = dx + dy 
+        
+        return [Goal(
+            goal_type="exploration",
+            max_time=0.04, # TODO: change this
+            visited_range=distance // 2,
+            priority=10,
+            position=self.mapping.state["body"][-1]
+        )]
+        # return [goal for goal in future_goals if goal.position not in [g.position for g in goals]]      
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""

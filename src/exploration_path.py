@@ -84,7 +84,7 @@ class ExplorationPath:
         while len(points_to_return) < n_points:
             
             if len(exploration_path_to_peek) < n_points or limit_iterations <= 0:
-                self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
+                exploration_path_to_peek = self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, True)
 
             point = list(exploration_path_to_peek.pop(0))
             if self.is_valid_point(point, body, traverse) and (not is_ignored_goal(point) or limit_iterations <= 0) and point != goal_position:
