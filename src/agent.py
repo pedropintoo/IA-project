@@ -232,7 +232,7 @@ class Agent:
         ## Try to get a path to goal and then to the first future goal
         present_goals = self.current_goals[:] + [new_future_goals[0]]
         num_goals = 1#len(new_future_goals)
-        while num_goals >= 0 and (self.actions_plan is None or len(self.actions_plan) == 0):
+        while num_goals > 0 and (self.actions_plan is None or len(self.actions_plan) == 0):
             num_goals -= 1
             
             ## Search structure
@@ -254,12 +254,10 @@ class Agent:
                 self.logger.mapping(f"Ignore goal {present_goals[0].position}")
                 self.mapping.ignore_goal(present_goals[0].position)
                 present_goals.pop(0)
-            
-            
-        
+
         ## If no path found, set the safe path
         if self.actions_plan is None or len(self.actions_plan) == 0:
-            self.actions_plan = safe_path
+            self.actions_plan = [safe_path.pop()]
             self.logger.mapping("Safe path set! After all, no path found.")
         
         self.action = self.actions_plan.pop()
