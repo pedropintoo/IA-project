@@ -46,6 +46,8 @@ class Mapping:
 
         self.opponent = OpponentMapping(logger, domain.width, domain.height)
 
+        self.current_goal = None
+
     @property
     def ignored_goals(self):
         for goal, timestamp in self.temp_ignored_goals.copy():
@@ -65,14 +67,13 @@ class Mapping:
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self) -> tuple:
-        self.current_goal = self.exploration_path.next_exploration_point(
+        return self.exploration_path.next_exploration_point(
             self.state["body"], 
             self.state["range"],
             self.state["traverse"], 
             self.cells_mapping,
             self.is_ignored_goal
         )
-        return self.current_goal
     
     def peek_next_exploration(self, n_points=1, force_traverse_disabled=False) -> list:
         return self.exploration_path.peek_exploration_point(
@@ -169,24 +170,24 @@ class Mapping:
         
         first_goal = goals[0]
         
-        # TODO: check this!
-        if first_goal.goal_type == "exploration":
-            x, y = first_goal.position
-            sight_range = self.state["range"]
-            exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
-            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-            if average_seen_density >= exploration_point_seen_threshold:
-                return False
-        elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
-            x, y = first_goal.position
-            if (x, y) not in self.observed_objects:
-                return False
-            sight_range = self.state["range"]
-            food_seen_threshold = get_food_seen_threshold(self.state["range"])
-            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-            if average_seen_density >= food_seen_threshold:
-                self.ignore_goal([x, y])
-                return False
+        # # TODO: check this!
+        # if first_goal.goal_type == "exploration":
+        #     x, y = first_goal.position
+        #     sight_range = self.state["range"]
+        #     exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
+        #     average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
+        #     if average_seen_density >= exploration_point_seen_threshold:
+        #         return False
+        # elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
+        #     x, y = first_goal.position
+        #     if (x, y) not in self.observed_objects:
+        #         return False
+        #     sight_range = self.state["range"]
+        #     food_seen_threshold = get_food_seen_threshold(self.state["range"])
+        #     average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
+        #     if average_seen_density >= food_seen_threshold:
+        #         self.ignore_goal([x, y])
+        #         return False
             
 
         return True

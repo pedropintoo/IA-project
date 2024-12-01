@@ -280,7 +280,7 @@ class Agent:
         for future_position in self.mapping.peek_next_exploration(num_future_goals, force_traverse_disabled):
             future_goal = Goal(
                 goal_type="exploration",
-                max_time=0.04, # TODO: change this
+                max_time=0.06, # TODO: change this
                 visited_range=future_range[idx],
                 priority=future_priority[idx],
                 position=future_position
@@ -325,6 +325,7 @@ class Agent:
             goals[0].priority = 10
             goals[0].position = self.mapping.next_exploration()
         
+        self.logger.info(f"Goal type: {goals[0].goal_type}")
         self.mapping.current_goal = goals[0].position
         
         return goals, force_traverse_disabled

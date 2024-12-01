@@ -98,7 +98,7 @@ def get_num_future_goals(current_range):
     This function is used to determine the number of future goals.
     Goal: So the snake goes for the future goals.
     """
-    return 3
+    return 1
     
 def get_future_goals_priority(num_goals):
     """
