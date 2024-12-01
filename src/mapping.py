@@ -90,10 +90,11 @@ class Mapping:
         
         self.opponent.update(state)
 
-        head = state["body"][0]
-        self.cumulated_ignored_goals[tuple(head)] = 0.5
+        head = tuple(state["body"][0])
+        self.cumulated_ignored_goals[head] = 0.5     
 
         self.logger.debug(f"Old: {self.observed_objects}")
+        
         ## Update the state
         if self.state and self.state["range"] != state["range"]:
             # Reset the exploration path if the range is changed
@@ -102,11 +103,16 @@ class Mapping:
         if self.state and self.state["traverse"] != state["traverse"]:
             # Reset the exploration path if the traverse is changed
             self.exploration_path.exploration_path = []
+            
+        traverse = state["traverse"]
+        if self.observed_objects:
+            if head in self.observed_objects and self.observed_objects[head][0] == Tiles.SUPER:
+                traverse = False # worst case scenario   
 
         self.state = {
             "body": state["body"] + [state["body"][-1]], # add the tail
             "range": state["range"],
-            "traverse": state["traverse"],
+            "traverse": traverse,
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"],
             "visited_goals": set()
