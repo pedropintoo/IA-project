@@ -130,14 +130,14 @@ class SnakeGame(SearchDomain):
             distance = dx + dy 
 
             ## Include wall density in heuristic
-            obstacle_count = self.count_obstacles_between(
-                head, 
-                goal_position, 
-                state, 
-                body_weight=3,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
-                walls_weight=1  
-            )
-            distance += obstacle_count
+            # obstacle_count = self.count_obstacles_between(
+            #     head, 
+            #     goal_position, 
+            #     state, 
+            #     body_weight=3,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
+            #     walls_weight=1  
+            # )
+            # distance += obstacle_count
 
             heuristic_value += distance * goal_priority
         

@@ -40,6 +40,7 @@ class Mapping:
          
         self.ignored_duration = 5
         self.temp_ignored_goals = set() # ((x, y), observed_timestamp) 
+        self.cumulated_ignored_goals = {(x, y): 0.5 for x in range(self.domain.width) for y in range(self.domain.height)}
         
         self.last_step = 0
 
@@ -48,12 +49,14 @@ class Mapping:
     @property
     def ignored_goals(self):
         for goal, timestamp in self.temp_ignored_goals.copy():
-            if time.time() - timestamp > self.ignored_duration:
+            if time.time() - timestamp > self.cumulated_ignored_goals[goal]:
                 self.temp_ignored_goals.remove((goal, timestamp))
         return self.temp_ignored_goals
 
     def ignore_goal(self, obj_pos):
         self.temp_ignored_goals.add((tuple(obj_pos), time.time()))
+        self.cumulated_ignored_goals[tuple(obj_pos)] *= 2 # double the time to ignore the goal
+        
         # also remove from the observed objects
         if tuple(obj_pos) in self.observed_objects:
             del self.observed_objects[tuple(obj_pos)]
@@ -85,6 +88,9 @@ class Mapping:
         self.objects_updated = False if self.last_step + 1 != state["step"] else True
 
         self.opponent.update(state)
+
+        head = state["body"][0]
+        self.cumulated_ignored_goals[tuple(head)] = 0.5
 
         self.logger.debug(f"Old: {self.observed_objects}")
         ## Update the state

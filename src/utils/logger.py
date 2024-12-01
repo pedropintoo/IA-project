@@ -26,7 +26,7 @@ class Logger:
         if not self.mapping_active: self.log.info(infoMsg)
 
     def debug(self, debugMsg):
-        if not self.mapping_active: self.log.debug("debugMsg")      
+        if not self.mapping_active: self.log.debug(debugMsg)      
 
     def warning(self, warningMsg):
         if not self.mapping_active: self.log.warning(warningMsg)

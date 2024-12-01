@@ -70,6 +70,7 @@ class OpponentMapping:
         # If the opponent is not visible, return
         if len(opponent_body) == 0:
             self.logger.critical('OPPONENT NOT VISIBLE')
+            self.opponent_head_position = 0
             return
 
         self.logger.info(f'OPPONENT BODY: {opponent_body}')
@@ -122,7 +123,12 @@ class OpponentMapping:
         
         self.opponent_head_position = self.predicted_head_position
 
-    def is_to_attack(self):
+    def is_to_attack_opponent(self):
+        # return self.opponent_head_position if it is not 0 
+        return self.opponent_head_position
+
+
+    def is_to_attack_food(self):
         # Check if the opponent is not moving towards the food 
         if self.opponent_target_food == 0:
             return False
