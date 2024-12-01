@@ -78,7 +78,7 @@ class ExplorationPath:
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
         sight_range = 3
-        exploration_path_to_peek = self.generate_exploration_path(goal_position, sight_range, exploration_map, traverse, True)
+        exploration_path_to_peek = self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, True)
 
         limit_iterations = 10
         while len(points_to_return) < n_points:

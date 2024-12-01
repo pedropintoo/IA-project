@@ -178,16 +178,16 @@ class Mapping:
             average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
             if average_seen_density >= exploration_point_seen_threshold:
                 return False
-        elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
-            x, y = first_goal.position
-            if (x, y) not in self.observed_objects:
-                return False
-            sight_range = self.state["range"]
-            food_seen_threshold = get_food_seen_threshold(self.state["range"])
-            average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-            if average_seen_density >= food_seen_threshold:
-                self.ignore_goal([x, y])
-                return False
+        # elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
+        #     x, y = first_goal.position
+        #     if (x, y) not in self.observed_objects:
+        #         return False
+        #     sight_range = self.state["range"]
+        #     food_seen_threshold = get_food_seen_threshold(self.state["range"])
+        #     average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
+        #     if average_seen_density >= food_seen_threshold:
+        #         self.ignore_goal([x, y])
+        #         return False
             
 
         return True

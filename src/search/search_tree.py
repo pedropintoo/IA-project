@@ -82,9 +82,9 @@ class SearchTree:
                     )
                 new_total_cost = new_node.heuristic + new_node.cost
                 
-                ## Ignore nodes with heuristic much greater than the best solution
-                if self.best_solution["total_cost"]*2 < new_total_cost:
-                    continue
+                # ## Ignore nodes with heuristic much greater than the best solution
+                # if self.best_solution["total_cost"]*5 < new_total_cost:
+                #     continue
                 
                 new_lower_nodes.append(new_node)
                 

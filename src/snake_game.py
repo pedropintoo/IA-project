@@ -181,7 +181,8 @@ class SnakeGame(SearchDomain):
         dy_no_crossing_walls = abs(head[1] - goal_position[1])
         dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls)
 
-        return dx + dy <= visited_range
+        print(f"dx: {dx}, dy: {dy}, visited_range: {visited_range}")
+        return dx + dy <= (visited_range)
 
 
     def is_goal_available(self, goal):
