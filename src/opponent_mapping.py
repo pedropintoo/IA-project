@@ -13,20 +13,22 @@ class OpponentMapping:
 
         # Own Information
         self.own_body = [] # e.g: [[15, 14], [14, 14], [13, 14]]
-        self.our_snake_length = 0
+        self.own_snake_length = 0
         self.own_traverse = False
         self.sight_state = [] # points [[int(x), int(y), value]] in the sight without the player's own snake
         self.previous_sight_state = []
 
         # Opponent Information
         self.opponent_name = ''
-        self.opponent_direction = 0 # TODO...
-        self.opponent_head_position = 0 # TODO...
-        self.previous_head_position = 0 # TODO...
-        self.opponent_target_food = 0 # TODO...
-        self.previous_opponent_body = [] # TODO...
-        self.predicted_head_position = 0 # TODO...
+        self.opponent_direction = 0
+        self.opponent_head_position = 0 
+        self.opponent_target_food = 0         
         self.opponent_traverse = True 
+
+        # Previous and Future Opponent Information
+        self.previous_head_position = 0
+        self.previous_opponent_body = []
+        self.predicted_head_position = 0 
 
         # Number of times the agent survived to the simpleTrap
         self.simple_trap_survival = 0
@@ -47,17 +49,17 @@ class OpponentMapping:
 
         # Update the own information
         self.own_body = state['body']
-        self.our_snake_length = len(self.own_body)
+        self.own_snake_length = len(self.own_body)
         self.own_traverse = state['traverse']
 
-        our_sight_state = state['sight']
+        own_sight_state = state['sight']
         self.sight_state = []
         
         # Check if the opponent or foods are visible
         opponent_body = []
         targets_food = []
-        for x_coordinate in our_sight_state:
-            set_y_coordinates = our_sight_state[x_coordinate]
+        for x_coordinate in own_sight_state:
+            set_y_coordinates = own_sight_state[x_coordinate]
             for y_coordinate in set_y_coordinates:
                 if [int(x_coordinate), int(y_coordinate)] in self.own_body:
                     continue
@@ -77,19 +79,21 @@ class OpponentMapping:
             self.predicted_head_position = 0
             self.previous_sight_state = self.sight_state
             return
+        else:
+            self.logger.info('OPPONENT VISIBLE')
 
-        self.logger.info('OPPONENT VISIBLE')
+        # Determine the opponent head position
+        self.opponent_head_position = self.determine_current_head_position()
+        self.previous_sight_state = self.sight_state
 
-        # Update the opponent head position
-        self.opponent_head_position = self.determinate_current_head_position()
-
+        # Evaluate the prediction made in the previous step
         if self.predicted_head_position != 0:
             if self.opponent_head_position != self.predicted_head_position:
                 self.logger.critical(f"PREDICTION ERROR: opponent_head_position = {self.opponent_head_position} != predicted_head_position = {self.predicted_head_position}")
             else:
                 self.logger.info(f"PREDICTION SUCCESS: opponent_head_position = {self.opponent_head_position} == predicted_head_position = {self.predicted_head_position}")
         
-        # Update the opponent mapping only if we are sure about the opponent head position
+        # The opponent is visible. However, we are not sure about the position of the opponent head
         if self.opponent_head_position == 0:
             self.previous_head_position = 0
             self.predicted_head_position = 0
@@ -98,30 +102,26 @@ class OpponentMapping:
         if len(targets_food) == 0:
             self.opponent_target_food = 0
         else:
-            # Update the target food position
-            previous_distance = self.width + self.height
-
             # Find the closest food to the opponent head position considering self.own_traverse
+            previous_distance = self.width + self.height # maximum distance
             for food in targets_food:
                 opponent_dx_no_crossing_walls = abs(food[0] - self.opponent_head_position[0])
                 opponent_dx = min(opponent_dx_no_crossing_walls, self.width - opponent_dx_no_crossing_walls) if self.opponent_traverse else opponent_dx_no_crossing_walls
                 opponent_dy_no_crossing_walls = abs(food[1] - self.opponent_head_position[1])
                 opponent_dy = min(opponent_dy_no_crossing_walls, self.height - opponent_dy_no_crossing_walls) if self.opponent_traverse else opponent_dy_no_crossing_walls
                 food_distance = opponent_dx + opponent_dy
-
-                # food_distance = abs(food[0] - self.opponent_head_position[0]) + abs(food[1] - self.opponent_head_position[1])
                 if food_distance < previous_distance:
                     self.opponent_target_food = food
                     previous_distance = food_distance
 
             self.logger.critical(f'TARGET FOOD: {self.opponent_target_food}')
     
-        # Update the predicted head position # TODO... preciso primeiro estimar a direção do oponente
+        # Predict the future position of the opponent's head
         self.opponent_direction = self.determine_opponent_direction(self.previous_head_position, self.opponent_head_position)
         self.predicted_head_position = self.determine_predicted_head_position(self.opponent_head_position, self.opponent_direction, self.opponent_target_food)
         
         self.previous_head_position = self.opponent_head_position
-        self.logger.info(f'Previous head position assigned the current head position: {self.previous_head_position}')
+        self.logger.info(f'Current head position assigned to previous_head_position: {self.previous_head_position}')
         self.opponent_head_position = self.predicted_head_position
         self.logger.info(f'Next (predicted) head position: {self.predicted_head_position}')
 
@@ -217,7 +217,7 @@ class OpponentMapping:
         return goals, self.opponent_target_food
 
     # Auxiliar functions
-    def determinate_current_head_position(self):     
+    def determine_current_head_position(self):     
         # Part of the snake that moves into previously unoccupied spaces (PASSAGE = 0).
         # Compare the self.sight_state with the previous_sight_state to determine the head position
         # If in the same position (x,y) the value is different than the previous value and is 4, then the head is in that position
@@ -230,18 +230,19 @@ class OpponentMapping:
                 if x == x_previous and y == y_previous:
                     if value == 4 and value_previous != 4:
                         self.logger.info(f'Head position: [{x}, {y}]')
-                        self.previous_sight_state = self.sight_state
                         return [x, y]
         return 0
 
     def determine_predicted_head_position(self, opponent_head_position, direction, target_food):
         # If no food is nearby, assume the opponent will move straight unless forced to turn.
         self.logger.info(f'Opponent Direction: {direction}')
+        
+        # If we could not determine the direction of the opponent, we cannot predict the future position
         if direction == 0:
             return 0
-        # if self.opponent_target_food == 0:
         
-        # will move straight
+        # if self.opponent_target_food == 0:
+        # Assume the opponent will move straight for simplicity
         if direction == 'up':
             return self.go_up(opponent_head_position)
         elif direction == 'down':
@@ -263,7 +264,6 @@ class OpponentMapping:
                 # return self.go_up(opponent_head_position)
 
     def determine_opponent_direction(self, previous_head_position, current_head_position):
-        # Determine the direction of the opponent
         self.logger.info(f'Previous head position: {previous_head_position} ; Current head position: {current_head_position}')
         if previous_head_position == 0:
             return 0
@@ -299,7 +299,7 @@ class OpponentMapping:
         # Note: Now the points depend on the current length of our snake
         first_point = self.opponent_target_food + LEFT
         
-        second_point_variation_in_x_coordinate = self.our_snake_length//3 # The variation depends on the length of our snake
+        second_point_variation_in_x_coordinate = self.own_snake_length//3 # The variation depends on the length of our snake
         second_point = self.opponent_target_food + RIGHT + [second_point_variation_in_x_coordinate, 0]
 
         third_point_variation_in_x_coordinate = second_point_variation_in_x_coordinate//2 # TODO... add this in _consts.py
