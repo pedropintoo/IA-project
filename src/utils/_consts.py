@@ -69,14 +69,14 @@ def get_duration_of_expire_cells(sight_range):
 #
 ############################################################################################################
 
-def is_snake_in_perfect_effects(state):
+def is_snake_in_perfect_effects(state, max_steps):
     """
     This function is used to determine if the snake should go for the super food.
     Goal: So the snake goes for the super food if it's required.
     """
     supers_required = 0 if not state["traverse"] else 2
     
-    if state["step"] > 2900 or state["range"] < 3:
+    if state["step"] > (max_steps - 100) or state["range"] < 3:
         return False
     
     if state["range"] == 3:

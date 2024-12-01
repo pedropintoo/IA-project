@@ -56,7 +56,7 @@ class SearchTree:
                 self.best_solution = {"total_cost": node.heuristic + node.cost, "node": node}
                 # print(node.state["visited_goals"])
                 return self.inverse_plan_to_solution(node)
-            
+
             self.non_terminals += 1
             new_lower_nodes = []
             visited_goal = None
@@ -93,7 +93,7 @@ class SearchTree:
                     self.best_solution = {"total_cost": new_total_cost, "node": new_node}
 
             self.add_to_open(new_lower_nodes)
-        return None
+        return []
     
     # add new nodes to the list of open nodes according to the strategy
     def add_to_open(self, new_lower_nodes):

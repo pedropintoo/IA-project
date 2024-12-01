@@ -125,7 +125,10 @@ class OpponentMapping:
 
     def is_to_attack_opponent(self):
         # return self.opponent_head_position if it is not 0 
-        return self.opponent_head_position
+        if self.opponent_head_position != 0:
+            return True
+        else:
+            return False
 
 
     def is_to_attack_food(self):
@@ -170,7 +173,12 @@ class OpponentMapping:
         else:
             return False
         
-    def attack(self):
+    def attack_opponent(self):
+        goal = Goal(goal_type='opponent', max_time=0, visited_range=0, priority=0, position=self.opponent_head_position, num_required_goals=1)
+        self.logger.critical(f'ATTACKING OPPONENT: {self.opponent_head_position}')
+        return [goal]
+
+    def attack_food(self):
         # This function returns the points that the agent must pass through to set a trap for the opponent.
         # If the agent survived three times to the simpleTrap we conclude that he has algorithms to deal with dead ends and we try to do a more advanced trap, advancedTrap.
         if self.simple_trap_survival < 3:

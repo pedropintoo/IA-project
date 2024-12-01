@@ -52,7 +52,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.disable()
@@ -108,7 +108,8 @@ class Agent:
             width=map_info["size"][0], 
             height=map_info["size"][1], 
             internal_walls=MatrixOperations.find_ones(map_info['map']),
-            dead_ends=MatrixOperations.find_dead_ends(map_info['map'])
+            dead_ends=MatrixOperations.find_dead_ends(map_info['map']),
+            max_steps=map_info["timeout"]
         )        
         self.mapping = Mapping(
             logger=self.logger,
@@ -184,6 +185,28 @@ class Agent:
         ## Search for the solution
         self.actions_plan = None
         
+        num_present_goals = 1 # TODO: change dynamically
+        
+        # ## Store a safe path to future goals
+        # safe_path = []
+        # future_goals = self.current_goals[num_present_goals:]
+        
+        # while len(safe_path) == 0 and len(future_goals) > 0:
+        #     self._search(time_limit)
+        #     safe_path = self.actions_plan
+        #     ## Search structure
+        #     self.problem = SearchProblem(self.domain, self.mapping.state, temp_goals)
+        #     temp_tree = SearchTree(self.problem)
+            
+        #     self.logger.debug(f"Searching {self.mapping.state["body"][0]} -> {temp_goals[0]}, ...")
+            
+        #     ## Search for the given goals
+        #     self.actions_plan = temp_tree.search(
+        #         time_limit=min(datetime.now() + timedelta(seconds=temp_goals[0].max_time), time_limit)
+        #     )
+        
+        
+        
         # Create a temporary search tree
         temp_tree = None
         temp_goals = self.current_goals[:]
@@ -255,14 +278,15 @@ class Agent:
         goals = []
         force_traverse_disabled = False
         
-        if self.mapping.opponent.is_to_attack():
-            for attack_position in self.mapping.opponent.attack():
-                goals.append(Goal(None, None, None, None, None))
-                goals[-1].goal_type = "attack"
-                goals[-1].max_time = 0.07
-                goals[-1].visited_range = 0
-                goals[-1].priority = 10
-                goals[-1].position = attack_position
+        if self.mapping.opponent.is_to_attack_opponent():
+            for goal in self.mapping.opponent.attack_opponent():
+                # goals.append(Goal(None, None, None, None, None))
+                # goals[-1].goal_type = "attack"
+                # goals[-1].max_time = 0.07
+                # goals[-1].visited_range = 0
+                # goals[-1].priority = 10
+                # goals[-1].position = attack_position
+                goals.append(goal)
 
         elif self.mapping.observed(Tiles.FOOD):
             goals.append(Goal(None, None, None, None, None))

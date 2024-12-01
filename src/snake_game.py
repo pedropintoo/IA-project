@@ -19,15 +19,16 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, logger, width, height, internal_walls, dead_ends):
+    def __init__(self, logger, width, height, internal_walls, dead_ends, max_steps):
         self.logger = logger
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
         self.dead_ends = dead_ends
+        self.max_steps = max_steps
     
     def is_perfect_effects(self, state):
-        return is_snake_in_perfect_effects(state)
+        return is_snake_in_perfect_effects(state, self.max_steps)
     
     def _check_collision(self, state, action):
         """Check if the action will result in a collision"""

@@ -44,14 +44,20 @@ class ExplorationPath:
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
+        limit_iterations = 10
         while self.exploration_path:
+            if len(self.exploration_path) < 1 or limit_iterations <= 0:
+                self.generate_exploration_path(body, sight_range, exploration_map, traverse)
+            
             point = list(self.exploration_path.pop(0))
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
-            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(point):
+            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and (not is_ignored_goal(point) or limit_iterations <= 0):
                 self.last_given_point = point
                 return point
+            
+            limit_iterations -= 1 # Avoid infinite loop
         
         print("CORREU MAL:............................................")
             
@@ -62,12 +68,13 @@ class ExplorationPath:
 
         limit_iterations = 10
         while len(points_to_return) < n_points:
-            if len(exploration_path_to_peek) < n_points:
+            if len(exploration_path_to_peek) < n_points or limit_iterations <= 0:
                 self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
 
             point = list(exploration_path_to_peek.pop(0))
             #if (traverse or point not in self.internal_walls) and point not in body and (not is_ignored_goal(point) or limit_iterations <= 0):
-            points_to_return.append(point)
+            if (not is_ignored_goal(point) or limit_iterations <= 0):
+                points_to_return.append(point)
             
             limit_iterations -= 1 # Avoid infinite loop
         
