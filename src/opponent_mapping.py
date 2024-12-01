@@ -71,6 +71,7 @@ class OpponentMapping:
         if len(opponent_body) == 0:
             self.logger.critical('OPPONENT NOT VISIBLE')
             self.opponent_head_position = 0
+            self.previous_sight_state = self.sight_state
             return
 
         self.logger.info(f'OPPONENT BODY: {opponent_body}')
@@ -125,12 +126,13 @@ class OpponentMapping:
 
     def is_to_attack_opponent(self):
         # return self.opponent_head_position if it is not 0 
+        self.logger.critical(f'IS TO ATTACK OPPONENT?')
         if self.opponent_head_position != 0:
             return True
         else:
+            self.logger.critical('NO OPPONENT HEAD POSITION')
             return False
-
-
+        
     def is_to_attack_food(self):
         # Check if the opponent is not moving towards the food 
         if self.opponent_target_food == 0:
@@ -174,7 +176,7 @@ class OpponentMapping:
             return False
         
     def attack_opponent(self):
-        goal = Goal(goal_type='opponent', max_time=0, visited_range=0, priority=0, position=self.opponent_head_position, num_required_goals=1)
+        goal = Goal(goal_type='opponent', max_time=0.07, visited_range=0, priority=10, position=self.opponent_head_position, num_required_goals=1)
         self.logger.critical(f'ATTACKING OPPONENT: {self.opponent_head_position}')
         return [goal]
 
@@ -216,24 +218,36 @@ class OpponentMapping:
         if self.opponent_target_food == 0:
             # will move straight
             if direction == 'up':
-                return opponent_head_position + UP
+                return self.go_up(opponent_head_position)
             elif direction == 'down':
-                return opponent_head_position + DOWN
+                return self.go_down(opponent_head_position)
             elif direction == 'left':
-                return opponent_head_position + LEFT
+                return self.go_left(opponent_head_position)
             elif direction == 'right':
-                return opponent_head_position + RIGHT
+                return self.go_right(opponent_head_position)
         
         # If food is nearby, assume the opponent will move towards the food.
         else:
             if opponent_head_position[0] < target_food[0]:
-                return opponent_head_position + RIGHT
+                return self.go_right(opponent_head_position)
             elif opponent_head_position[0] > target_food[0]:
-                return opponent_head_position + LEFT
+                return self.go_left(opponent_head_position)
             elif opponent_head_position[1] < target_food[1]:
-                return opponent_head_position + DOWN
+                return self.go_down(opponent_head_position)
             elif opponent_head_position[1] > target_food[1]:
-                return opponent_head_position + UP
+                return self.go_up(opponent_head_position)
+
+    def go_up(self, position):
+        return [position[0] + UP[0], position[1] + UP[1]]
+
+    def go_down(self, position):
+        return [position[0] + DOWN[0], position[1] + DOWN[1]]
+    
+    def go_left(self, position):
+        return [position[0] + LEFT[0], position[1] + LEFT[1]]
+    
+    def go_right(self, position):
+        return [position[0] + RIGHT[0], position[1] + RIGHT[1]]
 
     # Traps
     def simpleTrap(self):

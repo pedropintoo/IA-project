@@ -93,28 +93,28 @@ def is_snake_in_perfect_effects(state, max_steps):
         
     return not len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= supers_required
     
-def get_num_future_goals(goals, current_range):
+def get_num_future_goals(current_range):
     """
     This function is used to determine the number of future goals.
     Goal: So the snake goes for the future goals.
     """
-    return 3 - len(goals) 
+    return 3
     
 def get_future_goals_priority(num_goals):
     """
     This function is used to determine the priority of the future goals.
     Goal: So the snake goes for the future goals.
     """
-    inicial_range = 1
-    base_decrement = 0.2
-    return [inicial_range - base_decrement * i for i in range(num_goals)]
+    inicial_range = 20
+    base_decrement = 0.5
+    return [inicial_range * base_decrement for i in range(num_goals)]
     
 def get_future_goals_range(num_goals, current_range):
     """
     This function is used to determine the range of the future goals.
     Goal: So the snake goes for the future goals.
     """
-    inicial_range = 1
+    inicial_range = 3
     base_increment = current_range - 1
     return [inicial_range + base_increment * i for i in range(num_goals)]
     
