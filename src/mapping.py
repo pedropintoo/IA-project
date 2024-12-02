@@ -29,7 +29,7 @@ class Mapping:
             width=domain.width
         )
         # TODO: change the ignore_objects
-        self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
+        self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE}
 
         # Cells mapping: 0 - unseen, 1 - seen
         self.cells_mapping = {
@@ -143,6 +143,9 @@ class Mapping:
 
         ## Update the observed objects
         for position, [obj_type, timestamp] in currently_observed.items():
+            if list(position) in self.state["body"] and obj_type == Tiles.SNAKE:
+                print("SNAKE")
+                continue # ignore the snake body
 
             # This position has a object
             if position in self.observed_objects:
@@ -165,7 +168,7 @@ class Mapping:
                     self.observed_objects[position] = [obj_type, timestamp]
                     if not (obj_type == Tiles.SUPER and perfect_state):
                         self.objects_updated = True
-        
+
         if self.objects_updated:
             print("NEW OBJECTS OBSERVED")
         
@@ -264,7 +267,12 @@ class Mapping:
                     row += f"\033[1;35m{' I':2}\033[0m "
                 elif [x, y] in goals:
                     if (x, y) in self.observed_objects:
-                        row += f"\033[1;35m{' F' if self.observed_objects[(x, y)][0] == Tiles.FOOD else ' S':2}\033[0m "
+                        if self.observed_objects[(x, y)][0] == Tiles.SUPER:
+                            row += f"\033[1;35m{' S':2}\033[0m "
+                        elif self.observed_objects[(x, y)][0] == Tiles.FOOD:
+                            row += f"\033[1;35m{' F':2}\033[0m "
+                        elif self.observed_objects[(x, y)][0] == Tiles.SNAKE:
+                            row += f"\033[1;31m{' E':2}\033[0m "
                     else:
                         row += f"\033[1;35m\033[1m{goals.index([x, y]):2}\033[0m "
                 elif (x, y) in self.exploration_path.exploration_path:
@@ -275,7 +283,12 @@ class Mapping:
                     row += f"\033[1;34m{' W':2}\033[0m "
                 else:   
                     if (x, y) in self.observed_objects:
-                        row += f"\033[1;34m{' F' if self.observed_objects[(x, y)][0] == Tiles.FOOD else ' S':2}\033[0m "
+                        if self.observed_objects[(x, y)][0] == Tiles.SUPER:
+                            row += f"\033[1;35m{' S':2}\033[0m "
+                        elif self.observed_objects[(x, y)][0] == Tiles.FOOD:
+                            row += f"\033[1;35m{' F':2}\033[0m "
+                        elif self.observed_objects[(x, y)][0] == Tiles.SNAKE:
+                            row += f"\033[1;31m{' E':2}\033[0m "
                     else:
                         seen = self.cells_mapping[(x, y)][0]
                         if seen == 0:
@@ -302,3 +315,4 @@ class Mapping:
         self.logger.mapping("Goals: " + str([g for g in goals]))
         self.logger.mapping("Body: " + str(self.state["body"]))
         self.logger.mapping("Action plan: " + str(actions_plan))
+        self.logger.mapping("Observed: " + str([p for p in self.observed_objects.keys()]))

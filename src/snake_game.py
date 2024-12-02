@@ -19,13 +19,15 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, logger, width, height, internal_walls, dead_ends, max_steps):
+    def __init__(self, logger, width, height, internal_walls, dead_ends, max_steps, opponent_head=None, opponent_direction=None):
         self.logger = logger
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
         self.dead_ends = dead_ends
         self.max_steps = max_steps
+        self.opponent_head = opponent_head
+        self.opponent_direction = opponent_direction
     
     def is_perfect_effects(self, state):
         return is_snake_in_perfect_effects(state, self.max_steps)
@@ -38,6 +40,13 @@ class SnakeGame(SearchDomain):
         
         if new_head in body:
             return True
+        
+        head_tuple = tuple(new_head)
+        
+        if head_tuple in state["observed_objects"]:
+            if state["observed_objects"][head_tuple][0] == Tiles.SNAKE:
+                print("TESTE!!!!!!!!")
+                return True # collision with other snake
         
         if not state["traverse"]:
             if new_head in self.internal_walls:
@@ -117,7 +126,7 @@ class SnakeGame(SearchDomain):
         
         heuristic_value = 0   
         previous_goal_position = head
-        priority = 5
+        priority = 2.5
         for goal in goals: # TODO: change this to consider all goals   
             if tuple(goal.position) in visited_goals:
                 priority *= 10
