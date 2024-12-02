@@ -225,6 +225,7 @@ class Agent:
         new_future_goals = []
         for goal in future_goals:
             goal.priority = last_goal_priority 
+            goal.visited_range = 2
             last_goal_priority -= 0.1
             new_future_goals.append(goal)
          
@@ -263,24 +264,6 @@ class Agent:
         self.action = self.actions_plan.pop()
             
     def _find_future_goals(self, goals, force_traverse_disabled):
-        future_goals = []
-        
-        ## Create the list with future goals
-        num_future_goals = get_num_future_goals(self.mapping.state["range"])
-        future_priority = get_future_goals_priority(num_future_goals)
-        future_range = get_future_goals_range(num_future_goals, self.mapping.state["range"])
-        idx = 0
-        for future_position in self.mapping.peek_next_exploration(num_future_goals, force_traverse_disabled):
-            future_goal = Goal(
-                goal_type="exploration",
-                max_time=0.04, # TODO: change this
-                visited_range=future_range[idx],
-                priority=future_priority[idx],
-                position=future_position
-            )
-            idx += 1
-            future_goals.append(future_goal)
-        
         tail = self.mapping.state["body"][-1]
         head = self.mapping.state["body"][0]
         traverse = self.mapping.state["traverse"]
@@ -296,12 +279,11 @@ class Agent:
         
         return [Goal(
             goal_type="exploration",
-            max_time=0.04, # TODO: change this
-            visited_range=2 if distance >= 2 else 0,
+            max_time=0.09, # TODO: change this
+            visited_range=distance // 2,
             priority=10,
             position=self.mapping.state["body"][-1]
         )]
-        # return [goal for goal in future_goals if goal.position not in [g.position for g in goals]]      
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""

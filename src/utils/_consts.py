@@ -15,9 +15,14 @@ def get_last_exploration_distance_threshold(sign_range, head, width):
     If the last given point in the exploration path is further than this threshold, the path will be reset and regenerated.
     Goal: So the snake always goes to the closest point in the exploration path.
     """
-    if head[0] > width - sign_range * 5:
-        return float("inf")
-    return sign_range * 5
+    if sign_range > 3:
+        if head[0] > width - sign_range * 5:
+            return float("inf")
+        return sign_range * 5
+    else:
+        if head[0] > width - sign_range * 10:
+            return float("inf")
+        return sign_range * 10
 
 def get_exploration_point_seen_threshold(sight_range):
     """
@@ -83,13 +88,13 @@ def is_snake_in_perfect_effects(state, max_steps):
         supers_required = 8
         
     elif state["range"] == 4:
-        supers_required = 2
+        supers_required = 6
         
     elif state["range"] == 5:
-        return True
+        supers_required = 5
         
     elif state["range"] == 6:
-        return True
+        supers_required = 4
         
     return not len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= supers_required
     

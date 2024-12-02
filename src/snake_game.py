@@ -120,7 +120,6 @@ class SnakeGame(SearchDomain):
         priority = 25
         for goal in goals: # TODO: change this to consider all goals   
             if tuple(goal.position) in visited_goals:
-                # print("\33[33mGoal already visited\33[0m")
                 priority /= 10
                 continue
             
@@ -128,7 +127,7 @@ class SnakeGame(SearchDomain):
             goal_range = goal.visited_range
 
             ## Manhattan distance (not counting walls)
-            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse)
+            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
 
             # Include wall density in heuristic
             obstacle_count = self.count_obstacles_between(
@@ -141,8 +140,7 @@ class SnakeGame(SearchDomain):
             distance += obstacle_count
 
             heuristic_value += distance * priority
-            print(priority)
-            priority /= 5
+            priority /= 10
             
             previous_goal_position = goal_position
                     
@@ -163,9 +161,9 @@ class SnakeGame(SearchDomain):
         
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value += 50
+            heuristic_value *= 20
         
-        self.logger.mapping(f"heuristic_value: {heuristic_value} {len(visited_goals)}")
+        # self.logger.mapping(f"heuristic_value: {heuristic_value} {len(visited_goals)}")
         
         return heuristic_value
 
@@ -189,7 +187,7 @@ class SnakeGame(SearchDomain):
         goal_position = goal.position
                 
         distance = self.manhattan_distance(head, goal_position, traverse)
-        print(f"Distance to goal: {distance} - {visited_range}")
+
         return distance <= visited_range
 
     def is_goal_available(self, goal):
