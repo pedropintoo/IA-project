@@ -81,7 +81,7 @@ def is_snake_in_perfect_effects(state, max_steps):
     """
     traverse = state["traverse"]
     
-    if state["step"] > (max_steps - 100):
+    if state["step"] > (max_steps - 100 * state["range"]):
         return False
     
     if state["range"] == 2:
