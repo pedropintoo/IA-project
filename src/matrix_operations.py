@@ -46,21 +46,3 @@ class MatrixOperations:
                             dead_ends.append([row_idx, j])
                 
         return dead_ends
-    
-    @staticmethod
-    def count_neighbours(matrix, row_idx, col_idx):
-        neighbours = 0
-        for i in range(-1, 2):
-            for j in range(-1, 2):
-                if i == 0 and j == 0:
-                    continue
-                if row_idx + i < 0 or row_idx + i >= len(matrix):
-                    continue
-                if col_idx + j < 0 or col_idx + j >= len(matrix[0]):
-                    continue
-                if matrix[row_idx + i][col_idx + j] == 1:
-                    neighbours += 1
-        return neighbours
-
-
-                
