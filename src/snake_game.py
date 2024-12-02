@@ -5,6 +5,7 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
+import heapq
 from src.search.search_domain import SearchDomain
 from consts import Tiles
 import time
@@ -127,6 +128,11 @@ class SnakeGame(SearchDomain):
         heuristic_value = 0   
         previous_goal_position = head
         priority = 2.5
+
+        snake_length = len(state["body"])
+        body_weight = 1 # + snake_length // 10
+        walls_weight = 1 # + snake_length // 5
+
         for goal in goals: # TODO: change this to consider all goals   
             if tuple(goal.position) in visited_goals:
                 priority *= 10
@@ -143,8 +149,8 @@ class SnakeGame(SearchDomain):
                 previous_goal_position, 
                 goal_position, 
                 state, 
-                body_weight=1,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
-                walls_weight=1  
+                body_weight=body_weight,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
+                walls_weight=walls_weight  
             )
             distance += obstacle_count
 
@@ -172,9 +178,10 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
-        self.logger.mapping(f"heuristic_value: {heuristic_value} {len(visited_goals)}")
+        # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
         
         return heuristic_value
+
 
     def satisfies(self, state, goal):
         # TODO: add logic for different types of goals

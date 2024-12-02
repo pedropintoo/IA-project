@@ -29,7 +29,7 @@ class Mapping:
             width=domain.width
         )
         # TODO: change the ignore_objects
-        self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE}
+        self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
 
         # Cells mapping: 0 - unseen, 1 - seen
         self.cells_mapping = {
@@ -143,9 +143,9 @@ class Mapping:
 
         ## Update the observed objects
         for position, [obj_type, timestamp] in currently_observed.items():
-            if list(position) in self.state["body"] and obj_type == Tiles.SNAKE:
-                print("SNAKE")
-                continue # ignore the snake body
+            # if list(position) in self.state["body"] and obj_type == Tiles.SNAKE:
+            #     print("SNAKE")
+            #     continue # ignore the snake body
 
             # This position has a object
             if position in self.observed_objects:

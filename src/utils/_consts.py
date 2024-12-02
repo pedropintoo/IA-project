@@ -15,14 +15,9 @@ def get_last_exploration_distance_threshold(sign_range, head, width):
     If the last given point in the exploration path is further than this threshold, the path will be reset and regenerated.
     Goal: So the snake always goes to the closest point in the exploration path.
     """
-    if sign_range > 3:
-        if head[0] > width - sign_range * 5:
-            return float("inf")
-        return sign_range * 5
-    else:
-        if head[0] > width - sign_range * 10:
-            return float("inf")
-        return sign_range * 10
+    if head[0] > width - sign_range * 10:
+        return float("inf")
+    return sign_range * 10
 
 def get_exploration_point_seen_threshold(sight_range):
     """

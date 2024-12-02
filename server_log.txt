@@ -1,5 +1,15 @@
-2024-12-02 15:19:29,512 - asyncio - DEBUG - Using selector: EpollSelector
-2024-12-02 15:19:29,512 - Game - INFO - Game(level=1)
-2024-12-02 15:19:29,512 - Map - INFO - Generating a MAP
-2024-12-02 15:19:29,512 - Server - INFO - Listenning @ :8000
-2024-12-02 15:19:29,513 - Server - INFO - Waiting for players
+2024-12-02 15:53:24,694 - asyncio - DEBUG - Using selector: EpollSelector
+2024-12-02 15:53:24,694 - Game - INFO - Game(level=1)
+2024-12-02 15:53:24,694 - Map - INFO - Generating a MAP
+2024-12-02 15:53:24,694 - Server - INFO - Listenning @ :8000
+2024-12-02 15:53:24,695 - Server - INFO - Waiting for players
+2024-12-02 15:53:25,683 - Server - INFO - <lwe >> rsa> has joined
+2024-12-02 15:53:25,683 - Server - INFO - Starting game
+2024-12-02 15:53:25,683 - Game - INFO - Game(level=1)
+2024-12-02 15:53:25,683 - Map - INFO - Generating a MAP
+2024-12-02 15:53:25,683 - Game - DEBUG - Reset world
+2024-12-02 15:53:25,683 - Map - DEBUG - Food spawned at (46, 18)
+2024-12-02 15:53:25,683 - Map - DEBUG - Food spawned at (18, 18)
+2024-12-02 15:53:25,683 - Map - DEBUG - Food spawned at (38, 23)
+2024-12-02 15:53:25,683 - Map - DEBUG - Food spawned at (47, 15)
+2024-12-02 15:53:25,752 - Server - ERROR - Player <lwe >> rsa> already exists
