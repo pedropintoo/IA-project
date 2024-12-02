@@ -235,11 +235,26 @@ class Agent:
         # Normalize priority
         last_goal_priority = 1
         new_future_goals = []
-        for goal in future_goals:
-            goal.priority = last_goal_priority 
-            goal.visited_range = 2
+        head = self.current_goals[-1].position
+        traverse = self.mapping.state["traverse"] if not any([goal.goal_type == "super" for goal in self.current_goals]) else False
+        for ft_goal in future_goals:
+            ft_goal.priority = last_goal_priority 
+            
+            goal_position = ft_goal.position
+            
+            dx_no_crossing_walls = abs(head[0] - goal_position[0])
+            dx = min(dx_no_crossing_walls, self.mapping.exploration_path.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
+
+            dy_no_crossing_walls = abs(head[1] - goal_position[1])
+            dy = min(dy_no_crossing_walls, self.mapping.exploration_path.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+
+            distance = dx + dy
+            
+            ft_goal.visited_range = distance // 4
             last_goal_priority -= 0.1
-            new_future_goals.append(goal)
+            new_future_goals.append(ft_goal)
+            
+            head = goal_position
          
         
         ## Try to get a path to goal and then to the first future goal
