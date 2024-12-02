@@ -9,4 +9,4 @@ class Goal:
         self.num_required_goals = num_required_goals
 
     def __str__(self):
-        return f"Goal({self.goal_type}, {self.position}, {self.visited_range})"
+        return f"Goal({self.goal_type}, {self.position}, {self.visited_range} {self.priority})"

@@ -42,6 +42,6 @@ class SearchDomain(ABC):
 
     # Test if the given "goal" was visited by the "head"
     @abstractmethod
-    def is_goal_visited(self, head, goal):
+    def is_goal_visited(self, head, goal, traverse):
         pass
     

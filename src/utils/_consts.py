@@ -7,7 +7,7 @@ def get_exploration_length_threshold(sight_range):
     If the exploration path is shorter than this threshold, the path will be regenerated.
     Goal: So the exploration path is never empty.
     """
-    return 20 // sight_range
+    return 25 // sight_range
 
 def get_last_exploration_distance_threshold(sign_range, head, width):
     """
@@ -15,9 +15,14 @@ def get_last_exploration_distance_threshold(sign_range, head, width):
     If the last given point in the exploration path is further than this threshold, the path will be reset and regenerated.
     Goal: So the snake always goes to the closest point in the exploration path.
     """
-    if head[0] > width - sign_range * 5:
-        return float("inf")
-    return sign_range * 5
+    if sign_range > 3:
+        if head[0] > width - sign_range * 5:
+            return float("inf")
+        return sign_range * 5
+    else:
+        if head[0] > width - sign_range * 10:
+            return float("inf")
+        return sign_range * 10
 
 def get_exploration_point_seen_threshold(sight_range):
     """
@@ -69,52 +74,55 @@ def get_duration_of_expire_cells(sight_range):
 #
 ############################################################################################################
 
-def is_snake_in_perfect_effects(state):
+def is_snake_in_perfect_effects(state, max_steps):
     """
     This function is used to determine if the snake should go for the super food.
     Goal: So the snake goes for the super food if it's required.
     """
-    supers_required = 0 if not state["traverse"] else 2
+    traverse = state["traverse"]
     
-    if state["step"] > 2900 or state["range"] < 3:
+    if state["step"] > (max_steps - 100):
         return False
     
-    if state["range"] == 3:
-        supers_required = 8
+    if state["range"] == 2:
+        supers_required = 2 if traverse else 0
+        
+    elif state["range"] == 3:
+        supers_required = 6 if traverse else 4
         
     elif state["range"] == 4:
-        supers_required = 6
+        supers_required = 8 if traverse else 6
         
     elif state["range"] == 5:
-        supers_required = 4
+        supers_required = 12 if traverse else 10
         
     elif state["range"] == 6:
-        supers_required = 3
+        supers_required = 15 if traverse else 12
         
     return not len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= supers_required
     
-def get_num_future_goals(goals, current_range):
+def get_num_future_goals(current_range):
     """
     This function is used to determine the number of future goals.
     Goal: So the snake goes for the future goals.
     """
-    return 3 - len(goals) 
+    return 2
     
 def get_future_goals_priority(num_goals):
     """
     This function is used to determine the priority of the future goals.
     Goal: So the snake goes for the future goals.
     """
-    inicial_range = 1
-    base_decrement = 0.2
-    return [inicial_range - base_decrement * i for i in range(num_goals)]
+    inicial_range = 20
+    base_decrement = 0.5
+    return [inicial_range * base_decrement for i in range(num_goals)]
     
 def get_future_goals_range(num_goals, current_range):
     """
     This function is used to determine the range of the future goals.
     Goal: So the snake goes for the future goals.
     """
-    inicial_range = 1
-    base_increment = current_range - 1
+    inicial_range = 3
+    base_increment = current_range - 1 
     return [inicial_range + base_increment * i for i in range(num_goals)]
     

@@ -13,65 +13,94 @@ class ExplorationPath:
         self.exploration_generations_cache = {}
         self.last_given_point = None
 
-    def generate_exploration_path(self, body, sight_range, exploration_map, traverse, exploration_path=None):
-        head = body[0]
-
-        if exploration_path is None:
+    def generate_exploration_path(self, head, sight_range, exploration_map, traverse, peek):
+        
+        if not peek:
             exploration_path = self.exploration_path
+        else:
+            exploration_path = []
      
         if self.exploration_generations_cache.get(sight_range) is None:
             new_exploration_path = GilbertCurve.get_curve(self.width, self.height, sight_range, traverse)
             self.exploration_generations_cache[sight_range] = new_exploration_path
         else:
             new_exploration_path = self.exploration_generations_cache[sight_range]
-
+        
         if len(exploration_path) == 0:
-            target = self.find_best_target(head, new_exploration_path, exploration_map)
+            target = self.find_best_target(head, new_exploration_path, exploration_map, traverse, peek, sight_range)
         else:
             target = exploration_path.pop(-1)
         
-        exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+        if not peek:
+            self.exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+        else:
+            return GilbertCurve.adjust_path_to_target(new_exploration_path, target)
+    
+    def generate_exploration_path_v2(self, body, sight_range, exploration_map, traverse):
+        density_threshold = get_exploration_point_seen_threshold(sight_range)
         
+        cluster_centers = self.cluster_unseen_cells(sight_range, density_threshold, exploration_map, traverse, body)
+
+        ordered_points = self.order_cluster_centers(cluster_centers, body[0], traverse)
+        
+        self.exploration_path = ordered_points
+
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
-        
+
         if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
             self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            self.generate_exploration_path(body, sight_range, exploration_map, traverse)
+            self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+            #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
+        limit_iterations = 45 / sight_range
         while self.exploration_path:
+            
+            if len(self.exploration_path) < exploration_length_threshold or limit_iterations <= 0:
+                self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
+                #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
+            
             point = list(self.exploration_path.pop(0))
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
-            if (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(point):
+            #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
+            if (average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
                 self.last_given_point = point
-                return point
-        
-        print("CORREU MAL:............................................")
-            
+                return point          
 
-    def peek_exploration_point(self, body, sight_range, traverse, exploration_map, n_points, is_ignored_goal):
+            limit_iterations -= 1 # Avoid infinite loop 
+
+    def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
-        exploration_path_to_peek = self.exploration_path.copy()
+        sight_range = 3
+        exploration_path_to_peek = self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, True)
 
         limit_iterations = 10
         while len(points_to_return) < n_points:
-            if len(exploration_path_to_peek) < n_points:
-                self.generate_exploration_path(body, sight_range, exploration_map, traverse, exploration_path_to_peek)
+            
+            if len(exploration_path_to_peek) < n_points or limit_iterations <= 0:
+                exploration_path_to_peek = self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, True)
 
             point = list(exploration_path_to_peek.pop(0))
-            #if (traverse or point not in self.internal_walls) and point not in body and (not is_ignored_goal(point) or limit_iterations <= 0):
-            points_to_return.append(point)
+            if self.is_valid_point(point, body, traverse) and (not is_ignored_goal(point) or limit_iterations <= 0) and point != goal_position:
+                points_to_return.append(point)
             
             limit_iterations -= 1 # Avoid infinite loop
         
         return points_to_return
+    
+    def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
+        if average_seen_density is None or exploration_point_seen_threshold is None:
+            return (traverse or point not in self.internal_walls) and point not in body
+        else:
+            return (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold
+            
     
     def calcule_average_seen_density(self, point, sight_range, exploration_map):
         count = 0
@@ -82,12 +111,12 @@ class ExplorationPath:
                     if (point[0] + dx, point[1] + dy) in exploration_map:
                         count += exploration_map[(point[0] + dx, point[1] + dy)][0]
                         n_points += 1
-        return count / n_points
+        return count / n_points if n_points > 0 else 0
     
     def calcule_distance(self, traverse, a, b):
         dx = 0
         dy = 0
-        if b is not None:
+        if a is not None and b is not None:
             dx_no_crossing_walls = abs(a[0] - b[0])
             dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
             dy_no_crossing_walls = abs(a[1] - b[1])
@@ -95,20 +124,81 @@ class ExplorationPath:
 
         return dx + dy
             
-
-
-    def find_best_target(self, head, exploration_path, exploration_map):
-        best_distance = float('inf')
-        best_target = None
-        for (x, y) in exploration_path:
-            distance = math.dist((x, y), head)
-            if distance < best_distance:
-                if exploration_map[(x, y)][0] == 0:
+    def find_best_target(self, head, exploration_path, exploration_map, traverse, peek, sight_range):
+        if peek:
+            best_distance = float('inf')
+            best_target = None
+            for (x, y) in exploration_path[::-1]:
+                distance = self.calcule_distance(traverse, head, (x, y))
+                if distance < best_distance and self.last_given_point != [x, y]: #and distance >= 4 * sight_range:
                     best_distance = distance
                     best_target = (x, y)
-        
-        return best_target
+            return best_target
+        else:
+            max_unseen_cells = -1
+            best_distance = float('inf')
+            best_target = None
+            for (x, y) in exploration_path[::-1]:
+                if exploration_map.get((x, y), [0])[0] == 0:
+                    unseen_cells_count = self.count_unseen_cells((x, y), sight_range, exploration_map)
+                    distance = self.calcule_distance(traverse, head, (x, y))
+                    if unseen_cells_count > max_unseen_cells or (unseen_cells_count == max_unseen_cells and distance < best_distance):
+                        max_unseen_cells = unseen_cells_count
+                        best_distance = distance
+                        best_target = (x, y)
+            return best_target
 
+    def count_unseen_cells(self, point, sight_range, exploration_map):
+        count = 0
+        x, y = point
+        for dx in range(-sight_range, sight_range + 1):
+            for dy in range(-sight_range, sight_range + 1):
+                if abs(dx) + abs(dy) <= sight_range:
+                    cell = (x + dx, y + dy)
+                    if exploration_map.get(cell, [0])[0] == 0:
+                        count += 1
+        return count
+
+    def get_low_density_unseen_cells(self, exploration_map, density_threshold, sight_range, traverse, body):
+        unseen_cells = []
+        for (x,y), (seen_value, _) in exploration_map.items():
+            if (traverse or [x, y] not in self.internal_walls) and seen_value == 0 and [x, y] not in body:
+                density = self.calcule_average_seen_density((x, y), sight_range, exploration_map)
+                if density < density_threshold:
+                    unseen_cells.append((x, y))
+        
+        sorted_cells = sorted(
+            unseen_cells,
+            key=lambda cell: self.calcule_average_seen_density(cell, sight_range, exploration_map)
+        )
+
+        return sorted_cells
+    
+    def cluster_unseen_cells(self, sight_range, density_threshold, exploration_map, traverse, body):
+        low_density_cells = self.get_low_density_unseen_cells(exploration_map, density_threshold, sight_range, traverse, body)
+
+        cluster_centers = []
+        min_distance = 2 * sight_range 
+
+        for cell in low_density_cells:
+            if all(self.calcule_distance(traverse, cell, center) > min_distance for center in cluster_centers):
+                cluster_centers.append(cell)
+
+        return cluster_centers
+    
+    def order_cluster_centers(self, cluster_centers, start_position, traverse):
+        ordered_points = []
+        unvisited = set(cluster_centers)
+        current_position = start_position
+
+        while unvisited:
+            #TODO: Implement with traverse variable
+            next_point = min(unvisited, key=lambda p: self.calcule_distance(traverse, current_position, p))
+            ordered_points.append(next_point)
+            unvisited.remove(next_point)
+            current_position = next_point
+        
+        return ordered_points
 
     def print_exploration_path(self):
         print("EXPLORATION PATH")
@@ -235,7 +325,7 @@ class GilbertCurve:
             return path[closest_point_index:] + path[:closest_point_index]
 
 if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24, 3, False)
+    jorge = GilbertCurve.get_curve(48,24, 3, True)
     for jorginho in jorge:
         print(tuple(jorginho))
     print(len(jorge))
