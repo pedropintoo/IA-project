@@ -55,7 +55,7 @@ class Agent:
         self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        #self.logger.disable()
+        # self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -219,8 +219,18 @@ class Agent:
         if len(safe_path) == 0 or safe_path is None: 
             self.logger.mapping("No safe path found! (using not perfect solution)")
             #TODO: check this!!!!!!
-            # self.action = temp_tree.inverse_plan(temp_tree.best_solution["node"])[0]
+            # self.actions_plan = temp_tree.inverse_plan(temp_tree.best_solution["node"])
+            # self.logger.mapping(f"Understand: {str(temp_tree)}")
+            # if not self.actions_plan == []:
+            #     # not already in the goal range
+            #     self.actions_plan = [self.actions_plan[0]] # get the first action
+            #     self.action = self.actions_plan.pop()
+            #     return
+            # else:
+            #     # TODO: check this
+            #     self.logger.mapping("Already in the goal range (ignoring future goals)")
             return
+                
         
         # Normalize priority
         last_goal_priority = 1

@@ -53,7 +53,8 @@ class SearchTree:
 
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                self.best_solution = {"total_cost": node.heuristic + node.cost, "node": node}
+                self.best_solution = {"total_cost": node.heuristic, #+ node.cost,
+                                      "node": node}
                 # print(node.state["visited_goals"])
                 return self.inverse_plan_to_solution(node)
 
@@ -80,14 +81,14 @@ class SearchTree:
                     heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
                     action=act,
                     )
-                new_total_cost = new_node.heuristic + new_node.cost
-                
+
                 # ## Ignore nodes with heuristic much greater than the best solution
                 # if self.best_solution["total_cost"]*5 < new_total_cost:
                 #     continue
                 
                 new_lower_nodes.append(new_node)
                 
+                new_total_cost = new_node.heuristic #+ new_node.cost
                 ## Store the best solution
                 if self.best_solution["total_cost"] > new_total_cost:
                     self.best_solution = {"total_cost": new_total_cost, "node": new_node}
@@ -112,3 +113,6 @@ class SearchTree:
         heapq.heapify(self.open_nodes)
         
         
+    def __str__(self):
+        return f"SearchTree: {self.problem} {self.best_solution} {self.non_terminals} {self.open_nodes}"
+    

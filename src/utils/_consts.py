@@ -79,19 +79,25 @@ def is_snake_in_perfect_effects(state, max_steps):
     This function is used to determine if the snake should go for the super food.
     Goal: So the snake goes for the super food if it's required.
     """
-    supers_required = 0 if not state["traverse"] else 4
+    traverse = state["traverse"]
     
-    if state["step"] > (max_steps - 100) or state["range"] <= 3:
+    if state["step"] > (max_steps - 100):
         return False
     
-    if state["range"] == 4:
-        supers_required = 6
+    if state["range"] == 2:
+        supers_required = 2 if traverse else 0
+        
+    elif state["range"] == 3:
+        supers_required = 6 if traverse else 4
+        
+    elif state["range"] == 4:
+        supers_required = 8 if traverse else 6
         
     elif state["range"] == 5:
-        supers_required = 8
+        supers_required = 12 if traverse else 10
         
     elif state["range"] == 6:
-        supers_required = 8
+        supers_required = 15 if traverse else 12
         
     return not len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= supers_required
     
