@@ -70,10 +70,13 @@ class SnakeGame(SearchDomain):
         traverse = state["traverse"]
         visited_goals = state["visited_goals"].copy()
         for goal in goals:
-            if self.is_goal_visited(new_head, goal, traverse):
-                if goal.goal_type == "super":
-                    traverse = False # worst case scenario
-                visited_goals.add(tuple(goal.position))
+            if tuple(goal.position) not in visited_goals:
+                if self.is_goal_visited(new_head, goal, traverse):
+                    if goal.goal_type == "super":
+                        traverse = False # worst case scenario
+                    visited_goals.add(tuple(goal.position))
+                else:
+                    break # if one goal is not visited, we break the loop
 
         return {
                 "body": new_body,
@@ -112,27 +115,24 @@ class SnakeGame(SearchDomain):
         traverse = state["traverse"]
         visited_goals = state.get("visited_goals") # check if this is correct
         
-        heuristic_value = 0    
+        heuristic_value = 0   
+        previous_goal_position = head
+        priority = 25
         for goal in goals: # TODO: change this to consider all goals   
-            if tuple(goal.position) in visited_goals or self.is_goal_visited(head, goal, traverse):
+            if tuple(goal.position) in visited_goals:
                 # print("\33[33mGoal already visited\33[0m")
+                priority /= 10
                 continue
             
             goal_position = goal.position
-            goal_priority = goal.priority
-        
+            goal_range = goal.visited_range
+
             ## Manhattan distance (not counting walls)
-            dx_no_crossing_walls = abs(head[0] - goal_position[0])
-            dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
-
-            dy_no_crossing_walls = abs(head[1] - goal_position[1])
-            dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
-
-            distance = dx + dy 
+            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse)
 
             # Include wall density in heuristic
             obstacle_count = self.count_obstacles_between(
-                head, 
+                previous_goal_position, 
                 goal_position, 
                 state, 
                 body_weight=1,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
@@ -140,8 +140,12 @@ class SnakeGame(SearchDomain):
             )
             distance += obstacle_count
 
-            heuristic_value += distance * goal_priority
-        
+            heuristic_value += distance * priority
+            print(priority)
+            priority /= 5
+            
+            previous_goal_position = goal_position
+                    
         ## Count how many walls or body rounded by the snake
         rounded_obstacles = 0 
         for x in range(-1, 2):
@@ -161,7 +165,7 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value += 50
         
-        self.logger.debug(f"heuristic_value: {heuristic_value}")
+        self.logger.mapping(f"heuristic_value: {heuristic_value} {len(visited_goals)}")
         
         return heuristic_value
 
@@ -171,18 +175,22 @@ class SnakeGame(SearchDomain):
         # e.g.: if the goal is of type eat, check if we have passed through the exact position
         return tuple(goal.position) in state["visited_goals"]
 
-    def is_goal_visited(self, head, goal, traverse): 
-        visited_range = goal.visited_range
-        goal_position = goal.position
-        traverse 
-        
+    def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
         dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
         dy_no_crossing_walls = abs(head[1] - goal_position[1])
-        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dx_no_crossing_walls
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
 
-        return dx + dy <= visited_range
+        return dx + dy
+
+    def is_goal_visited(self, head, goal, traverse): 
+        visited_range = goal.visited_range
+        goal_position = goal.position
+                
+        distance = self.manhattan_distance(head, goal_position, traverse)
+        print(f"Distance to goal: {distance} - {visited_range}")
+        return distance <= visited_range
 
     def is_goal_available(self, goal):
         return datetime.datetime.now() >= goal.max_time

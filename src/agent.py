@@ -179,7 +179,7 @@ class Agent:
         
         ## Reset the action plan
         self.actions_plan = []
-        self.action = None        
+        self.action = None
         
         ## Get a new goal
         self.current_goals, force_traverse_disabled = self._find_goals() # Find a new goal
@@ -220,8 +220,8 @@ class Agent:
             self.logger.mapping("No safe path found! (using not perfect solution)")
             return
         
-        ## Normalize priority
-        last_goal_priority = 2
+        # Normalize priority
+        last_goal_priority = 1
         new_future_goals = []
         for goal in future_goals:
             goal.priority = last_goal_priority 
@@ -297,7 +297,7 @@ class Agent:
         return [Goal(
             goal_type="exploration",
             max_time=0.04, # TODO: change this
-            visited_range=distance // 2,
+            visited_range=2 if distance >= 2 else 0,
             priority=10,
             position=self.mapping.state["body"][-1]
         )]
