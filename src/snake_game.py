@@ -5,6 +5,7 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
+import heapq
 from src.search.search_domain import SearchDomain
 from consts import Tiles
 import time
@@ -110,7 +111,9 @@ class SnakeGame(SearchDomain):
         head = state["body"][0]
         traverse = state["traverse"]
         visited_goals = state.get("visited_goals") # check if this is correct
-        
+        snake_length = len(state["body"])
+        self.logger.critical(f" *** SNAKE LENGTH ***: {snake_length}")
+
         heuristic_value = 0    
         for goal in goals: # TODO: change this to consider all goals   
             if tuple(goal.position) in visited_goals or self.is_goal_visited(head, goal):
@@ -129,13 +132,16 @@ class SnakeGame(SearchDomain):
 
             distance = dx + dy 
 
+            body_weight = 3 + (snake_length // 10)  # Increase body weight as the snake grows
+            walls_weight = 1 + (snake_length // 20)  # Increase walls weight more slowly
+
             ## Include wall density in heuristic
             obstacle_count = self.count_obstacles_between(
                 head, 
                 goal_position, 
                 state, 
-                body_weight=3,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
-                walls_weight=1  
+                body_weight=body_weight,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
+                walls_weight=walls_weight  
             )
             distance += obstacle_count
 
@@ -163,6 +169,71 @@ class SnakeGame(SearchDomain):
         self.logger.debug(f"heuristic_value: {heuristic_value}")
         
         return heuristic_value
+
+    # def heuristic(self, state, goals):
+    #     head = state["body"][0]
+    #     heuristic_value = 0
+    #     for goal in goals:
+    #         if self.is_goal_visited(head, goal):
+    #             continue
+    #         path_cost = self.calculate_path_cost(tuple(head), tuple(goal.position), state)
+    #         heuristic_value += path_cost * goal.priority
+    #     return heuristic_value
+
+    
+
+    # def calculate_path_cost(self, start_pos, end_pos, state):
+    #     """
+    #     Calcula o custo do caminho mais curto entre start_pos e end_pos usando o algoritmo A*.
+    #     Considera obstáculos como o corpo da cobra e paredes internas.
+    #     """
+    #     start_pos = tuple(start_pos)  # Converter para tuple
+    #     end_pos = tuple(end_pos)      # Converter para tuple
+
+    #     def heuristic(a, b):
+    #         # Distância de Manhattan como heurística
+    #         return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    #     # Inicialização das estruturas de dados
+    #     open_set = []
+    #     heapq.heappush(open_set, (0, start_pos))
+    #     came_from = {}
+    #     g_score = {start_pos: 0}
+    #     f_score = {start_pos: heuristic(start_pos, end_pos)}
+
+    #     while open_set:
+    #         # Seleciona o nó com menor f_score
+    #         _, current = heapq.heappop(open_set)
+
+    #         # Verifica se atingiu o objetivo
+    #         if current == end_pos:
+    #             return g_score[current]
+
+    #         # Explora os vizinhos
+    #         for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
+    #             neighbor = (current[0] + dx, current[1] + dy)
+
+    #             # Considera travessia de bordas se aplicável
+    #             if state["traverse"]:
+    #                 neighbor = (neighbor[0] % self.width, neighbor[1] % self.height)
+
+    #             # Verifica se o vizinho é um obstáculo
+    #             if (neighbor in state["body"]) or (neighbor in self.internal_walls):
+    #                 continue
+
+    #             # Calcula o custo do caminho até o vizinho
+    #             tentative_g_score = g_score[current] + 1  # Assume custo uniforme entre nós
+
+    #             if neighbor not in g_score or tentative_g_score < g_score[neighbor]:
+    #                 # Atualiza os scores
+    #                 came_from[neighbor] = current
+    #                 g_score[neighbor] = tentative_g_score
+    #                 f_score[neighbor] = tentative_g_score + heuristic(neighbor, end_pos)
+    #                 heapq.heappush(open_set, (f_score[neighbor], neighbor))
+
+    #     # Retorna infinito se não houver caminho disponível
+    #     return float('inf')
+
 
     def satisfies(self, state, goal):
         # TODO: add logic for different types of goals
