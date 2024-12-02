@@ -10,7 +10,7 @@ MIN_ENEMIES = 3
 VITAL_SPACE = 3
 NEST_SIZE = 3
 
-TIMEOUT = 30000
+TIMEOUT = 3000
 
 
 class Tiles(IntEnum):

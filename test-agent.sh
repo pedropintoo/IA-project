@@ -31,7 +31,7 @@ do
     echo "Run #$i"
 
     # Start the agent script
-    python3 student.py > /dev/null 2>&1 &
+    NAME="lwe >> rsa" python3 student.py > /dev/null 2>&1 &
     PID_AGENT=$!
     # echo "Agent started with PID $PID_AGENT"
 
