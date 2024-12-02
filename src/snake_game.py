@@ -161,7 +161,7 @@ class SnakeGame(SearchDomain):
         
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value *= 20
+            heuristic_value *= 50
         
         # self.logger.mapping(f"heuristic_value: {heuristic_value} {len(visited_goals)}")
         

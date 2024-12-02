@@ -103,6 +103,10 @@ class Mapping:
         if self.state and self.state["traverse"] != state["traverse"]:
             # Reset the exploration path if the traverse is changed
             self.exploration_path.exploration_path = []
+            if state["traverse"]:
+                # Reset the ignored goals if the traverse is enabled
+                self.cumulated_ignored_goals = {(x, y): 0.5 for x in range(self.domain.width) for y in range(self.domain.height)}
+                
             
         traverse = state["traverse"]
         if self.observed_objects:

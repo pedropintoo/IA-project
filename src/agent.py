@@ -315,7 +315,7 @@ class Agent:
             goals.append(Goal(None, None, None, None, None))
             goals[0].goal_type = "exploration"
             goals[0].max_time = 0.07
-            goals[0].visited_range = 0 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
+            goals[0].visited_range = 1 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
             goals[0].priority = 10
             goals[0].position = self.mapping.next_exploration()
         
