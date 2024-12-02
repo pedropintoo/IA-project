@@ -218,6 +218,8 @@ class Agent:
         ## If no safe path found, get a fast action
         if len(safe_path) == 0 or safe_path is None: 
             self.logger.mapping("No safe path found! (using not perfect solution)")
+            #TODO: check this!!!!!!
+            # self.action = temp_tree.inverse_plan(temp_tree.best_solution["node"])[0]
             return
         
         # Normalize priority
