@@ -52,10 +52,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        #self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.disable()
+        self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
