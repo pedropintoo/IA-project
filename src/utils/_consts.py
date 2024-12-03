@@ -102,6 +102,13 @@ def get_num_future_goals(current_range):
     Goal: So the snake goes for the future goals.
     """
     return 2
+
+def get_num_max_present_goals():
+    """
+    This function is used to determine the maximum number of present goals.
+    Goal: So the snake goes for the present goals.
+    """
+    return 3
     
 def get_future_goals_priority(num_goals):
     """

@@ -3,11 +3,10 @@ from src.utils._consts import get_exploration_length_threshold, get_last_explora
 
 class ExplorationPath:
     
-    def __init__(self, internal_walls, height, width, dead_ends=None):
+    def __init__(self, internal_walls, height, width):
         self.internal_walls = internal_walls
         self.height = height
         self.width = width
-        self.dead_ends = dead_ends
         
         self.exploration_path = []
         self.exploration_generations_cache = {}

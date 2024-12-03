@@ -14,7 +14,7 @@ import logging
 import random
 import heapq
 from datetime import datetime, timedelta
-from src.utils._consts import get_num_future_goals, get_future_goals_priority, get_future_goals_range
+from src.utils._consts import get_num_future_goals, get_future_goals_priority, get_future_goals_range, get_num_max_present_goals
 import sys
 
 ## Search
@@ -52,10 +52,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        self.logger.disable()
+        # self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -109,7 +109,6 @@ class Agent:
             width=map_info["size"][0], 
             height=map_info["size"][1], 
             internal_walls=MatrixOperations.find_ones(map_info['map']),
-            dead_ends=MatrixOperations.find_dead_ends(map_info['map']),
             max_steps=map_info["timeout"]
         )        
         self.mapping = Mapping(
@@ -322,40 +321,47 @@ class Agent:
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
         goals = []
+        max_goals = get_num_max_present_goals()
         force_traverse_disabled = False
-        
-        # if self.mapping.opponent.is_to_attack_opponent():
-        #     for goal in self.mapping.opponent.attack_opponent():
-        #         goals.append(goal)
 
-        if self.mapping.observed(Tiles.FOOD):
-            for obj_position in self.mapping.closest_objects(Tiles.FOOD):
-                goals.append(Goal(None, None, None, None, None))
-                goals[-1].goal_type = "food"
-                goals[-1].max_time = 0.07
-                goals[-1].visited_range = 0
-                goals[-1].priority = 10
-                goals[-1].position = obj_position
-            
-        elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
-            objs_position = self.mapping.closest_objects(Tiles.SUPER)
-            goals.append(Goal(None, None, None, None, None))
-            goals[0].goal_type = "super"
-            goals[0].max_time = 0.07
-            goals[0].visited_range = 0
-            goals[0].priority = 10
-            goals[0].position = self.mapping.closest_objects(Tiles.SUPER)
+        ## Insert super goals, if any
+        if self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
+            for obj_position in self.mapping.closest_objects(Tiles.SUPER):
+                if len(goals) >= max_goals:
+                    break
+                goals.append(Goal(
+                    goal_type="super", 
+                    max_time=0.07, 
+                    visited_range=0,
+                    priority=10, 
+                    position=obj_position
+                ))
             force_traverse_disabled = True # worst case scenario
-            
-        else:
-            goals.append(Goal(None, None, None, None, None))
-            goals[0].goal_type = "exploration"
-            goals[0].max_time = 0.07
-            goals[0].visited_range = 1 if self.mapping.state["range"] > 2 else 0
-            goals[0].priority = 10
-            goals[0].position = self.mapping.next_exploration()
         
-        self.logger.info(f"Goal type: {goals[0].goal_type}")
+        ## Insert food goals, if any
+        if len(goals) < max_goals and self.mapping.observed(Tiles.FOOD):
+            for obj_position in self.mapping.closest_objects(Tiles.FOOD):
+                if len(goals) >= max_goals:
+                    break
+                goals.append(Goal(
+                    goal_type="food", 
+                    max_time=0.07, 
+                    visited_range=0,
+                    priority=10, 
+                    position=obj_position
+                ))
+        
+        ## In case of no goals, go for exploration
+        if len(goals) == 0:
+            goals.append(Goal(
+                goal_type="exploration", 
+                max_time=0.07, 
+                visited_range=1 if self.mapping.state["range"] > 2 else 0,
+                priority=10, 
+                position=self.mapping.next_exploration(force_traverse_disabled)
+            ))
+    
+        self.logger.mapping(f"Goal type: {goals[0].goal_type}")
         self.mapping.current_goal = goals[0].position
         
         return goals, force_traverse_disabled

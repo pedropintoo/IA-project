@@ -20,12 +20,11 @@ DIRECTIONS = {
 }
 
 class SnakeGame(SearchDomain):
-    def __init__(self, logger, width, height, internal_walls, dead_ends, max_steps, opponent_head=None, opponent_direction=None):
+    def __init__(self, logger, width, height, internal_walls, max_steps, opponent_head=None, opponent_direction=None):
         self.logger = logger
         self.width = width
         self.height = height
         self.internal_walls = internal_walls
-        self.dead_ends = dead_ends
         self.max_steps = max_steps
         self.opponent_head = opponent_head
         self.opponent_direction = opponent_direction

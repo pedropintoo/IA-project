@@ -16,7 +16,7 @@ class Mapping:
         self.logger = logger
         self.domain = domain
         self.fps = fps
-        self.DEFAULT_IGNORED_GOAL_DURATION = (1 / self.fps) / 2
+        self.DEFAULT_IGNORED_GOAL_DURATION = (1 / self.fps)
 
         self.objects_updated = False
         self.observed_objects = None
@@ -26,7 +26,6 @@ class Mapping:
         
         self.exploration_path = ExplorationPath(
             internal_walls=domain.internal_walls, 
-            dead_ends=domain.dead_ends, 
             height=domain.height,
             width=domain.width
         )
@@ -69,11 +68,11 @@ class Mapping:
     def is_ignored_goal(self, obj_pos):
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
-    def next_exploration(self) -> tuple:
+    def next_exploration(self, force_traverse_disabled=False) -> tuple:
         return self.exploration_path.next_exploration_point(
             self.state["body"], 
             self.state["range"],
-            self.state["traverse"], 
+            self.state["traverse"] and not force_traverse_disabled, 
             self.cells_mapping,
             self.is_ignored_goal
         )
@@ -193,11 +192,10 @@ class Mapping:
         if self.objects_updated:
             return False
       
-        # TODO: check if the goal has disappeared
+        # TODO: For multiplayer: check if the goal has disappeared
         
+        ## Check if the exploration has already been seen, with a good density
         first_goal = goals[0]
-        
-        # TODO: check this!
         if first_goal.goal_type == "exploration":
             x, y = first_goal.position
             sight_range = self.state["range"]
@@ -206,17 +204,6 @@ class Mapping:
             if average_seen_density >= exploration_point_seen_threshold:
                 self.cumulated_ignored_goals[(x, y)] = self.DEFAULT_IGNORED_GOAL_DURATION
                 return False
-        # elif first_goal.goal_type == "food" or first_goal.goal_type == "super":
-        #     x, y = first_goal.position
-        #     if (x, y) not in self.observed_objects:
-        #         return False
-        #     sight_range = self.state["range"]
-        #     food_seen_threshold = get_food_seen_threshold(self.state["range"])
-        #     average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-        #     if average_seen_density >= food_seen_threshold:
-        #         self.ignore_goal([x, y])
-        #         return False
-            
 
         return True
 
@@ -226,55 +213,55 @@ class Mapping:
         
     def closest_objects(self, obj_type):
         """Find the closest object based on the heuristic"""
-        if obj_type == Tiles.FOOD:            
-            points = []
-            for position in self.observed_objects.keys():
-                if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
-                    continue  # ignore the ignored goals, and the other objects
-                
-                points.append(position)
+        # if obj_type == Tiles.FOOD:            
+        points = []
+        for position in self.observed_objects.keys():
+            if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
+                continue  # ignore the ignored goals, and the other objects
+            
+            points.append(position)
 
-            # Sort points such that the first is closest to head, the second is closest to the first, and so on
-            sorted_points = []
-            traverse = self.state["traverse"]
-            current_point = self.state["body"][0]
+        # Sort points such that the first is closest to head, the second is closest to the first, and so on
+        sorted_points = []
+        traverse = self.state["traverse"]
+        current_point = self.state["body"][0]
 
-            while points:
-                # Find the closest point to the current point
-                closest_point = min(points, key=lambda pos: self.manhattan_distance(current_point, pos, traverse))
-                sorted_points.append(closest_point)
-                points.remove(closest_point)
-                current_point = closest_point
+        while points:
+            # Find the closest point to the current point
+            closest_point = min(points, key=lambda pos: self.manhattan_distance(current_point, pos, traverse))
+            sorted_points.append(closest_point)
+            points.remove(closest_point)
+            current_point = closest_point
 
-            return sorted_points
+        return sorted_points
         
-        else:
-            # TODO: change this!
-            closest = None
-            min_heuristic = None
+        # else:
+        #     # TODO: change this!
+        #     closest = None
+        #     min_heuristic = None
 
-            default_goal = Goal(
-                goal_type=obj_type,
-                max_time=None,
-                visited_range=0,
-                priority=1,
-                position=None
-            )
+        #     default_goal = Goal(
+        #         goal_type=obj_type,
+        #         max_time=None,
+        #         visited_range=0,
+        #         priority=1,
+        #         position=None
+        #     )
 
-            for position in self.observed_objects.keys():
-                if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
-                    continue
+        #     for position in self.observed_objects.keys():
+        #         if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
+        #             continue
                 
-                default_goal.position = position
-                heuristic = self.domain.heuristic(self.state, [default_goal]) # change this!
+        #         default_goal.position = position
+        #         heuristic = self.domain.heuristic(self.state, [default_goal]) # change this!
                 
-                if min_heuristic is None or heuristic < min_heuristic:
-                    min_heuristic = heuristic
-                    closest = position
+        #         if min_heuristic is None or heuristic < min_heuristic:
+        #             min_heuristic = heuristic
+        #             closest = position
             
-            self.logger.debug(f"Closest {obj_type}: {closest}")
+        #     self.logger.debug(f"Closest {obj_type}: {closest}")
             
-            return list(closest)  
+        #     return list(closest)  
     
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
