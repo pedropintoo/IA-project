@@ -117,16 +117,10 @@ class Mapping:
                 self.logger.mapping("Ignored goals changed")
         self.previous_ignored_keys = current_ignored_goals   
         
-            
-        traverse = state["traverse"]
-        if self.observed_objects:
-            if head in self.observed_objects and self.observed_objects[head][0] == Tiles.SUPER:
-                traverse = False # worst case scenario   
-
         self.state = {
             "body": state["body"] + [state["body"][-1]], # add the tail
             "range": state["range"],
-            "traverse": traverse,
+            "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"],
             "visited_goals": set()
@@ -214,29 +208,68 @@ class Mapping:
         
     def closest_objects(self, obj_type):
         """Find the closest object based on the heuristic"""
-        # if obj_type == Tiles.FOOD:            
-        points = []
+        points = []         
         min_heuristic = None
+        closest = None
+        traverse = self.state["traverse"]
+        
+        ## Get the closest food
         for position in self.observed_objects.keys():
-            if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
+            if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type or list(position) in self.state["body"]:
                 continue  # ignore the ignored goals, and the other objects
             
             points.append(position)
+            
+            heuristic = self.domain.heuristic(self.state, [Goal(goal_type=obj_type, position=position, visited_range=0)]) # change this!
+            if not min_heuristic or heuristic < min_heuristic:
+                min_heuristic = heuristic
+                closest = position
+        print("POINTS - ", points, "CLOSEST - ", closest)
+        ## Get near goals
+        near_objects = [closest]
+        near_goal_range = 3
+        for x in range(-near_goal_range, near_goal_range + 1):
+            for y in range(-near_goal_range, near_goal_range + 1):
+                if (x == 0 and y == 0):
+                    continue
+                position = [closest[0] + x, closest[1] + y]
+                
+                print("p: ", position)
+                if tuple(position) not in points:
+                    print("POSITION (not in points) - ", position)
+                    continue # not of this type
+                
+                if not traverse:
+                    if self._outside_of_domain(position) or position in self.domain.internal_walls:
+                        print("POSITION (outside of domain) - ", position)
+                        continue
+                    near_objects.append(position)
+                    
+                else:
+                    if obj_type == Tiles.SUPER and self._outside_of_domain(position):
+                        print("POSITION (outside of domain SUPER) - ", position)
+                        continue
+                        
+                    else:
+                        position = [position[0] % self.domain.width, position[1] % self.domain.height]
+                        near_objects.append(position)
+        
+        print("NEAR OBJECTS - ", near_objects)                       
+        return near_objects
 
+        # # Sort points such that the first is closest to head, the second is closest to the first, and so on
+        # sorted_points = []
+        # traverse = self.state["traverse"]
+        # current_point = self.state["body"][0]
 
-        # Sort points such that the first is closest to head, the second is closest to the first, and so on
-        sorted_points = []
-        traverse = self.state["traverse"]
-        current_point = self.state["body"][0]
+        # while points:
+        #     # Find the closest point to the current point
+        #     closest_point = min(points, key=lambda pos: self.manhattan_distance(current_point, pos, traverse))
+        #     sorted_points.append(closest_point)
+        #     points.remove(closest_point)
+        #     current_point = closest_point
 
-        while points:
-            # Find the closest point to the current point
-            closest_point = min(points, key=lambda pos: self.manhattan_distance(current_point, pos, traverse))
-            sorted_points.append(closest_point)
-            points.remove(closest_point)
-            current_point = closest_point
-
-        return sorted_points
+        # return sorted_points
         
         # else:
         #     # TODO: change this!
@@ -265,6 +298,10 @@ class Mapping:
         #     self.logger.debug(f"Closest {obj_type}: {closest}")
             
         #     return list(closest)  
+    
+    def _outside_of_domain(self, position):
+        x, y = position
+        return x < 0 or x >= self.domain.width or y < 0 or y >= self.domain.height
     
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
@@ -352,3 +389,7 @@ class Mapping:
         self.logger.mapping("Body: " + str(self.state["body"]))
         self.logger.mapping("Action plan: " + str(actions_plan))
         self.logger.mapping("Observed: " + str([p for p in self.observed_objects.keys()]))
+        self.logger.mapping("Traversal: " + str(self.state["traverse"]))
+        self.logger.mapping("Range: " + str(self.state["range"]))
+        self.logger.mapping("Step: " + str(self.state["step"]))
+        

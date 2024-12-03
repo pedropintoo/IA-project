@@ -126,7 +126,7 @@ class SnakeGame(SearchDomain):
             goal_range = goal.visited_range
 
             ## Manhattan distance (not counting walls)
-            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) #- goal_range
+            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
 
             heuristic_value += distance * priority
             priority *= 10
@@ -156,7 +156,7 @@ class SnakeGame(SearchDomain):
                     rounded_obstacles += 1
         
         self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
-        heuristic_value *= 1 + (((rounded_obstacles-3) // 2)  / 100)
+        heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50

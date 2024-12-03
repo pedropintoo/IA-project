@@ -1,6 +1,6 @@
 class Goal:
     
-    def __init__(self, goal_type, max_time, visited_range, priority, position, num_required_goals=1):
+    def __init__(self, goal_type=None, max_time=None, visited_range=None, priority=None, position=None, num_required_goals=1):
         self.goal_type = goal_type
         self.max_time = max_time
         self.visited_range = visited_range

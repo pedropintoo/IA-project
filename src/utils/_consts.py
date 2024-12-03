@@ -29,7 +29,7 @@ def get_exploration_point_seen_threshold(sight_range, traverse):
         return float("inf") if not traverse else 3
     elif sight_range == 3:
         return float("inf") if not traverse else 5
-    elif sight_range >= 4:
+    elif sight_range == 4:
         return float("inf") if not traverse else 7
     elif sight_range == 5:
         return float("inf") if not traverse else 9
