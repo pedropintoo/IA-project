@@ -83,7 +83,7 @@ def is_snake_in_perfect_effects(state, max_steps):
         supers_required = 0
         
     elif state["range"] == 3:
-        supers_required = 8
+        supers_required = 6 # TODO: or 8 
         
     elif state["range"] == 4:
         supers_required = 12 if traverse else 8
