@@ -38,7 +38,7 @@ class SearchTree:
         solution = None
         n = node
         while n is not None:
-            if self.problem.satisfies_first_goal(n.state):
+            if self.problem.satisfies_present_goals(n.state):
                 solution = n
             else:
                 if solution:

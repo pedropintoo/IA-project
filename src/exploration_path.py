@@ -37,7 +37,7 @@ class ExplorationPath:
             return GilbertCurve.adjust_path_to_target(new_exploration_path, target)
     
     def generate_exploration_path_v2(self, body, sight_range, exploration_map, traverse):
-        density_threshold = get_exploration_point_seen_threshold(sight_range)
+        density_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
         
         cluster_centers = self.cluster_unseen_cells(sight_range, density_threshold, exploration_map, traverse, body)
 
@@ -47,17 +47,17 @@ class ExplorationPath:
 
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
-        last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
+        # last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
 
-        if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
-            self.exploration_path = []
+        # if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
+        #     self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
             self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
             #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
-        exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range)
+        exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
         limit_iterations = 45 / sight_range
         while self.exploration_path:
             
@@ -70,7 +70,7 @@ class ExplorationPath:
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
             #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
-            if (average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
+            if (average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(point) and not (sight_range == 2 and point in body)) or limit_iterations <= 0:
                 self.last_given_point = point
                 return point          
 
@@ -135,17 +135,15 @@ class ExplorationPath:
                     best_target = (x, y)
             return best_target
         else:
-            max_unseen_cells = -1
+            exploration_seen_density_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
             best_distance = float('inf')
             best_target = None
             for (x, y) in exploration_path[::-1]:
-                if exploration_map.get((x, y), [0])[0] == 0:
-                    unseen_cells_count = self.count_unseen_cells((x, y), sight_range, exploration_map)
-                    distance = self.calcule_distance(traverse, head, (x, y))
-                    if unseen_cells_count > max_unseen_cells or (unseen_cells_count == max_unseen_cells and distance < best_distance):
-                        max_unseen_cells = unseen_cells_count
-                        best_distance = distance
-                        best_target = (x, y)
+                average_seen_density = self.calcule_average_seen_density((x, y), sight_range, exploration_map)
+                distance = self.calcule_distance(traverse, head, (x, y))
+                if average_seen_density < exploration_seen_density_threshold and distance < best_distance:
+                    best_distance = distance
+                    best_target = (x, y)
             return best_target
 
     def count_unseen_cells(self, point, sight_range, exploration_map):
@@ -218,7 +216,7 @@ class GilbertCurve:
         
         if not traverse:
             start_point = adjusted_path[0]
-            end_point = adjusted_path[-1]
+            end_point = adjusted_path[-1]   
             
             return_path = GilbertCurve.linear_path(end_point, start_point, sight_range * 2)
             
@@ -227,6 +225,9 @@ class GilbertCurve:
                     adjusted_path.append(point)
         
         return adjusted_path
+    
+    
+
     
     def linear_path(start, end, step_size):
         x0, y0 = start

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Start the first script and capture its process ID
-python3 server.py --players 1 &
+python3 server.py --players ${1:-1} &
 PID_SCRIPT1=$!
 
 # Start the second script in the background and suppress its output

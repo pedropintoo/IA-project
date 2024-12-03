@@ -52,7 +52,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.disable()
@@ -114,7 +114,8 @@ class Agent:
         )        
         self.mapping = Mapping(
             logger=self.logger,
-            domain=self.domain
+            domain=self.domain,
+            fps=self.fps,
         )
         
     async def play(self):
@@ -204,6 +205,7 @@ class Agent:
                                 
                 ## Check max execution time
                 if datetime.now() > time_limit:
+                    future_goals.pop(0)
                     break
             
             if len(safe_path) == 0 or safe_path is None:
@@ -258,13 +260,13 @@ class Agent:
          
         
         ## Try to get a path to goal and then to the first future goal
-        present_goals = self.current_goals[:] + [new_future_goals[0]]
-        num_goals = 1#len(new_future_goals)
+        present_goals = self.current_goals[:] + new_future_goals
+        num_goals = len(self.current_goals)
         while num_goals > 0 and (self.actions_plan is None or len(self.actions_plan) == 0):
-            num_goals -= 1
+            
             
             ## Search structure
-            problem = SearchProblem(self.domain, self.mapping.state, present_goals)
+            problem = SearchProblem(self.domain, self.mapping.state, present_goals, num_present_goals=num_goals)
             temp_tree = SearchTree(problem)
             
             try:
@@ -275,13 +277,18 @@ class Agent:
                 
                 ## Check max execution time
                 if datetime.now() > time_limit:
-                    break
+                    num_goals = 0
+            
+            num_goals -= 1
             
             self.logger.mapping(f"Goal action plan: {self.actions_plan}")
             if len(self.actions_plan) == 0 or self.actions_plan is None:
                 self.logger.mapping(f"Ignore goal {present_goals[0].position}")
                 self.mapping.ignore_goal(present_goals[0].position)
                 present_goals.pop(0)
+            
+            
+    
 
         ## If no path found, set the safe path
         if self.actions_plan is None or len(self.actions_plan) == 0:
@@ -307,7 +314,7 @@ class Agent:
         return [Goal(
             goal_type="exploration",
             max_time=0.09, # TODO: change this
-            visited_range=distance // 2,
+            visited_range=(4*distance) // 7,
             priority=10,
             position=self.mapping.state["body"][-1]
         )]
@@ -322,27 +329,29 @@ class Agent:
         #         goals.append(goal)
 
         if self.mapping.observed(Tiles.FOOD):
-            goals.append(Goal(None, None, None, None, None))
-            goals[0].goal_type = "food"
-            goals[0].max_time = 0.07
-            goals[0].visited_range = 0
-            goals[0].priority = 10
-            goals[0].position = self.mapping.closest_object(Tiles.FOOD)
+            for obj_position in self.mapping.closest_objects(Tiles.FOOD):
+                goals.append(Goal(None, None, None, None, None))
+                goals[-1].goal_type = "food"
+                goals[-1].max_time = 0.07
+                goals[-1].visited_range = 0
+                goals[-1].priority = 10
+                goals[-1].position = obj_position
             
         elif self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
+            objs_position = self.mapping.closest_objects(Tiles.SUPER)
             goals.append(Goal(None, None, None, None, None))
             goals[0].goal_type = "super"
             goals[0].max_time = 0.07
             goals[0].visited_range = 0
             goals[0].priority = 10
-            goals[0].position = self.mapping.closest_object(Tiles.SUPER)
+            goals[0].position = self.mapping.closest_objects(Tiles.SUPER)
             force_traverse_disabled = True # worst case scenario
             
         else:
             goals.append(Goal(None, None, None, None, None))
             goals[0].goal_type = "exploration"
             goals[0].max_time = 0.07
-            goals[0].visited_range = 1 #(self.mapping.state["range"] + 1) // 2 - 1 # ( 2 -> 0, 3 -> 1, 4 -> 1, 5 -> 2, 6 -> 2)
+            goals[0].visited_range = 1 if self.mapping.state["range"] > 2 else 0
             goals[0].priority = 10
             goals[0].position = self.mapping.next_exploration()
         
