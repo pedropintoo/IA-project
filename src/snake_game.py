@@ -83,7 +83,6 @@ class SnakeGame(SearchDomain):
                 if self.is_goal_visited(new_head, goal, traverse):
                     if goal.goal_type == "super":
                         traverse = False # worst case scenario
-                        print("ALERT!!!!", goal.position)
                     elif goal.goal_type == "food":
                         new_body.append(body[-1]) # grow the snake
                     visited_goals.add(tuple(goal.position))
@@ -129,7 +128,7 @@ class SnakeGame(SearchDomain):
         
         heuristic_value = 0   
         previous_goal_position = head
-        priority = 2.5
+        priority = 10
 
         snake_length = len(state["body"])
         body_weight = 1 # + snake_length // 10
@@ -144,7 +143,7 @@ class SnakeGame(SearchDomain):
             goal_range = goal.visited_range
 
             ## Manhattan distance (not counting walls)
-            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
+            distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) #- goal_range
 
             # Include wall density in heuristic
             obstacle_count = self.count_obstacles_between(
@@ -174,6 +173,7 @@ class SnakeGame(SearchDomain):
                 if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
                     rounded_obstacles += 1
         
+        # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
         heuristic_value += rounded_obstacles * 3
         
         

@@ -23,6 +23,18 @@ class SearchTree:
         self.best_solution = {"total_cost": root.heuristic, "node": root} 
         self.non_terminals = 0
 
+    # Get the root first action to a given node
+    def first_action_to(self, node):
+        n = node
+        previous = n.parent
+        while previous is not None:
+            if previous.parent is None:
+                return n.action
+            n = previous
+            previous = n.parent
+        return None
+        
+
     # Path from root to node
     def inverse_plan(self, node):
         n = node
@@ -47,7 +59,7 @@ class SearchTree:
         return self.inverse_plan(solution)
 
     # Search solution
-    def search(self, time_limit=None):
+    def search(self, time_limit=None, first_action=False):
         while self.open_nodes is not None and len(self.open_nodes) > 0:          
             node = heapq.heappop(self.open_nodes)
 
@@ -55,7 +67,11 @@ class SearchTree:
             if self.problem.goal_test(node.state):
                 self.best_solution = {"total_cost": node.heuristic, #+ node.cost,
                                       "node": node}
-                # print(node.state["visited_goals"])
+
+                ## In case only the first direction is needed
+                if first_action:
+                    return self.first_action_to(node)
+                
                 return self.inverse_plan_to_solution(node)
 
             self.non_terminals += 1
