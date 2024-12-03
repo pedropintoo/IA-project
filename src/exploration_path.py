@@ -85,8 +85,8 @@ class ExplorationPath:
 
 
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
-        if not traverse or sight_range in [5, 6]:
-            return self.next_point_v2(body, sight_range, exploration_map, traverse, is_ignored_goal)
+        # if not traverse or sight_range in [5, 6]:
+        #     return self.next_point_v2(body, sight_range, exploration_map, traverse, is_ignored_goal)
 
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         # last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
