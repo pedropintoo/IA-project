@@ -182,7 +182,8 @@ class Mapping:
         if self.objects_updated:
             print("NEW OBJECTS OBSERVED")
         
-        self.print_mapping([goal.position for goal in goals], actions_plan)
+        if self.logger.activate_mapping:
+            self.print_mapping([goal.position for goal in goals], actions_plan)
         self.logger.debug(f"New: {self.observed_objects}")
 
     def a_in_b_objects(self, a, b):
@@ -215,11 +216,13 @@ class Mapping:
         """Find the closest object based on the heuristic"""
         # if obj_type == Tiles.FOOD:            
         points = []
+        min_heuristic = None
         for position in self.observed_objects.keys():
             if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
                 continue  # ignore the ignored goals, and the other objects
             
             points.append(position)
+
 
         # Sort points such that the first is closest to head, the second is closest to the first, and so on
         sorted_points = []

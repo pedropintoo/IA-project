@@ -223,8 +223,7 @@ class Agent:
             self.action = temp_tree.first_action_to(best_node)
             return
                 
-        
-        # Normalize
+        ## Normalize future goals
         new_future_goals = []
         head = self.current_goals[-1].position
         traverse = self.mapping.state["traverse"] if not any([goal.goal_type == "super" for goal in self.current_goals]) else False
@@ -240,22 +239,20 @@ class Agent:
 
             distance = dx + dy
             
-            ft_goal.visited_range = 2 if distance >= 3 else 0
+            ft_goal.visited_range = distance // 4
             new_future_goals.append(ft_goal)
             
             head = goal_position
-         
         
         ## Try to get a path to goal and then to the first future goal
-        present_goals = self.current_goals[:] + new_future_goals
+        present_goals = self.current_goals + new_future_goals
         num_goals = len(self.current_goals)
-        while num_goals > 0 and (self.actions_plan is None or len(self.actions_plan) == 0):
+        
+        ## Search structure
+        problem = SearchProblem(self.domain, self.mapping.state, present_goals, num_present_goals=num_goals)
+        temp_tree = SearchTree(problem)
             
-            
-            ## Search structure
-            problem = SearchProblem(self.domain, self.mapping.state, present_goals, num_present_goals=num_goals)
-            temp_tree = SearchTree(problem)
-            
+        while num_goals > 0 and self._is_empty(self.actions_plan):
             try:
                 ## Search for the given goals
                 self.actions_plan = temp_tree.search(time_limit=min(datetime.now() + timedelta(seconds=present_goals[0].max_time), time_limit))
@@ -264,22 +261,27 @@ class Agent:
                 
                 ## Check max execution time
                 if datetime.now() > time_limit:
-                    num_goals = 0
+                    num_goals = 1 # last goal
             
             num_goals -= 1
             
-            self.logger.mapping(f"Goal action plan: {self.actions_plan}")
-            if len(self.actions_plan) == 0 or self.actions_plan is None:
-                self.logger.mapping(f"Ignore goal {present_goals[0].position}")
-                self.mapping.ignore_goal(present_goals[0].position)
-                present_goals.pop(0)
+            if self._is_empty(self.actions_plan):
+                self.logger.mapping(f"Ignore goal {present_goals[num_goals].position}")
+                
+                ## Clear the last present goal from search tree (and all affected)
+                self.mapping.ignore_goal(present_goals[num_goals].position)
+                temp_tree.remove_goal(idx=num_goals)
+                problem.num_present_goals = len(present_goals)
         
         ## If no path found, set the safe path
-        if self.actions_plan is None or len(self.actions_plan) == 0:
+        if self._is_empty(self.actions_plan):
             self.logger.mapping("Safe action set! After all, no path found.")
+            self.actions_plan = []
             self.action = safe_action
             return
         
+        ## Set the next action
+        self.logger.mapping(f"Goal action plan: {self.actions_plan}")
         self.action = self.actions_plan.pop()
     
     def _is_empty(self, obj):

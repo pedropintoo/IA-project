@@ -117,8 +117,8 @@ class SearchTree:
         for node in new_lower_nodes:
             heapq.heappush(self.open_nodes, node)
     
-    def remove_goal(self):
-        goal = self.problem.goals.pop(0)
+    def remove_goal(self, idx):
+        goal = self.problem.goals.pop(idx)
         
         ## Remove affected nodes
         new_open_nodes = []
