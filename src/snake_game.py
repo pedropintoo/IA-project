@@ -84,6 +84,9 @@ class SnakeGame(SearchDomain):
                 if self.is_goal_visited(new_head, goal, traverse):
                     if goal.goal_type == "super":
                         traverse = False # worst case scenario
+                        print("ALERT!!!!", goal.position)
+                    elif goal.goal_type == "food":
+                        new_body.append(body[-1]) # grow the snake
                     visited_goals.add(tuple(goal.position))
                 else:
                     break # if one goal is not visited, we break the loop

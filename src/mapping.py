@@ -113,7 +113,7 @@ class Mapping:
         
         current_ignored_goals = set([goal for goal, timestamp in self.ignored_goals])
         if self.previous_ignored_keys:
-            if not self.a_in_b(a=self.previous_ignored_keys, b=current_ignored_goals):
+            if not self.a_in_b_objects(a=self.previous_ignored_keys, b=current_ignored_goals):
                 self.objects_updated = True
                 self.logger.mapping("Ignored goals changed")
         self.previous_ignored_keys = current_ignored_goals   
@@ -186,8 +186,8 @@ class Mapping:
         self.print_mapping([goal.position for goal in goals], actions_plan)
         self.logger.debug(f"New: {self.observed_objects}")
 
-    def a_in_b(self, a, b):
-        return all(a_i in b for a_i in a)
+    def a_in_b_objects(self, a, b):
+        return all(a_i in b for a_i in a if a_i in self.observed_objects and not (self.observed_objects[a_i][0] == Tiles.SUPER and self.domain.is_perfect_effects(self.state)))
 
     def nothing_new_observed(self, goals):
         if self.objects_updated:

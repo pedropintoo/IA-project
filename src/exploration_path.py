@@ -53,8 +53,10 @@ class ExplorationPath:
         #     self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
+            # if traverse:
             self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
-            #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
+            # else:
+            #     self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
@@ -62,8 +64,10 @@ class ExplorationPath:
         while self.exploration_path:
             
             if len(self.exploration_path) < exploration_length_threshold or limit_iterations <= 0:
+                # if traverse:
                 self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
-                #self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
+                # else:
+                #     self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
             
             point = list(self.exploration_path.pop(0))
 

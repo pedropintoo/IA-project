@@ -26,15 +26,15 @@ def get_exploration_point_seen_threshold(sight_range, traverse):
     Goal: So the snake doesn't go to points in previously seen areas.
     """
     if sight_range == 2:
-        return 3 if not traverse else 2
+        return 4 if not traverse else 2
     elif sight_range == 3:
-        return 4 if not traverse else 3
+        return 8 if not traverse else 3
     elif sight_range == 4:
-        return float("inf") if not traverse else 5
+        return 12 if not traverse else 5
     elif sight_range == 5:
-        return 11 if not traverse else 9
+        return 15 if not traverse else 9
     else:
-        return 18 if not traverse else 15
+        return 20 if not traverse else 15
     
 def get_food_seen_threshold(sight_range):
     """
@@ -89,10 +89,10 @@ def is_snake_in_perfect_effects(state, max_steps):
         supers_required = 12 if traverse else 8
         
     elif state["range"] == 5:
-        supers_required = 15 if traverse else 12
+        supers_required = 15 if traverse else 0
         
     elif state["range"] == 6:
-        supers_required = 20 if traverse else 15
+        supers_required = 20 if traverse else 0
         
     return not len([p for p in state.get("observed_objects", []) if state["observed_objects"][p][0] == Tiles.SUPER]) >= supers_required
     
