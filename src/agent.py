@@ -52,10 +52,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.disable()
+        self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -251,7 +251,7 @@ class Agent:
 
             distance = dx + dy
             
-            ft_goal.visited_range = distance // 4
+            ft_goal.visited_range = 2 if distance >= 3 else 0
             last_goal_priority -= 0.1
             new_future_goals.append(ft_goal)
             
@@ -285,21 +285,18 @@ class Agent:
                 self.logger.mapping(f"Ignore goal {present_goals[0].position}")
                 self.mapping.ignore_goal(present_goals[0].position)
                 present_goals.pop(0)
-            
-            
-    
-
+        
         ## If no path found, set the safe path
         if self.actions_plan is None or len(self.actions_plan) == 0:
             self.actions_plan = [safe_path.pop()]
             self.logger.mapping("Safe path set! After all, no path found.")
         
         self.action = self.actions_plan.pop()
-            
+    
     def _find_future_goals(self, goals, force_traverse_disabled):
         tail = self.mapping.state["body"][-1]
         head = self.mapping.state["body"][0]
-        traverse = self.mapping.state["traverse"]
+        traverse = self.mapping.state["traverse"] and not force_traverse_disabled
         
         ## Manhattan distance (not counting walls)
         dx_no_crossing_walls = abs(head[0] - tail[0])
@@ -310,9 +307,11 @@ class Agent:
 
         distance = dx + dy 
         
+        # TODO: get a better point based on space a round
+        
         return [Goal(
             goal_type="exploration",
-            max_time=0.09, # TODO: change this
+            max_time=0.09,
             visited_range=(4*distance) // 7,
             priority=10,
             position=self.mapping.state["body"][-1]
@@ -369,10 +368,9 @@ class Agent:
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
         self.actions_plan = []
-        #self.mapping.ignore_goal(self.current_goals[0].position)
         
         if warning:
-            self.logger.critical("Fast action!")
+            self.logger.mapping("Fast action!")
 
         ## If there are no actions available, return None
         if self.domain.actions(self.mapping.state) == []:

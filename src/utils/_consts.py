@@ -7,7 +7,7 @@ def get_exploration_length_threshold(sight_range):
     If the exploration path is shorter than this threshold, the path will be regenerated.
     Goal: So the exploration path is never empty.
     """
-    return 25 // sight_range
+    return 25 // sight_range if sight_range < 5 else 25 // 4
 
 def get_last_exploration_distance_threshold(sign_range, head, width):
     """
@@ -26,15 +26,20 @@ def get_exploration_point_seen_threshold(sight_range, traverse):
     Goal: So the snake doesn't go to points in previously seen areas.
     """
     if sight_range == 2:
-        return float("inf") if not traverse else 2
-    elif sight_range == 3:
         return float("inf") if not traverse else 3
-    elif sight_range == 4:
+    elif sight_range == 3:
         return float("inf") if not traverse else 5
+    elif sight_range >= 4:
+        return float("inf") if not traverse else 7
     elif sight_range == 5:
         return float("inf") if not traverse else 9
     else:
-        return float("inf") if not traverse else 15
+        return float("inf") if not traverse else 11
+
+    # if traverse:
+    #     return sight_range * 1.5
+    # else:
+    #     return sight_range * 2.5
     
 def get_food_seen_threshold(sight_range):
     """
@@ -76,7 +81,7 @@ def is_snake_in_perfect_effects(state, max_steps):
     """
     traverse = state["traverse"]
     
-    if state["step"] > (max_steps - 200):
+    if state["step"] > (max_steps - 300):
         return False
     
     if state["range"] == 2:

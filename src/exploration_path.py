@@ -35,15 +35,6 @@ class ExplorationPath:
         else:
             return GilbertCurve.adjust_path_to_target(new_exploration_path, target)
     
-    def generate_exploration_path_v2(self, body, sight_range, exploration_map, traverse):
-        density_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
-        
-        cluster_centers = self.cluster_unseen_cells(sight_range, density_threshold, exploration_map, traverse, body)
-
-        ordered_points = self.order_cluster_centers(cluster_centers, body[0], traverse)
-        
-        self.exploration_path = ordered_points
-
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         # last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
@@ -52,32 +43,31 @@ class ExplorationPath:
         #     self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            # if traverse:
+            print("REGENERATING PATH BECAUSE OF LENGTH")
             self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
-            # else:
-            #     self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
 
         # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
-        limit_iterations = 45 / sight_range
+        # limit_iterations = 45 / sight_range
         while self.exploration_path:
             
-            if len(self.exploration_path) < exploration_length_threshold or limit_iterations <= 0:
-                # if traverse:
+            if len(self.exploration_path) < exploration_length_threshold: #or limit_iterations <= 0:
+                print("REGENERATING PATH BECAUSE OF LENGTH")
                 self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
-                # else:
-                #     self.generate_exploration_path_v2(body, sight_range, exploration_map, traverse)
             
             point = list(self.exploration_path.pop(0))
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
             #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
-            if (average_seen_density < exploration_point_seen_threshold and not is_ignored_goal(point) and not (sight_range == 2 and point in body)) or limit_iterations <= 0:
+            if (not is_ignored_goal(point) and not (sight_range == 2 and self.is_valid_point(point, body, traverse, average_seen_density, exploration_length_threshold))):# or limit_iterations <= 0:
                 self.last_given_point = point
-                return point          
+                return point    
 
-            limit_iterations -= 1 # Avoid infinite loop 
+            if average_seen_density >= exploration_point_seen_threshold:
+                print(f"Point {point} has average density {average_seen_density} and is being ignored with traverse {traverse}")    
+
+            # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         points_to_return = []
@@ -175,32 +165,6 @@ class ExplorationPath:
 
         return sorted_cells
     
-    def cluster_unseen_cells(self, sight_range, density_threshold, exploration_map, traverse, body):
-        low_density_cells = self.get_low_density_unseen_cells(exploration_map, density_threshold, sight_range, traverse, body)
-
-        cluster_centers = []
-        min_distance = 2 * sight_range 
-
-        for cell in low_density_cells:
-            if all(self.calcule_distance(traverse, cell, center) > min_distance for center in cluster_centers):
-                cluster_centers.append(cell)
-
-        return cluster_centers
-    
-    def order_cluster_centers(self, cluster_centers, start_position, traverse):
-        ordered_points = []
-        unvisited = set(cluster_centers)
-        current_position = start_position
-
-        while unvisited:
-            #TODO: Implement with traverse variable
-            next_point = min(unvisited, key=lambda p: self.calcule_distance(traverse, current_position, p))
-            ordered_points.append(next_point)
-            unvisited.remove(next_point)
-            current_position = next_point
-        
-        return ordered_points
-
     def print_exploration_path(self):
         print("EXPLORATION PATH")
         for y in range(self.height):
@@ -216,7 +180,7 @@ class GilbertCurve:
     def get_curve(width, height, sight_range=1, traverse=True):
         path = list(GilbertCurve.gilbert2d(width, height, sight_range*2))
         adjusted_path = [(x * sight_range*2 + 1, y * sight_range*2 + 1) for x, y in path]
-        
+
         if not traverse:
             start_point = adjusted_path[0]
             end_point = adjusted_path[-1]   
@@ -226,12 +190,39 @@ class GilbertCurve:
             for point in return_path:
                 if point not in adjusted_path:
                     adjusted_path.append(point)
-        
+
+        if sight_range in [5, 6]:
+            num_divisions = max(1, sight_range // 2)
+
+            full_path = []
+
+            for i in range(len(adjusted_path)- 1):
+                start = adjusted_path[i]
+                end = adjusted_path[i + 1]
+                full_path.append(start)
+
+                intermediate_points = GilbertCurve.generate_intermediate_points(start, end, num_divisions)
+                full_path.extend(intermediate_points)
+            
+            full_path.append(adjusted_path[-1])
+            adjusted_path = full_path
+
         return adjusted_path
     
-    
+    def generate_intermediate_points(start, end, num_divisions):
+        x0, y0 = start
+        x1, y1 = end
+        points = []
 
-    
+        for i in range(1, num_divisions):
+            t = i / num_divisions
+            x = x0 + t * (x1 - x0)
+            y = y0 + t * (y1 - y0)
+            points.append((int(round(x)), int(round(y))))
+        
+        return points
+
+
     def linear_path(start, end, step_size):
         x0, y0 = start
         x1, y1 = end
@@ -329,7 +320,7 @@ class GilbertCurve:
             return path[closest_point_index:] + path[:closest_point_index]
 
 if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24, 3, True)
+    jorge = GilbertCurve.get_curve(48,24, 6, False)
     for jorginho in jorge:
         print(tuple(jorginho))
     print(len(jorge))
