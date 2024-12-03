@@ -35,7 +35,59 @@ class ExplorationPath:
         else:
             return GilbertCurve.adjust_path_to_target(new_exploration_path, target)
     
+    def next_point_v2(self, body, sight_range, exploration_map, traverse, is_ignored_goal):
+        head = body[0]
+        exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
+
+        min_density = None
+        closest_point = None
+        min_distance = None
+
+        # Define a reasonable search radius around the snake's head to limit computation
+        search_radius = 5 * sight_range  # Adjust based on performance needs
+
+        # Generate positions within the search radius
+        positions_to_evaluate = []
+        for dx in range(-search_radius, search_radius + 1):
+            for dy in range(-search_radius, search_radius + 1):
+                if abs(dx) + abs(dy) > search_radius:
+                    continue  # Skip points outside the search radius
+                x = head[0] + dx
+                y = head[1] + dy
+                if traverse:
+                    x %= self.width
+                    y %= self.height
+                else:
+                    if x < 0 or x >= self.width or y < 0 or y >= self.height:
+                        continue  # Skip out-of-bounds positions
+                positions_to_evaluate.append((x, y))
+
+        for point in positions_to_evaluate:
+            if point in body:
+                continue  # Skip snake's body
+            if is_ignored_goal(point):
+                continue  # Skip ignored goals
+
+            # Calculate density
+            density = self.calcule_average_seen_density(point, sight_range, exploration_map)
+            if density > exploration_point_seen_threshold:
+                continue  # Skip points exceeding density threshold
+
+            # Calculate distance to head
+            distance = self.calcule_distance(traverse, head, point)
+
+            # Select point with acceptable density and minimal distance
+            if closest_point is None or distance < min_distance:
+                closest_point = point
+                min_distance = distance
+
+        return closest_point  # Returns None if no suitable point is found
+
+
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
+        if not traverse or sight_range in [5, 6]:
+            return self.next_point_v2(body, sight_range, exploration_map, traverse, is_ignored_goal)
+
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         # last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
 
@@ -43,7 +95,7 @@ class ExplorationPath:
         #     self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            print("REGENERATING PATH BECAUSE OF LENGTH")
+            print("REGENERATING PATH BECAUSE OF LENGTH AFTER NEXT REQUEST")
             self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
 
         # self.print_exploration_path()
@@ -52,7 +104,7 @@ class ExplorationPath:
         while self.exploration_path:
             
             if len(self.exploration_path) < exploration_length_threshold: #or limit_iterations <= 0:
-                print("REGENERATING PATH BECAUSE OF LENGTH")
+                print("REGENERATING PATH BECAUSE OF LENGTH INSIDE THE LOOP")
                 self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
             
             point = list(self.exploration_path.pop(0))
@@ -60,12 +112,13 @@ class ExplorationPath:
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
             #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
-            if (not is_ignored_goal(point) and not (sight_range == 2 and self.is_valid_point(point, body, traverse, average_seen_density, exploration_length_threshold))):# or limit_iterations <= 0:
+            if (not is_ignored_goal(point) and not (sight_range == 2 and not self.is_valid_point(point, body, traverse))) and average_seen_density < exploration_point_seen_threshold:# or limit_iterations <= 0:
                 self.last_given_point = point
                 return point    
 
+            print(f"---------->POINT SKIPPED {point}")
             if average_seen_density >= exploration_point_seen_threshold:
-                print(f"Point {point} has average density {average_seen_density} and is being ignored with traverse {traverse}")    
+                print(f"--------------------->Point {point} has average density {average_seen_density} and is being ignored with traverse {traverse} and the threshold {exploration_point_seen_threshold}")    
 
             # limit_iterations -= 1 # Avoid infinite loop 
 
@@ -149,21 +202,6 @@ class ExplorationPath:
                     if exploration_map.get(cell, [0])[0] == 0:
                         count += 1
         return count
-
-    def get_low_density_unseen_cells(self, exploration_map, density_threshold, sight_range, traverse, body):
-        unseen_cells = []
-        for (x,y), (seen_value, _) in exploration_map.items():
-            if (traverse or [x, y] not in self.internal_walls) and seen_value == 0 and [x, y] not in body:
-                density = self.calcule_average_seen_density((x, y), sight_range, exploration_map)
-                if density < density_threshold:
-                    unseen_cells.append((x, y))
-        
-        sorted_cells = sorted(
-            unseen_cells,
-            key=lambda cell: self.calcule_average_seen_density(cell, sight_range, exploration_map)
-        )
-
-        return sorted_cells
     
     def print_exploration_path(self):
         print("EXPLORATION PATH")
@@ -320,7 +358,7 @@ class GilbertCurve:
             return path[closest_point_index:] + path[:closest_point_index]
 
 if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24, 6, False)
+    jorge = GilbertCurve.get_curve(48,24, 2, True)
     for jorginho in jorge:
         print(tuple(jorginho))
     print(len(jorge))

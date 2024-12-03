@@ -29,7 +29,7 @@ def get_exploration_point_seen_threshold(sight_range, traverse):
         return float("inf") if not traverse else 3
     elif sight_range == 3:
         return float("inf") if not traverse else 5
-    elif sight_range >= 4:
+    elif sight_range == 4:
         return float("inf") if not traverse else 7
     elif sight_range == 5:
         return float("inf") if not traverse else 9
@@ -63,7 +63,7 @@ def get_duration_of_expire_cells(sight_range, fps):
     This is the duration of the cells in the exploration map.
     Goal: So the snake clears the exploration map of old cells so it has always some new cells to explore.
     """
-    return (30 / sight_range) * 10 / fps
+    return (45 / sight_range) * 10 / fps
 
 
 
