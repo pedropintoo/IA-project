@@ -83,7 +83,6 @@ class SnakeGame(SearchDomain):
                 if self.is_goal_visited(new_head, goal, traverse):
                     if goal.goal_type == "super":
                         traverse = False # worst case scenario
-                        print("ALERT!!!!", goal.position)
                     elif goal.goal_type == "food":
                         new_body.append(body[-1]) # grow the snake
                     visited_goals.add(tuple(goal.position))
@@ -102,26 +101,6 @@ class SnakeGame(SearchDomain):
     def cost(self, state, action):
         return 1
     
-    def count_obstacles_between(self, start_pos, end_pos, body, body_weight, walls_weight):
-        x1, y1 = start_pos
-        x2, y2 = end_pos
-
-        traverse = body["traverse"]
-
-        x_start, x_end = sorted([x1, x2])
-        y_start, y_end = sorted([y1, y2])
-
-        obstacle_count = 0
-        for x in range(x_start, x_end + 1):
-            for y in range(y_start, y_end + 1):
-                position = (x % self.width, y % self.height) if traverse else (x, y)
-                if not traverse and position in self.internal_walls:
-                    obstacle_count += walls_weight
-                elif position in body["body"]:
-                    obstacle_count += body_weight
-
-        return obstacle_count
-    
     def heuristic(self, state, goals):        
         head = state["body"][0]
         traverse = state["traverse"]
@@ -129,15 +108,18 @@ class SnakeGame(SearchDomain):
         
         heuristic_value = 0   
         previous_goal_position = head
-        priority = 2.5
+        priority = 10
 
         snake_length = len(state["body"])
         body_weight = 1 # + snake_length // 10
         walls_weight = 1 # + snake_length // 5
 
-        for goal in goals: # TODO: change this to consider all goals   
+        ## Manhattan distance to the goals
+        for goal in goals: 
             if tuple(goal.position) in visited_goals:
                 priority *= 10
+                if goal.goal_type == "super":
+                    traverse = False # worst case scenario
                 continue
             
             goal_position = goal.position
@@ -146,50 +128,42 @@ class SnakeGame(SearchDomain):
             ## Manhattan distance (not counting walls)
             distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
 
-            # Include wall density in heuristic
-            obstacle_count = self.count_obstacles_between(
-                previous_goal_position, 
-                goal_position, 
-                state, 
-                body_weight=body_weight,  # This can became overly cautious. Suggestion: Dynamically adjust weights based on the snake’s size or current safety margin.
-                walls_weight=walls_weight  
-            )
-            distance += obstacle_count
-
             heuristic_value += distance * priority
             priority *= 10
             
             previous_goal_position = goal_position
+            
+            if goal.goal_type == "super":
+                traverse = False # worst case scenario
                     
         ## Count how many walls or body rounded by the snake
         rounded_obstacles = 0 
-        for x in range(-1, 2):
-            for y in range(-1, 2):
+        for x in range(-2, 3):
+            for y in range(-2, 3):
                 if (x, y) == (0, 0):
                     continue # skip the head
                 neighbor_x = (head[0] + x) % self.width if traverse else head[0] + x
                 neighbor_y = (head[1] + y) % self.height if traverse else head[1] + y
-                if [neighbor_x, neighbor_y] in state["body"]:
+                
+                # Border walls
+                if neighbor_x < 0 or neighbor_x >= self.width or neighbor_y < 0 or neighbor_y >= self.height:
+                    rounded_obstacles += 1 
+                    
+                elif [neighbor_x, neighbor_y] in state["body"]:
                     rounded_obstacles += 1 # at least one body part is in the neighborhood
+                
                 if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
                     rounded_obstacles += 1
         
-        heuristic_value += rounded_obstacles * 3
-        
+        self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
+        heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
-        # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
-        
+        self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
+
         return heuristic_value
-
-
-    def satisfies(self, state, goal):
-        # TODO: add logic for different types of goals
-        # e.g.: if the goal is of type explore, check if we have passed through the nearby position (maybe with some range defined in the goal)
-        # e.g.: if the goal is of type eat, check if we have passed through the exact position
-        return tuple(goal.position) in state["visited_goals"]
 
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
@@ -199,6 +173,9 @@ class SnakeGame(SearchDomain):
         dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
 
         return dx + dy
+
+    def satisfies(self, state, goal):
+        return tuple(goal.position) in state["visited_goals"]
 
     def is_goal_visited(self, head, goal, traverse): 
         visited_range = goal.visited_range
