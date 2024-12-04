@@ -180,7 +180,6 @@ class SnakeGame(SearchDomain):
             heuristic_value *= 50
         
         if state["opponent_head"] is not None:
-            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             ## Penalize predicted collision with the opponent
             if head[0] == state["opponent_head"][0] and head[1] == state["opponent_head"][1]:
                 heuristic_value *= 150
@@ -196,7 +195,6 @@ class SnakeGame(SearchDomain):
 
             for pred_x, pred_y in possible_collisions:
                 if head[0] == pred_x and head[1] == pred_y:
-                    print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBb")
                     heuristic_value *= 100
         
         #self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")

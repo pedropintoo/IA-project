@@ -96,7 +96,7 @@ class Mapping:
         self.objects_updated = False
                 
         if self.last_step + 1 < state["step"]:
-            self.logger.critical(f"Unsynced steps: {state['step']} {self.last_step + 1}")
+            # self.logger.critical(f"Unsynced steps: {state['step']} {self.last_step + 1}")
             self.objects_updated = True
             self.last_step = state["step"]
         else:
@@ -108,7 +108,7 @@ class Mapping:
         if self.opponent.opponent_head_position != 0:
             self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
             self.domain.opponent_direction = self.opponent.opponent_direction
-            self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
+            # self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
         
         else:
             self.domain.opponent_head = None
@@ -117,12 +117,12 @@ class Mapping:
         ## Check if opponent change predicted direction
         if self.opponent.predicted_failed:
             self.objects_updated = True
-            self.logger.mapping("Opponent prediction failed")
+            # self.logger.mapping("Opponent prediction failed")
 
         head = tuple(state["body"][0])
         self.cumulated_ignored_goals[head] = self.DEFAULT_IGNORED_GOAL_DURATION    
 
-        self.logger.debug(f"Old: {self.observed_objects}")
+        # self.logger.debug(f"Old: {self.observed_objects}")
         
         current_range_val = state["range"]
         current_traverse_val = state["traverse"]
@@ -149,7 +149,7 @@ class Mapping:
         if self.previous_ignored_keys:
             if not self.a_in_b_objects(a=self.previous_ignored_keys, b=current_ignored_goals):
                 self.objects_updated = True
-                self.logger.mapping("Ignored goals changed")
+                # self.logger.mapping("Ignored goals changed")
         self.previous_ignored_keys = current_ignored_goals       
         
         self.state = {
@@ -239,9 +239,9 @@ class Mapping:
         # print(self.observed_objects)
         # if self.objects_updated:
         #     print("NEW OBJECTS OBSERVED")
-        if self.logger.mapping_active:
-            self.print_mapping([goal.position for goal in goals], actions_plan)
-        self.logger.debug(f"New: {self.observed_objects}")
+        # if self.logger.mapping_active:
+        #     self.print_mapping([goal.position for goal in goals], actions_plan)
+        # self.logger.debug(f"New: {self.observed_objects}")
         
 
     def a_in_b_objects(self, a, b):
@@ -395,67 +395,67 @@ class Mapping:
             if timestamp is not None and time.time() - timestamp > duration:
                 self.cells_mapping[position] = (0, None)
 
-    def print_mapping(self, goals, actions_plan):
-        self.logger.mapping("\033[2J") # clear the screen
-        self.logger.mapping("\033[H") # move cursor to the top
+    # def print_mapping(self, goals, actions_plan):
+    #     self.logger.mapping("\033[2J") # clear the screen
+    #     self.logger.mapping("\033[H") # move cursor to the top
         
-        for y in range(self.domain.height):
-            row = ""
-            for x in range(self.domain.width):
-                if self.is_ignored_goal((x,y)):
-                    row += f"\033[1;35m{' I':2}\033[0m "
-                elif [x, y] in goals:
-                    if (x, y) in self.observed_objects:
-                        if self.observed_objects[(x, y)][0] == Tiles.SUPER:
-                            row += f"\033[1;35m{' S':2}\033[0m "
-                        elif self.observed_objects[(x, y)][0] == Tiles.FOOD:
-                            row += f"\033[1;35m{' F':2}\033[0m "
-                        elif self.observed_objects[(x, y)][0] == Tiles.SNAKE:
-                            row += f"\033[1;31m{' E':2}\033[0m "
-                    else:
-                        row += f"\033[1;35m\033[1m{goals.index([x, y]):2}\033[0m "
-                elif (x, y) in self.exploration_path.exploration_path:
-                    row += f"\033[1;38;2;255;255;0m{' E':2}\033[0m "
-                elif [x, y] in self.state["body"]:
-                    row += f"\033[1;38;2;0;0;0m{self.state['body'].index([x, y]):2}\033[0m "
-                elif [x, y] in self.domain.internal_walls:
-                    row += f"\033[1;34m{' W':2}\033[0m "
-                else:   
-                    if (x, y) in self.observed_objects:
-                        if self.observed_objects[(x, y)][0] == Tiles.SUPER:
-                            row += f"\033[1;35m{' S':2}\033[0m "
-                        elif self.observed_objects[(x, y)][0] == Tiles.FOOD:
-                            row += f"\033[1;35m{' F':2}\033[0m "
-                        elif self.observed_objects[(x, y)][0] == Tiles.SNAKE:
-                            row += f"\033[1;31m{' E':2}\033[0m "
-                    else:
-                        seen = self.cells_mapping[(x, y)][0]
-                        if seen == 0:
-                            r = 255
-                            g = 255
-                            b = 255
-                        else:
-                            normalized_seen = min(seen / (10*self.state["range"]), 1.0)
-                            if normalized_seen <= 0.5:
-                                r = int(255 * (normalized_seen * 2))
-                                g = int(255 * (1 - normalized_seen * 2))
-                                b = 0
-                            elif normalized_seen <= 0.85:
-                                r = 255
-                                g = 0
-                                b = int(255 * ((normalized_seen - 0.5) * 4))
-                            else:
-                                r = int(255 * (1 - (normalized_seen - 0.85) * 4))
-                                g = 0
-                                b = 255
+    #     for y in range(self.domain.height):
+    #         row = ""
+    #         for x in range(self.domain.width):
+    #             if self.is_ignored_goal((x,y)):
+    #                 row += f"\033[1;35m{' I':2}\033[0m "
+    #             elif [x, y] in goals:
+    #                 if (x, y) in self.observed_objects:
+    #                     if self.observed_objects[(x, y)][0] == Tiles.SUPER:
+    #                         row += f"\033[1;35m{' S':2}\033[0m "
+    #                     elif self.observed_objects[(x, y)][0] == Tiles.FOOD:
+    #                         row += f"\033[1;35m{' F':2}\033[0m "
+    #                     elif self.observed_objects[(x, y)][0] == Tiles.SNAKE:
+    #                         row += f"\033[1;31m{' E':2}\033[0m "
+    #                 else:
+    #                     row += f"\033[1;35m\033[1m{goals.index([x, y]):2}\033[0m "
+    #             elif (x, y) in self.exploration_path.exploration_path:
+    #                 row += f"\033[1;38;2;255;255;0m{' E':2}\033[0m "
+    #             elif [x, y] in self.state["body"]:
+    #                 row += f"\033[1;38;2;0;0;0m{self.state['body'].index([x, y]):2}\033[0m "
+    #             elif [x, y] in self.domain.internal_walls:
+    #                 row += f"\033[1;34m{' W':2}\033[0m "
+    #             else:   
+    #                 if (x, y) in self.observed_objects:
+    #                     if self.observed_objects[(x, y)][0] == Tiles.SUPER:
+    #                         row += f"\033[1;35m{' S':2}\033[0m "
+    #                     elif self.observed_objects[(x, y)][0] == Tiles.FOOD:
+    #                         row += f"\033[1;35m{' F':2}\033[0m "
+    #                     elif self.observed_objects[(x, y)][0] == Tiles.SNAKE:
+    #                         row += f"\033[1;31m{' E':2}\033[0m "
+    #                 else:
+    #                     seen = self.cells_mapping[(x, y)][0]
+    #                     if seen == 0:
+    #                         r = 255
+    #                         g = 255
+    #                         b = 255
+    #                     else:
+    #                         normalized_seen = min(seen / (10*self.state["range"]), 1.0)
+    #                         if normalized_seen <= 0.5:
+    #                             r = int(255 * (normalized_seen * 2))
+    #                             g = int(255 * (1 - normalized_seen * 2))
+    #                             b = 0
+    #                         elif normalized_seen <= 0.85:
+    #                             r = 255
+    #                             g = 0
+    #                             b = int(255 * ((normalized_seen - 0.5) * 4))
+    #                         else:
+    #                             r = int(255 * (1 - (normalized_seen - 0.85) * 4))
+    #                             g = 0
+    #                             b = 255
                                 
-                        row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
-            self.logger.mapping(row)
-        self.logger.mapping("Goals: " + str([g for g in goals]))
-        self.logger.mapping("Body: " + str(self.state["body"]))
-        self.logger.mapping("Action plan: " + str(actions_plan))
-        self.logger.mapping("Observed: " + str([p for p in self.observed_objects.keys()]))
-        self.logger.mapping("Traversal: " + str(self.state["traverse"]))
-        self.logger.mapping("Range: " + str(self.state["range"]))
-        self.logger.mapping("Step: " + str(self.state["step"]))
+    #                     row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
+        #     self.logger.mapping(row)
+        # self.logger.mapping("Goals: " + str([g for g in goals]))
+        # self.logger.mapping("Body: " + str(self.state["body"]))
+        # self.logger.mapping("Action plan: " + str(actions_plan))
+        # self.logger.mapping("Observed: " + str([p for p in self.observed_objects.keys()]))
+        # self.logger.mapping("Traversal: " + str(self.state["traverse"]))
+        # self.logger.mapping("Range: " + str(self.state["range"]))
+        # self.logger.mapping("Step: " + str(self.state["step"]))
         

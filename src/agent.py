@@ -47,14 +47,14 @@ class Agent:
     def __init__(self, server_address, agent_name):
         
         ## Utils
-        print(f"Agent: {agent_name}")
-        self.logger = Logger(f"[{agent_name}]", logFile=None)
+        # print(f"Agent: {agent_name}")
+        self.logger = None#Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
         # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        self.logger.disable()
+        #self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -80,7 +80,7 @@ class Agent:
     async def close(self):
         """Close the websocket connection"""
         await self.websocket.close()
-        self.logger.info("Websocket connection closed")
+        # self.logger.info("Websocket connection closed")
     
     async def run(self):
         """Start the execution of the agent"""
@@ -93,8 +93,8 @@ class Agent:
         self.websocket = await websockets.connect(f"ws://{self.server_address}/player")
         await self.websocket.send(json.dumps({"cmd": "join", "name": self.agent_name}))
 
-        self.logger.info(f"Connected to server {self.server_address}")
-        self.logger.debug(f"Waiting for game information")
+        # self.logger.info(f"Connected to server {self.server_address}")
+        # self.logger.debug(f"Waiting for game information")
         
         map_info = json.loads(await self.websocket.recv())
         
@@ -122,7 +122,7 @@ class Agent:
                 state = json.loads(await self.websocket.recv())
 
                 if not state.get("body"):
-                    self.logger.warning("Game Over!")
+                    # self.logger.warning("Game Over!")
                     break
                 
                 state_ts = datetime.fromisoformat(state["ts"])
@@ -130,7 +130,7 @@ class Agent:
                     # print(state_ts, "vs", datetime.now(state_ts.tzinfo))
                     continue
                 
-                self.logger.debug(f"Received state. Step: [{state["step"]}]")
+                # self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
                 ## --- Main Logic ---
                 self.observe(state)
@@ -140,7 +140,7 @@ class Agent:
                 
                 # print(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
         except websockets.exceptions.ConnectionClosedOK:
-            self.logger.warning("Server has cleanly disconnected us")      
+            # self.logger.warning("Server has cleanly disconnected us")      
             sys.exit(0)            
     
     # ------ Observe ------
@@ -156,13 +156,13 @@ class Agent:
 
     async def act(self):
         """Send the action to the server"""
-        self.logger.debug(f"Action: [{self.action}] in [{self.domain.actions(self.mapping.state)}]")
+        # self.logger.debug(f"Action: [{self.action}] in [{self.domain.actions(self.mapping.state)}]")
         
         if self._action_not_possible():
             # Big problem, because the agent is trying to do something that is not possible
             # Can happen if the sync between the agent and the server is not perfect
             # TODO: understand why this is happening. Maybe is masking some bigger problem
-            self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
+            # self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
             self.action = self._get_fast_action(warning=True)
         
         await self.websocket.send(json.dumps({"cmd": "key", "key": DIRECTION_TO_KEY[self.action]})) # mapping to the server key
@@ -176,8 +176,8 @@ class Agent:
         ## Follow the action plain (nothing new observed)            
         if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goals):
             self.action = self.actions_plan.pop()
-            self.logger.debug(f"Following action plan: {self.action}")
-            self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
+            # self.logger.debug(f"Following action plan: {self.action}")
+            # self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
             return
         
         ## Reset the action plan
@@ -186,11 +186,11 @@ class Agent:
         
         ## Get a new goal
         self.current_goals, force_traverse_disabled = self._find_goals() # Find a new goal
-        self.logger.mapping(f"New goals {[goal.position for goal in self.current_goals]}")
+        # self.logger.mapping(f"New goals {[goal.position for goal in self.current_goals]}")
         
         ## Get a safe path
         self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled)
-        self.logger.mapping(f"Future goals {[goal.position for goal in self.future_goals]}")
+        # self.logger.mapping(f"Future goals {[goal.position for goal in self.future_goals]}")
         
         ## Store a safe path to future goals
         safe_action = None
@@ -207,7 +207,7 @@ class Agent:
             
             if safe_action == -1:
                 current_time = datetime.now()
-                self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
+                # self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
                                     
                 ## Check max execution time
                 if current_time > time_limit:
@@ -216,15 +216,15 @@ class Agent:
                     break
             
             if safe_action is None:
-                self.logger.mapping(f"[NOT FOUND] Safe path to {self.future_goals[0]}")
+                # self.logger.mapping(f"[NOT FOUND] Safe path to {self.future_goals[0]}")
                 self.mapping.ignore_goal(self.future_goals[0].position)
                 self.future_goals.pop(0)
-            else:
-                self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
+            # else:
+            #     self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
                 
         ## If no safe path found, get a fast action
         if safe_action is None: 
-            self.logger.mapping("No safe path found! (using not perfect solution)")
+            # self.logger.mapping("No safe path found! (using not perfect solution)")
             # best_node = temp_tree.best_solution["node"]
             # self.action = temp_tree.first_action_to(best_node)
             return
@@ -242,7 +242,7 @@ class Agent:
             
             if self.actions_plan == -1:
                 current_time = datetime.now()
-                self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
+                # self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
                 
                 ## Check max execution time
                 if current_time > time_limit:
@@ -251,7 +251,7 @@ class Agent:
             num_goals -= 1
             
             if self._is_empty(self.actions_plan):
-                self.logger.mapping(f"Ignore goal {present_goals[num_goals].position}")
+                # self.logger.mapping(f"Ignore goal {present_goals[num_goals].position}")
                 
                 ## Clear the last present goal from search tree (and all affected)
                 self.mapping.ignore_goal(present_goals[num_goals].position)
@@ -260,13 +260,13 @@ class Agent:
         
         ## If no path found, set the safe path
         if self._is_empty(self.actions_plan):
-            self.logger.mapping("Safe action set! After all, no path found.")
+            # self.logger.mapping("Safe action set! After all, no path found.")
             self.actions_plan = []
             self.action = safe_action
             return
         
         ## Set the next action
-        self.logger.mapping(f"Goal action plan: {self.actions_plan}")
+        # self.logger.mapping(f"Goal action plan: {self.actions_plan}")
         self.action = self.actions_plan.pop()
     
     def _is_empty(self, obj):
@@ -339,7 +339,7 @@ class Agent:
             
             visited_range = 0
             if tuple(exploration_pos) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(exploration_pos)][0] == Tiles.SUPER:
-                self.logger.mapping("Safe point is a super food! (expanding range)")
+                # self.logger.mapping("Safe point is a super food! (expanding range)")
                 visited_range = 1
                 
             goals.append(Goal(
@@ -350,7 +350,7 @@ class Agent:
                 position=exploration_pos
             ))
     
-        self.logger.mapping(f"Goal type: {goals[0].goal_type}")
+        # self.logger.mapping(f"Goal type: {goals[0].goal_type}")
         self.mapping.current_goal = goals[0].position
         
         return goals, force_traverse_disabled
@@ -359,12 +359,12 @@ class Agent:
         """Non blocking fast action"""
         # self.actions_plan = []
         
-        if warning:
-            self.logger.mapping("Fast action!")
+        # if warning:
+        #     self.logger.mapping("Fast action!")
 
         # ## If there are no actions available, return None
         if self.domain.actions(self.mapping.state) == []:
-            self.logger.warning("No actions available!") # you're dead ;(
+            # self.logger.warning("No actions available!") # you're dead ;(
             return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
 
         ## Use heuristics to choose the best action

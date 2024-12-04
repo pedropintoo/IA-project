@@ -258,16 +258,16 @@ class ExplorationPath:
         
         return x_range, y_range
     
-    def print_exploration_path(self):
-        print("EXPLORATION PATH")
-        for y in range(self.height):
-            row = ""
-            for x in range(self.width):
-                if (x, y) in self.exploration_path:
-                    row += "X"
-                else:
-                    row += "."
-            print(row)
+    # def print_exploration_path(self):
+    #     print("EXPLORATION PATH")
+    #     for y in range(self.height):
+    #         row = ""
+    #         for x in range(self.width):
+    #             if (x, y) in self.exploration_path:
+    #                 row += "X"
+    #             else:
+    #                 row += "."
+    #         print(row)
 
 class GilbertCurve:
     def get_curve(width, height, sight_range=1, traverse=True):
@@ -412,8 +412,8 @@ class GilbertCurve:
             closest_point_index = path.index(closest_point)
             return path[closest_point_index:] + path[:closest_point_index]
 
-if __name__ == "__main__":
-    jorge = GilbertCurve.get_curve(48,24, 2, True)
-    for jorginho in jorge:
-        print(tuple(jorginho))
-    print(len(jorge))
+# if __name__ == "__main__":
+#     jorge = GilbertCurve.get_curve(48,24, 2, True)
+#     for jorginho in jorge:
+#         print(tuple(jorginho))
+#     print(len(jorge))
