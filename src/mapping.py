@@ -161,27 +161,35 @@ class Mapping:
             "opponent_head": None
         }
         
-        self.update_cells_mapping(state["sight"]) 
+        
+        print("start cells_mapping: ", datetime.now())
+        currently_observed = defaultdict(list)
+        for x_str, y_dict in state["sight"].items():
+            x = int(x_str)
+            for y_str, obj_type in y_dict.items():
+                y = int(y_str)
+                seen, _ = self.cells_mapping[(x, y)]
+                timestamp = time.time()
+                self.cells_mapping[(x, y)] = (seen + 1, timestamp)
+                currently_observed[(x, y)] = [obj_type, timestamp]  
+        
+        self.expire_cells_mapping()
+        print("end: ", datetime.now())
         
 
         ## Copy for better readability
         self.observed_objects = self.state["observed_objects"] # as a reference
 
         ## Clear the expired observed objects
-        for position, [obj_type, timestamp] in self.observed_objects.copy().items():
+        del_positions = []
+        for position, [obj_type, timestamp] in self.observed_objects.items():
             max_duration = self.observation_duration if obj_type != Tiles.SNAKE else self.opponent_duration                
             if time.time() - timestamp > max_duration:
-                del self.observed_objects[position]
-
-        currently_observed = defaultdict(list)
-
-        for x_str, y_dict in state["sight"].items():
-            x = int(x_str)
-            for y_str, obj_type in y_dict.items():
-                y = int(y_str)
-                position = (x, y)
-                timestamp = time.time()
-                currently_observed[position] = [obj_type, timestamp]                 
+                del_positions.append(position)
+        
+        for position in del_positions:
+            del self.observed_objects[position]
+               
 
         ## Update the observed objects
         for position, [obj_type, timestamp] in currently_observed.items():            
@@ -378,21 +386,11 @@ class Mapping:
         dy = min(dy_no_crossing_walls, self.exploration_path.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
 
         return dx + dy                  
-        
-    def update_cells_mapping(self, sight):
-        for x_str, y_dict in sight.items():
-            x = int(x_str)
-            for y_str, obj_type in y_dict.items():
-                y = int(y_str)
-                seen, timestamp = self.cells_mapping[(x, y)]
-                self.cells_mapping[(x, y)] = (seen + 1, time.time())
-        
-        self.expire_cells_mapping()
     
     def expire_cells_mapping(self):
         duration = get_duration_of_expire_cells(self.state["range"], self.fps)
 
-        for position, (seen, timestamp) in self.cells_mapping.copy().items():
+        for position, (seen, timestamp) in self.cells_mapping.items():
             if timestamp is not None and time.time() - timestamp > duration:
                 self.cells_mapping[position] = (0, None)
 
