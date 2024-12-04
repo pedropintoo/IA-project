@@ -1,1 +1,1 @@
-NAME="lwe >> rsa" python3 student.py
+NAME=${1:-"lwe >> rsa"} python3 student.py

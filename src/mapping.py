@@ -21,6 +21,7 @@ class Mapping:
         self.objects_updated = False
         self.observed_objects = None
         self.observation_duration = 90
+        self.opponent_duration = 5
 
         self.super_foods = []
         
@@ -30,7 +31,7 @@ class Mapping:
             width=domain.width
         )
         # TODO: change the ignore_objects
-        self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE, Tiles.SNAKE}
+        self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE}
 
         # Cells mapping: 0 - unseen, 1 - seen
         self.cells_mapping = {
@@ -148,7 +149,8 @@ class Mapping:
 
         ## Clear the expired observed objects
         for position, [obj_type, timestamp] in self.observed_objects.copy().items():
-            if time.time() - timestamp > self.observation_duration:
+            max_duration = self.observation_duration if obj_type != Tiles.SNAKE else self.opponent_duration                
+            if time.time() - timestamp > max_duration:
                 del self.observed_objects[position]
 
         currently_observed = defaultdict(list)
@@ -162,33 +164,48 @@ class Mapping:
                 currently_observed[position] = [obj_type, timestamp]                 
 
         ## Update the observed objects
-        for position, [obj_type, timestamp] in currently_observed.items():
-            # if list(position) in self.state["body"] and obj_type == Tiles.SNAKE:
-            #     print("SNAKE")
-            #     continue # ignore the snake body
-
+        for position, [obj_type, timestamp] in currently_observed.items():            
             # This position has a object
             if position in self.observed_objects:
                 
                 # In case, the object is the same
-                if obj_type == self.observed_objects[position][0]:
+                if self.is_the_same_object(obj_type, position):
                     self.observed_objects[position][1] = timestamp # update the timestamp
+                    
                 else:
+                    # In case, the object is to ignore
                     if obj_type in self.ignored_objects:
                         del self.observed_objects[position] # ignore the empty space
-                    else:
-                        # Update the object type (and current ts)
-                        self.observed_objects[position] = [obj_type, timestamp]
-                        if not (obj_type == Tiles.SUPER and perfect_state):
-                            self.objects_updated = True
+                        continue
+                    
+                    # In case, the object is now my body
+                    if obj_type == Tiles.SNAKE and list(position) in self.state["body"]:
+                        del self.observed_objects[position]
+                        continue
+                    
+                    # Update the object type (and current ts)
+                    self.observed_objects[position] = [obj_type, timestamp]
+                    
+                    # Update a flag
+                    if not (obj_type == Tiles.SUPER and perfect_state):
+                        self.objects_updated = True
+                        
             else:
                 # This position is new
                 if obj_type not in self.ignored_objects:
-                    # print("NEW - ", obj_type)
+                    
+                    # In case, the object is now my body
+                    if obj_type == Tiles.SNAKE and list(position) in self.state["body"]:
+                        continue
+                    
+                    # Create the entry
                     self.observed_objects[position] = [obj_type, timestamp]
+                    
+                    # Update a flag
                     if not (obj_type == Tiles.SUPER and perfect_state):
                         self.objects_updated = True
 
+        print(self.observed_objects)
         # if self.objects_updated:
         #     print("NEW OBJECTS OBSERVED")
         
@@ -198,6 +215,18 @@ class Mapping:
 
     def a_in_b_objects(self, a, b):
         return all(a_i in b for a_i in a if a_i in self.observed_objects and not (self.observed_objects[a_i][0] == Tiles.SUPER and self.domain.is_perfect_effects(self.state)))
+
+    def is_the_same_object(self, obj_type, position):
+        
+        if obj_type == self.observed_objects[position][0]:
+            if obj_type != Tiles.SNAKE:
+                return True # the same object, but not a snake
+
+            # compare two snake objects
+            if list(position) not in self.state["body"]:
+                return True
+        
+        return False
 
     def nothing_new_observed(self, goals):
         if self.objects_updated:
@@ -230,7 +259,7 @@ class Mapping:
         min_heuristic = None
         closest = None
         traverse = self.state["traverse"]
-        
+        print("OBJECT TYPE: ", obj_type)
         ## Get the closest food
         for position in self.observed_objects.keys():
             if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type or list(position) in self.state["body"]:

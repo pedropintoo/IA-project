@@ -25,7 +25,7 @@ class Snake:
         self._traverse = True  # if True, the snake can traverse stones
         self._alive = True
         self.lastkey = ""
-        self.to_grow = 1
+        self.to_grow = 3
         self.range = 3
 
     def sight(self, mapa, snakes):
