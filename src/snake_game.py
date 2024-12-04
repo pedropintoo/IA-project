@@ -106,7 +106,7 @@ class SnakeGame(SearchDomain):
         
         heuristic_value = 0   
         previous_goal_position = head
-        priority = 100
+        priority = 250
 
         snake_length = len(state["body"])
         body_weight = 1 # + snake_length // 10
@@ -115,7 +115,7 @@ class SnakeGame(SearchDomain):
         ## Manhattan distance to the goals
         for goal in goals: 
             if tuple(goal.position) in visited_goals:
-                priority /= 10
+                priority /= 5
                 if goal.goal_type == "super":
                     traverse = False # worst case scenario
                 continue
@@ -127,7 +127,7 @@ class SnakeGame(SearchDomain):
             distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
 
             heuristic_value += distance * priority
-            priority /= 10
+            priority /= 5
             
             previous_goal_position = goal_position
             
@@ -159,7 +159,7 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
-        # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)} {state["body"]}")
+        self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)} {state["body"]}")
 
         return heuristic_value + state["step"] * 0.1
 

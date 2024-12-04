@@ -7,7 +7,7 @@ from src.exploration_path import ExplorationPath
 from src.matrix_operations import MatrixOperations
 from src.goal import Goal
 from consts import Tiles
-from src.utils._consts import get_exploration_point_seen_threshold, get_duration_of_expire_cells, get_food_seen_threshold
+from src.utils._consts import get_exploration_point_seen_threshold, get_duration_of_expire_cells, get_food_seen_threshold, get_near_goal_range
 
 class Mapping:
     def __init__(self, logger, domain, fps):
@@ -211,6 +211,7 @@ class Mapping:
         
     def closest_objects(self, obj_type):
         """Find the closest object based on the heuristic"""
+        is_super_food_type = obj_type == Tiles.SUPER
         points = []         
         min_heuristic = None
         closest = None
@@ -230,7 +231,7 @@ class Mapping:
 
         ## Get near goals
         near_objects = [closest]
-        near_goal_range = 3
+        near_goal_range = get_near_goal_range(self.state["range"], len(self.state["body"]), is_super_food_type)
         for x in range(-near_goal_range, near_goal_range + 1):
             for y in range(-near_goal_range, near_goal_range + 1):
                 if (x == 0 and y == 0):
@@ -246,7 +247,7 @@ class Mapping:
                     near_objects.append(position)
                     
                 else:
-                    if obj_type == Tiles.SUPER and self._outside_of_domain(position):
+                    if is_super_food_type and self._outside_of_domain(position):
                         continue
                         
                     else:
