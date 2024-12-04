@@ -107,6 +107,7 @@ class Mapping:
         self.logger.debug(f"Old: {self.observed_objects}")
         
         current_range_val = state["range"]
+        current_traverse_val = state["traverse"]
         
         ## Update the state
         if self.state and self.state["range"] != current_range_val:
@@ -117,10 +118,10 @@ class Mapping:
                 self.objects_updated = True # Stop eating super foods!
                 # print("stop eating super foods")
         
-        if self.state and self.state["traverse"] != current_range_val:
+        if self.state and self.state["traverse"] != current_traverse_val:
             # Reset the exploration path if the traverse is changed
             self.exploration_path.exploration_path = []
-            if current_range_val:
+            if current_traverse_val:
                 # Reset the ignored goals if the traverse is enabled
                 self.cumulated_ignored_goals = {(x, y): self.DEFAULT_IGNORED_GOAL_DURATION for x in range(self.domain.width) for y in range(self.domain.height)}
         
