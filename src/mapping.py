@@ -115,7 +115,7 @@ class Mapping:
             
             if current_range_val > self.state["range"]:
                 self.objects_updated = True # Stop eating super foods!
-                print("stop eating super foods")
+                # print("stop eating super foods")
         
         if self.state and self.state["traverse"] != current_range_val:
             # Reset the exploration path if the traverse is changed
