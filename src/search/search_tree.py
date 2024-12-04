@@ -5,8 +5,8 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
-import heapq
 import datetime
+from operator import attrgetter
 
 from src.search.search_node import SearchNode
 from src.search.search_problem import SearchProblem
@@ -19,7 +19,6 @@ class SearchTree:
         self.problem = problem
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
-        heapq.heapify(self.open_nodes)
         self.best_solution = {"total_cost": root.heuristic, "node": root} 
         self.non_terminals = 0
 
@@ -61,7 +60,7 @@ class SearchTree:
     # Search solution
     def search(self, time_limit=None, first_action=False):
         while self.open_nodes is not None and len(self.open_nodes) > 0:          
-            node = heapq.heappop(self.open_nodes)
+            node = self.open_nodes.pop(0)
 
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
@@ -114,19 +113,15 @@ class SearchTree:
     
     # add new nodes to the list of open nodes according to the strategy
     def add_to_open(self, new_lower_nodes):
-        for node in new_lower_nodes:
-            heapq.heappush(self.open_nodes, node)
+        self.open_nodes.extend(new_lower_nodes)
+        self.open_nodes.sort(key=attrgetter('heuristic'))
     
     def remove_goal(self, idx):
         goal = self.problem.goals.pop(idx)
         
         ## Remove affected nodes
-        new_open_nodes = []
-        for node in self.open_nodes:
-            if not self.problem.domain.satisfies(node.state, goal):
-                new_open_nodes.append(node)
-        self.open_nodes = new_open_nodes
-        heapq.heapify(self.open_nodes)
+        self.open_nodes = [node for node in self.open_nodes if not self.problem.domain.satisfies(node.state, goal)]
+        self.open_nodes.sort(key=attrgetter('heuristic'))
         
         
     def __str__(self):

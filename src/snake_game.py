@@ -5,7 +5,6 @@
  #  - Guilherme Santos (gui.santos91@ua.pt)
  # @ Create Time: 2024-10-13
  '''
-import heapq
 from src.search.search_domain import SearchDomain
 from consts import Tiles
 import time
@@ -160,7 +159,7 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
-        self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
+        self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)} {state["body"]}")
 
         return heuristic_value
 

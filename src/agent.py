@@ -12,7 +12,6 @@ import websockets
 import json
 import logging
 import random
-import heapq
 from datetime import datetime, timedelta
 from src.utils._consts import get_num_future_goals, get_future_goals_priority, get_future_goals_range, get_num_max_present_goals
 import sys

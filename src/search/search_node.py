@@ -32,7 +32,8 @@ class SearchNode:
         if self.parent is None:
             return False
         
-        if self.parent.state["body"] == newstate["body"] and self.parent.state["traverse"] == newstate["traverse"]:
+        if all(b in self.parent.state["body"] for b in newstate["body"]) and self.parent.state["traverse"] == newstate["traverse"]:
+            print("AAAAAAAAAAAAAAAAAAAA")
             return True
         
         return self.parent.in_parent(newstate)
