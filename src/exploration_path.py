@@ -130,29 +130,37 @@ class ExplorationPath:
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         x_range, y_range = self.get_quadrant(goal_position)
-        area_to_check = max(self.width, self.height) // 8
+        area_to_check = max(self.width, self.height) // 16
     
-        min_obstacles = float('inf')
+        min_obstacles = None
         best_point = None
 
         for x in x_range:
             for y in y_range:
-                point = (x, y)
-                if not self.is_valid_point(point, body, traverse):
+                point = [x, y]
+                if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
+                    print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
                     
                 obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check)
-                if obstacles < min_obstacles:
+                if not min_obstacles or obstacles < min_obstacles:
                     min_obstacles = obstacles
                     best_point = point
 
                     if obstacles == 0:
                         return best_point
+
         return best_point
 
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
         if average_seen_density is None or exploration_point_seen_threshold is None:
             # VALIDATION OF PEEK
+            if (not traverse and point in self.internal_walls):
+                print("POINT IN WALLS")
+            
+            if point in body:
+                print("POINT IN BODY")
+
             return (traverse or point not in self.internal_walls) and point not in body
         else:
             # VALIDATION OF NEXT POINT
@@ -183,8 +191,10 @@ class ExplorationPath:
                     # If the point is out of bounds, it is considered an obstacle
                     count += 1
                     continue
+                
+                cell_point = [x, y]
 
-                if (not traverse and point in self.internal_walls) or point in body:
+                if (not traverse and cell_point in self.internal_walls) or cell_point in body:
                     count += 1
                 
         return count

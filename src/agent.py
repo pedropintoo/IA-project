@@ -51,10 +51,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.disable()
+        self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -211,6 +211,7 @@ class Agent:
             
             if safe_action is None:
                 self.logger.mapping(f"[NOT FOUND] Safe path to {self.future_goals[0]}")
+                self.mapping.ignore_goal(self.future_goals[0].position)
                 self.future_goals.pop(0)
             else:
                 self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
@@ -268,10 +269,15 @@ class Agent:
     def _find_future_goals(self, goals, force_traverse_disabled):
         safe_point = self.mapping.peek_next_exploration()
         
+        visited_range = 0
+        if tuple(safe_point) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(safe_point)][0] == Tiles.SUPER:
+            self.logger.mapping("Safe point is a super food! (expanding range)")
+            visited_range = 1
+        
         return [Goal(
             goal_type="exploration",
             max_time=0.09,
-            visited_range=0,
+            visited_range=visited_range,
             priority=10,
             position=safe_point
         )]
@@ -311,12 +317,19 @@ class Agent:
         
         ## In case of no goals, go for exploration
         if len(goals) == 0:
+            exploration_pos = self.mapping.next_exploration(force_traverse_disabled)
+            
+            visited_range = 0
+            if tuple(exploration_pos) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(exploration_pos)][0] == Tiles.SUPER:
+                self.logger.mapping("Safe point is a super food! (expanding range)")
+                visited_range = 1
+                
             goals.append(Goal(
                 goal_type="exploration", 
                 max_time=0.07, 
-                visited_range=0,
+                visited_range=visited_range,
                 priority=10, 
-                position=self.mapping.next_exploration(force_traverse_disabled)
+                position=exploration_pos
             ))
     
         self.logger.mapping(f"Goal type: {goals[0].goal_type}")
