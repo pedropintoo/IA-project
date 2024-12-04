@@ -133,3 +133,18 @@ def get_future_goals_range(num_goals, current_range):
     base_increment = current_range - 1 
     return [inicial_range + base_increment * i for i in range(num_goals)]
     
+def get_near_goal_range(current_range, body_length, super_food=False):
+    """
+    This function is used to determine the range of the near goals.
+    Goal: So the snake goes for the near goals.
+    """
+    if body_length <= 20:
+        return 10
+    elif body_length <= 60:
+        return 5
+    elif body_length <= 70:
+        return 3
+    elif body_length <= 80:
+        return 2
+    else:
+        return 1
