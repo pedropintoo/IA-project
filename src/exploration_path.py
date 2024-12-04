@@ -173,7 +173,7 @@ class ExplorationPath:
     def count_obstacles_around_point(self, point, body, traverse, area_to_check):
         x0, y0 = point
         count = 0
-        obstacles = set(body) if traverse else set(body) | set(self.internal_walls)
+        obstacles = set(map(tuple, body)) if traverse else set(map(tuple, body)) | set(map(tuple, self.internal_walls))
 
         for dx in range(-area_to_check, area_to_check + 1):
             for dy in range(-area_to_check, area_to_check + 1):
