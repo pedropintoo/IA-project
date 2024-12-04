@@ -81,7 +81,7 @@ class SearchTree:
                 
                 if time_limit is not None and datetime.datetime.now() >= time_limit: 
                     ## Time limit exceeded
-                    raise TimeLimitExceeded(f"Time limit exceeded: {(datetime.datetime.now() - time_limit).total_seconds()}s")
+                    return -1
 
                 new_state = self.problem.domain.result(node.state, act, self.problem.goals)
 

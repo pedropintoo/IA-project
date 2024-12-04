@@ -84,11 +84,9 @@ class Agent:
     
     async def run(self):
         """Start the execution of the agent"""
-        try:
-            await self.connect()
-            await self.play()
-        finally:
-            await self.close()
+        await self.connect()
+        await self.play()
+        await self.close()
     
     async def connect(self):
         """Connect to the server via websocket"""
@@ -208,17 +206,18 @@ class Agent:
             problem = SearchProblem(self.domain, self.mapping.state, self.future_goals)
             temp_tree = SearchTree(problem)
             
-            try:
-                ## Search for the given goals
-                safe_action = temp_tree.search(
-                    first_action=True,
-                    time_limit=min(datetime.now() + timedelta(seconds=self.future_goals[0].max_time), time_limit)
-                )
-            except TimeLimitExceeded as e:
-                self.logger.mapping(e.args[0])
-                                
+            ## Search for the given goals
+            safe_action = temp_tree.search(
+                first_action=True,
+                time_limit=min(datetime.now() + timedelta(seconds=self.future_goals[0].max_time), time_limit)
+            )
+            
+            if safe_action == -1:
+                current_time = datetime.now()
+                self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
+                                    
                 ## Check max execution time
-                if datetime.now() > time_limit:
+                if current_time > time_limit:
                     self.mapping.ignore_goal(self.future_goals[0].position)
                     self.future_goals.pop(0)
                     break
@@ -229,6 +228,7 @@ class Agent:
                 self.future_goals.pop(0)
             else:
                 self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
+                
         print("2: ", datetime.now())
         ## If no safe path found, get a fast action
         if safe_action is None: 
@@ -246,14 +246,14 @@ class Agent:
         temp_tree = SearchTree(problem)
             
         while num_goals > 0 and self._is_empty(self.actions_plan):
-            try:
-                ## Search for the given goals
-                self.actions_plan = temp_tree.search(time_limit=min(datetime.now() + timedelta(seconds=present_goals[0].max_time), time_limit))
-            except TimeLimitExceeded as e:
-                self.logger.mapping(e.args[0])
+            self.actions_plan = temp_tree.search(time_limit=min(datetime.now() + timedelta(seconds=present_goals[0].max_time), time_limit))
+            
+            if self.actions_plan == -1:
+                current_time = datetime.now()
+                self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
                 
                 ## Check max execution time
-                if datetime.now() > time_limit:
+                if current_time > time_limit:
                     num_goals = 1 # last goal
             
             num_goals -= 1
@@ -279,7 +279,7 @@ class Agent:
         self.action = self.actions_plan.pop()
     
     def _is_empty(self, obj):
-        return obj is None or len(obj) == 0
+        return obj == -1 or obj is None or len(obj) == 0
     
     def _find_future_goals(self, goals, force_traverse_disabled):
         safe_point = self.mapping.peek_next_exploration()
