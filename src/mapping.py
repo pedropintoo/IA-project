@@ -95,11 +95,12 @@ class Mapping:
         
         self.objects_updated = False
                 
-        if self.last_step + 1 != state["step"]:
+        if self.last_step + 1 < state["step"]:
             self.logger.critical(f"Unsynced steps: {state['step']} {self.last_step + 1}")
             self.objects_updated = True
-        
-        self.last_step += 1
+            self.last_step = state["step"]
+        else:
+            self.last_step += 1
         
         self.opponent.update(state)
         
@@ -301,6 +302,9 @@ class Mapping:
             if not min_heuristic or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 closest = position
+
+        if not closest:
+            return []
 
         ## Get near goals
         near_objects = [closest]
