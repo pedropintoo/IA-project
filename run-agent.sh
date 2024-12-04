@@ -1,0 +1,1 @@
+NAME=${1:-"lwe >> rsa"} python3 student.py
