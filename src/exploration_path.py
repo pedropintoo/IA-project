@@ -129,28 +129,33 @@ class ExplorationPath:
             # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
-        points_to_return = []
-        sight_range = 3
-        exploration_path_to_peek = self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, True)
-
-        limit_iterations = 10
-        while len(points_to_return) < n_points:
-            
-            if len(exploration_path_to_peek) < n_points or limit_iterations <= 0:
-                exploration_path_to_peek = self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, True)
-
-            point = list(exploration_path_to_peek.pop(0))
-            if self.is_valid_point(point, body, traverse) and (not is_ignored_goal(point) or limit_iterations <= 0) and point != goal_position:
-                points_to_return.append(point)
-            
-            limit_iterations -= 1 # Avoid infinite loop
-        
-        return points_to_return
+        x_range, y_range = self.get_quadrant(goal_position)
+        area_to_check = max(self.width, self.height) // 8
     
+        min_obstacles = float('inf')
+        best_point = None
+
+        for x in x_range:
+            for y in y_range:
+                point = (x, y)
+                if not self.is_valid_point(point, body, traverse):
+                    continue
+                    
+                obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check)
+                if obstacles < min_obstacles:
+                    min_obstacles = obstacles
+                    best_point = point
+
+                    if obstacles == 0:
+                        return best_point
+        return best_point
+
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
         if average_seen_density is None or exploration_point_seen_threshold is None:
+            # VALIDATION OF PEEK
             return (traverse or point not in self.internal_walls) and point not in body
         else:
+            # VALIDATION OF NEXT POINT
             print("BODY IN VALIDATION POINT:", body)
 
             if (not traverse and point in self.internal_walls):
@@ -165,6 +170,25 @@ class ExplorationPath:
 
             return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
             
+    def count_obstacles_around_point(self, point, body, traverse, area_to_check):
+        x0, y0 = point
+        count = 0
+        obstacles = set(body) if traverse else set(body) | set(self.internal_walls)
+
+        for dx in range(-area_to_check, area_to_check + 1):
+            for dy in range(-area_to_check, area_to_check + 1):
+                x = (x0 + dx) % self.width if traverse else x0 + dx
+                y = (y0 + dy) % self.height if traverse else y0 + dy
+
+                if x < 0 or x >= self.width or y < 0 or y >= self.height:
+                    # If the point is out of bounds, it is considered an obstacle
+                    count += 1
+                    continue
+
+                if (x, y) in obstacles:
+                    count += 1
+                
+        return count
     
     def calcule_average_seen_density(self, point, sight_range, exploration_map):
         count = 0
@@ -220,6 +244,23 @@ class ExplorationPath:
                     if exploration_map.get(cell, [0])[0] == 0:
                         count += 1
         return count
+
+    def get_quadrant(self, point):
+        x, y = point
+        width_mid = self.width // 2
+        height_mid = self.height // 2
+
+        if x < width_mid:
+            x_range = range(0, width_mid)
+        else:
+            x_range = range(width_mid, self.width)
+        
+        if y < height_mid:
+            y_range = range(0, height_mid)
+        else:
+            y_range = range(height_mid, self.height)
+        
+        return x_range, y_range
     
     def print_exploration_path(self):
         print("EXPLORATION PATH")

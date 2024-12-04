@@ -287,15 +287,16 @@ class Agent:
         return obj is None or len(obj) == 0
     
     def _find_future_goals(self, goals, force_traverse_disabled):
-        tail = self.mapping.state["body"][-1]
+        # tail = self.mapping.state["body"][-1]
+        safe_point = self.mapping.peek_next_exploration()
         head = self.mapping.state["body"][0]
         traverse = self.mapping.state["traverse"] and not force_traverse_disabled
         
         ## Manhattan distance (not counting walls)
-        dx_no_crossing_walls = abs(head[0] - tail[0])
+        dx_no_crossing_walls = abs(head[0] - safe_point[0])
         dx = min(dx_no_crossing_walls, self.mapping.exploration_path.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
 
-        dy_no_crossing_walls = abs(head[1] - tail[1])
+        dy_no_crossing_walls = abs(head[1] - safe_point[1])
         dy = min(dy_no_crossing_walls, self.mapping.exploration_path.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
 
         distance = dx + dy 
@@ -307,7 +308,7 @@ class Agent:
             max_time=0.09,
             visited_range=(4*distance) // 7,
             priority=10,
-            position=self.mapping.state["body"][-1]
+            position=safe_point
         )]
 
     def _find_goals(self, ):
