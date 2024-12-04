@@ -98,13 +98,13 @@ class SnakeGame(SearchDomain):
             new_opponent_head = self.opponent_head
         
         if new_opponent_head is not None:
-            
+
             ## IMPORTANT: Not remove the last position!! (it will accumulate the body)
             
             opponent_vector = DIRECTIONS[self.opponent_direction]
             new_opponent_head = ((new_opponent_head[0] + opponent_vector[0]) % self.width, (new_opponent_head[1] + opponent_vector[1]) % self.height)
             
-            observed_objects[new_opponent_head] = [Tiles.SNAKE, 0]
+            observed_objects[new_opponent_head] = [Tiles.SNAKE, 5]
             
         return {
                 "body": new_body,
@@ -154,52 +154,54 @@ class SnakeGame(SearchDomain):
             if goal.goal_type == "super":
                 traverse = False # worst case scenario
                     
-        ## Count how many walls or body rounded by the snake
-        rounded_obstacles = 0 
-        for x in range(-2, 3):
-            for y in range(-2, 3):
-                if (x, y) == (0, 0):
-                    continue # skip the head
-                neighbor_x = (head[0] + x) % self.width if traverse else head[0] + x
-                neighbor_y = (head[1] + y) % self.height if traverse else head[1] + y
+        # ## Count how many walls or body rounded by the snake
+        # rounded_obstacles = 0 
+        # for x in range(-2, 3):
+        #     for y in range(-2, 3):
+        #         if (x, y) == (0, 0):
+        #             continue # skip the head
+        #         neighbor_x = (head[0] + x) % self.width if traverse else head[0] + x
+        #         neighbor_y = (head[1] + y) % self.height if traverse else head[1] + y
                 
-                # Border walls
-                if neighbor_x < 0 or neighbor_x >= self.width or neighbor_y < 0 or neighbor_y >= self.height:
-                    rounded_obstacles += 1 
+        #         # Border walls
+        #         if neighbor_x < 0 or neighbor_x >= self.width or neighbor_y < 0 or neighbor_y >= self.height:
+        #             rounded_obstacles += 1 
                     
-                elif [neighbor_x, neighbor_y] in state["body"]:
-                    rounded_obstacles += 1 # at least one body part is in the neighborhood
+        #         elif [neighbor_x, neighbor_y] in state["body"]:
+        #             rounded_obstacles += 1 # at least one body part is in the neighborhood
                 
-                if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
-                    rounded_obstacles += 1
+        #         if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
+        #             rounded_obstacles += 1
         
-        # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
-        heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
+        # # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
+        # heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
         if state["opponent_head"] is not None:
+            print("AAAAAAAAAAAAAAAAAAAAAAAAAAAA")
             ## Penalize predicted collision with the opponent
             if head[0] == state["opponent_head"][0] and head[1] == state["opponent_head"][1]:
                 heuristic_value *= 150
                 
             ## Penalize being in a possible collision with the opponent
-            for x in range(-1, 2):
-                for y in range(-1, 2):
-                    # impossible predictions
-                    if (x, y) == (0, 0) or (x, y) == (-1, -1) or (x, y) == (-1, 1) or (x, y) == (1, -1) or (x, y) == (1, 1):
-                        continue
-                    
-                    pred_x = (state["opponent_head"][0] + x) % self.width
-                    pred_y = (state["opponent_head"][1] + y) % self.height
-                    
-                    if head[0] == pred_x and head[1] == pred_y:
-                        heuristic_value *= 100
-        
-        # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
+            opponent_head = state["opponent_head"]
+            possible_collisions = [
+                ((opponent_head[0] - 1) % self.width, opponent_head[1]),
+                ((opponent_head[0] + 1) % self.width, opponent_head[1]),
+                (opponent_head[0], (opponent_head[1] - 1) % self.height),
+                (opponent_head[0], (opponent_head[1] + 1) % self.height)
+            ]
 
-        return heuristic_value + state["step"] * 0.1
+            for pred_x, pred_y in possible_collisions:
+                if head[0] == pred_x and head[1] == pred_y:
+                    print("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBb")
+                    heuristic_value *= 100
+        
+        #self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
+
+        return heuristic_value #+ state["step"] * 0.1
 
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])

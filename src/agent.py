@@ -51,7 +51,7 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        #self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         self.logger.disable()
@@ -121,13 +121,13 @@ class Agent:
             while True:
                 state = json.loads(await self.websocket.recv())
 
-                state_ts = datetime.fromisoformat(state["ts"])
-                if state_ts > datetime.now(state_ts.tzinfo):
-                    print(state_ts, "vs", datetime.now(state_ts.tzinfo))
-                    continue
-
                 if not state.get("body"):
                     self.logger.warning("Game Over!")
+                    break
+                
+                state_ts = datetime.fromisoformat(state["ts"])
+                if state_ts > datetime.now(state_ts.tzinfo):
+                    # print(state_ts, "vs", datetime.now(state_ts.tzinfo))
                     continue
                 
                 self.logger.debug(f"Received state. Step: [{state["step"]}]")
@@ -138,7 +138,7 @@ class Agent:
                 await self.act()
                 ## ------------------
                 
-                print(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+                # print(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
         except websockets.exceptions.ConnectionClosedOK:
             self.logger.warning("Server has cleanly disconnected us")      
             sys.exit(0)            
@@ -275,18 +275,30 @@ class Agent:
     def _find_future_goals(self, goals, force_traverse_disabled):
         safe_point = self.mapping.peek_next_exploration()
         
-        visited_range = 0
-        if tuple(safe_point) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(safe_point)][0] == Tiles.SUPER:
-            self.logger.mapping("Safe point is a super food! (expanding range)")
-            visited_range = 1
+        distance = self.mapping.manhattan_distance(self.mapping.state["body"][0], safe_point, self.mapping.state["traverse"])
         
         return [Goal(
             goal_type="exploration",
             max_time=0.09,
-            visited_range=visited_range,
+            visited_range=distance // 4,
             priority=10,
             position=safe_point
         )]
+        
+        # safe_point = self.mapping.peek_next_exploration()
+        
+        # visited_range = 0
+        # if tuple(safe_point) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(safe_point)][0] == Tiles.SUPER:
+        #     self.logger.mapping("Safe point is a super food! (expanding range)")
+        #     visited_range = 1
+        
+        # return [Goal(
+        #     goal_type="exploration",
+        #     max_time=0.09,
+        #     visited_range=visited_range,
+        #     priority=10,
+        #     position=safe_point
+        # )]
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
@@ -301,7 +313,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="super", 
-                    max_time=0.09, 
+                    max_time=0.04, 
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -315,7 +327,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="food", 
-                    max_time=0.09, 
+                    max_time=0.04, 
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -332,7 +344,7 @@ class Agent:
                 
             goals.append(Goal(
                 goal_type="exploration", 
-                max_time=0.09, 
+                max_time=0.07, 
                 visited_range=visited_range,
                 priority=10, 
                 position=exploration_pos

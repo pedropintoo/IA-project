@@ -22,3 +22,4 @@ class SearchProblem:
     def satisfies_present_goals(self, state):
         goal_idx = self.num_present_goals - 1
         return self.domain.is_goal_visited(head=state["body"][0], goal=self.goals[goal_idx], traverse=state["traverse"])
+    

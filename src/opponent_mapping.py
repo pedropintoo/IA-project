@@ -74,14 +74,14 @@ class OpponentMapping:
 
         # If the opponent is not visible, return
         if len(opponent_body) == 0:
-            self.logger.critical('OPPONENT NOT VISIBLE')
+            # self.logger.critical('OPPONENT NOT VISIBLE')
             self.opponent_head_position = 0
             self.previous_head_position = 0
             self.predicted_head_position = 0
             self.previous_sight_state = self.sight_state
             return
-        else:
-            self.logger.info('OPPONENT VISIBLE')
+        # else:
+        #     self.logger.info('OPPONENT VISIBLE')
 
         # Determine the opponent head position
         self.opponent_head_position = self.determine_current_head_position()
@@ -90,10 +90,10 @@ class OpponentMapping:
         # Evaluate the prediction made in the previous step
         if self.predicted_head_position != 0:
             if self.opponent_head_position != self.predicted_head_position:
-                self.logger.critical(f"PREDICTION ERROR: opponent_head_position = {self.opponent_head_position} != predicted_head_position = {self.predicted_head_position}")
+                # self.logger.critical(f"PREDICTION ERROR: opponent_head_position = {self.opponent_head_position} != predicted_head_position = {self.predicted_head_position}")
                 self.predicted_failed = True
             else:
-                self.logger.info(f"PREDICTION SUCCESS: opponent_head_position = {self.opponent_head_position} == predicted_head_position = {self.predicted_head_position}")
+                # self.logger.info(f"PREDICTION SUCCESS: opponent_head_position = {self.opponent_head_position} == predicted_head_position = {self.predicted_head_position}")
                 self.predicted_failed = False
         
         # The opponent is visible. However, we are not sure about the position of the opponent head
@@ -117,24 +117,24 @@ class OpponentMapping:
                     self.opponent_target_food = food
                     previous_distance = food_distance
 
-            self.logger.critical(f'TARGET FOOD: {self.opponent_target_food}')
+            # self.logger.critical(f'TARGET FOOD: {self.opponent_target_food}')
     
         # Predict the future position of the opponent's head
         self.opponent_direction = self.determine_opponent_direction(self.previous_head_position, self.opponent_head_position)
         self.predicted_head_position = self.determine_predicted_head_position(self.opponent_head_position, self.opponent_direction, self.opponent_target_food)
         
         self.previous_head_position = self.opponent_head_position
-        self.logger.info(f'Current head position assigned to previous_head_position: {self.previous_head_position}')
+        # self.logger.info(f'Current head position assigned to previous_head_position: {self.previous_head_position}')
         self.opponent_head_position = self.predicted_head_position
-        self.logger.info(f'Next (predicted) head position: {self.predicted_head_position}')
+        # self.logger.info(f'Next (predicted) head position: {self.predicted_head_position}')
 
     def is_to_attack_opponent(self):
         # return self.opponent_head_position if it is not 0 
-        self.logger.critical(f'IS TO ATTACK OPPONENT?')
+        # self.logger.critical(f'IS TO ATTACK OPPONENT?')
         if self.opponent_head_position != 0 and self.opponent_direction != 0:
             return True
         else:
-            self.logger.critical('NO OPPONENT HEAD POSITION')
+            # self.logger.critical('NO OPPONENT HEAD POSITION')
             return False
         
     def is_to_attack_food(self):
@@ -195,8 +195,8 @@ class OpponentMapping:
                 opponent_future_position = self.go_right(opponent_future_position)
             i += 1                                        
 
-        self.logger.info(f"Opponent Direction: {self.opponent_direction} ; Opponent Head Position: {self.opponent_head_position}")
-        self.logger.info(f'Colliding with opponent in position : {opponent_future_position}')
+        # self.logger.info(f"Opponent Direction: {self.opponent_direction} ; Opponent Head Position: {self.opponent_head_position}")
+        # self.logger.info(f'Colliding with opponent in position : {opponent_future_position}')
         goal = Goal(goal_type='opponent', max_time=0.07, visited_range=0, priority=10, position=opponent_future_position, num_required_goals=1)
         return [goal]
 
@@ -204,10 +204,10 @@ class OpponentMapping:
         # This function returns the points that the agent must pass through to set a trap for the opponent.
         # If the agent survived three times to the simpleTrap we conclude that he has algorithms to deal with dead ends and we try to do a more advanced trap, advancedTrap.
         if self.simple_trap_survival < 3:
-            self.logger.critical('ATTACKING WITH SIMPLE TRAP')
+            # self.logger.critical('ATTACKING WITH SIMPLE TRAP')
             goals_positions = self.simpleTrap()
         else:
-            self.logger.critical('ATTACKING WITH ADVANCED TRAP')
+            # self.logger.critical('ATTACKING WITH ADVANCED TRAP')
             goals_positions = self.advancedTrap()
 
         goals = []
@@ -225,20 +225,20 @@ class OpponentMapping:
         # Compare the self.sight_state with the previous_sight_state to determine the head position
         # If in the same position (x,y) the value is different than the previous value and is 4, then the head is in that position
         if len(self.previous_sight_state) == 0:
-            self.logger.info('we dont have previous sight state')
+            # self.logger.info('we dont have previous sight state')
             return 0
 
         for [x, y, value] in self.sight_state:
             for [x_previous, y_previous, value_previous] in self.previous_sight_state:
                 if x == x_previous and y == y_previous:
                     if value == 4 and value_previous != 4:
-                        self.logger.info(f'Head position: [{x}, {y}]')
+                        # self.logger.info(f'Head position: [{x}, {y}]')
                         return [x, y]
         return 0
 
     def determine_predicted_head_position(self, opponent_head_position, direction, target_food):
         # If no food is nearby, assume the opponent will move straight unless forced to turn.
-        self.logger.info(f'Opponent Direction: {direction}')
+        # self.logger.info(f'Opponent Direction: {direction}')
         
         # If we could not determine the direction of the opponent, we cannot predict the future position
         if direction == 0:
@@ -267,7 +267,7 @@ class OpponentMapping:
                 # return self.go_up(opponent_head_position)
 
     def determine_opponent_direction(self, previous_head_position, current_head_position):
-        self.logger.info(f'Previous head position: {previous_head_position} ; Current head position: {current_head_position}')
+        # self.logger.info(f'Previous head position: {previous_head_position} ; Current head position: {current_head_position}')
         if previous_head_position == 0:
             return 0
         if current_head_position[0] > previous_head_position[0]:

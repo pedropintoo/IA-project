@@ -101,22 +101,22 @@ class Mapping:
         
         self.last_step += 1
         
-        # self.opponent.update(state)
+        self.opponent.update(state)
         
-        # ## In case, opponent observed
-        # if self.opponent.opponent_head_position != 0:
-        #     self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
-        #     self.domain.opponent_direction = self.opponent.opponent_direction
-        #     self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
+        ## In case, opponent observed
+        if self.opponent.opponent_head_position != 0:
+            self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
+            self.domain.opponent_direction = self.opponent.opponent_direction
+            self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
         
-        # else:
-        #     self.domain.opponent_head = None
-        #     self.domain.opponent_direction = None
+        else:
+            self.domain.opponent_head = None
+            self.domain.opponent_direction = None
             
-        # ## Check if opponent change predicted direction
-        # if self.opponent.predicted_failed:
-        #     self.objects_updated = True
-        #     self.logger.mapping("Opponent prediction failed")
+        ## Check if opponent change predicted direction
+        if self.opponent.predicted_failed:
+            self.objects_updated = True
+            self.logger.mapping("Opponent prediction failed")
 
         head = tuple(state["body"][0])
         self.cumulated_ignored_goals[head] = self.DEFAULT_IGNORED_GOAL_DURATION    
