@@ -11,8 +11,8 @@ logger.setLevel(logging.DEBUG)
 
 INITIAL_SCORE = 0
 GAME_SPEED = 20
-MAP_SIZE = (48, 27)
-FOOD_IN_MAP = 0
+MAP_SIZE = (48, 24)
+FOOD_IN_MAP = 4
 
 class Snake:
     def __init__(self, player_name, x=1, y=1):
@@ -22,11 +22,11 @@ class Snake:
         self._direction: Direction = Direction.EAST
         self._history = deque(maxlen=HISTORY_LEN)
         self._score = 0
-        self._traverse = False  # if True, the snake can traverse stones
+        self._traverse = True  # if True, the snake can traverse stones
         self._alive = True
         self.lastkey = ""
         self.to_grow = 1
-        self.range = 6
+        self.range = 3
 
     def sight(self, mapa, snakes):
         in_range = mapa.get_zone(self.head, self.range)
@@ -302,7 +302,7 @@ class Game:
         if self._step == self._timeout:
             self.stop()
 
-        if self._step % 100000 == 0:
+        if self._step % 100 == 0:
             self.map.spawn_food(Tiles.SUPER)
 
             for name, snake in self._snakes.items():
