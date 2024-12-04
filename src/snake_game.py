@@ -80,6 +80,8 @@ class SnakeGame(SearchDomain):
             if tuple(goal.position) not in visited_goals:
                 if self.is_goal_visited(new_head, goal, traverse):
                     if goal.goal_type == "super":
+                        new_body.append(body[-1])
+                        new_body.append(body[-1])
                         traverse = False # worst case scenario
                     elif goal.goal_type == "food":
                         new_body.append(body[-1]) # grow the snake

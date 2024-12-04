@@ -10,7 +10,7 @@ logger = logging.getLogger("Game")
 logger.setLevel(logging.DEBUG)
 
 INITIAL_SCORE = 0
-GAME_SPEED = 10
+GAME_SPEED = 20
 MAP_SIZE = (48, 24)
 FOOD_IN_MAP = 4
 
@@ -25,7 +25,7 @@ class Snake:
         self._traverse = True  # if True, the snake can traverse stones
         self._alive = True
         self.lastkey = ""
-        self.to_grow = 3
+        self.to_grow = 1
         self.range = 3
 
     def sight(self, mapa, snakes):

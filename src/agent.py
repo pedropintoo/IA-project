@@ -51,10 +51,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.disable()
+        self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -122,6 +122,11 @@ class Agent:
             try:
                 state = json.loads(await self.websocket.recv())
 
+                state_ts = datetime.fromisoformat(state["ts"])
+                if state_ts > datetime.now(state_ts.tzinfo):
+                    print(state_ts, "vs", datetime.now(state_ts.tzinfo))
+                    continue
+
                 if not state.get("body"):
                     self.logger.warning("Game Over!")
                     continue
@@ -129,12 +134,17 @@ class Agent:
                 self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
                 ## --- Main Logic ---
+                print("start: ", datetime.now())
                 self.observe(state)
+                print(self.ts, self.ts + timedelta(seconds=1/(self.fps+0.6)))
+                print("observed: ", datetime.now())
                 self.think(time_limit = ( self.ts + timedelta(seconds=1/(self.fps+0.6)) ))
+                print("think: ", datetime.now())
                 await self.act()
+                print("act: ", datetime.now())
                 ## ------------------
                 
-                self.logger.mapping(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+                print(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
             except websockets.exceptions.ConnectionClosedOK:
                 self.logger.warning("Server has cleanly disconnected us")      
                 sys.exit(0)            
@@ -174,6 +184,7 @@ class Agent:
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
+            print("go -----", datetime.now())
             return
         
         ## Reset the action plan
@@ -187,8 +198,10 @@ class Agent:
         ## Get a safe path
         self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled)
         self.logger.mapping(f"Future goals {[goal.position for goal in self.future_goals]}")
-                
+        
         ## Store a safe path to future goals
+        print("time_limit: ", time_limit)
+        print("1: ", datetime.now())
         safe_action = None
         while safe_action is None and len(self.future_goals) > 0:
             ## Search structure
@@ -216,14 +229,14 @@ class Agent:
                 self.future_goals.pop(0)
             else:
                 self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
-                
+        print("2: ", datetime.now())
         ## If no safe path found, get a fast action
         if safe_action is None: 
             self.logger.mapping("No safe path found! (using not perfect solution)")
             # best_node = temp_tree.best_solution["node"]
             # self.action = temp_tree.first_action_to(best_node)
             return
-        
+                
         ## Try to get a path to goal and then to the first future goal
         present_goals = self.current_goals + self.future_goals
         num_goals = len(self.current_goals)
@@ -260,6 +273,7 @@ class Agent:
             self.action = safe_action
             return
         
+        print("3: ", datetime.now())
         ## Set the next action
         self.logger.mapping(f"Goal action plan: {self.actions_plan}")
         self.action = self.actions_plan.pop()
@@ -296,7 +310,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="super", 
-                    max_time=0.07, 
+                    max_time=0.09, 
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -310,7 +324,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="food", 
-                    max_time=0.07, 
+                    max_time=0.09, 
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -327,7 +341,7 @@ class Agent:
                 
             goals.append(Goal(
                 goal_type="exploration", 
-                max_time=0.07, 
+                max_time=0.09, 
                 visited_range=visited_range,
                 priority=10, 
                 position=exploration_pos

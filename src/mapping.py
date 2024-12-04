@@ -1,6 +1,7 @@
 import heapq
 import random
 import time
+from datetime import datetime
 from collections import defaultdict
 from src.opponent_mapping import OpponentMapping
 from src.exploration_path import ExplorationPath
@@ -100,22 +101,22 @@ class Mapping:
         
         self.last_step += 1
         
-        self.opponent.update(state)
+        # self.opponent.update(state)
         
-        ## In case, opponent observed
-        if self.opponent.opponent_head_position != 0:
-            self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
-            self.domain.opponent_direction = self.opponent.opponent_direction
-            self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
+        # ## In case, opponent observed
+        # if self.opponent.opponent_head_position != 0:
+        #     self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
+        #     self.domain.opponent_direction = self.opponent.opponent_direction
+        #     self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
         
-        else:
-            self.domain.opponent_head = None
-            self.domain.opponent_direction = None
+        # else:
+        #     self.domain.opponent_head = None
+        #     self.domain.opponent_direction = None
             
-        ## Check if opponent change predicted direction
-        if self.opponent.predicted_failed:
-            self.objects_updated = True
-            self.logger.mapping("Opponent prediction failed")
+        # ## Check if opponent change predicted direction
+        # if self.opponent.predicted_failed:
+        #     self.objects_updated = True
+        #     self.logger.mapping("Opponent prediction failed")
 
         head = tuple(state["body"][0])
         self.cumulated_ignored_goals[head] = self.DEFAULT_IGNORED_GOAL_DURATION    
@@ -142,6 +143,7 @@ class Mapping:
                 self.cumulated_ignored_goals = {(x, y): self.DEFAULT_IGNORED_GOAL_DURATION for x in range(self.domain.width) for y in range(self.domain.height)}
         
         
+        
         current_ignored_goals = set([goal for goal, timestamp in self.ignored_goals])
         if self.previous_ignored_keys:
             if not self.a_in_b_objects(a=self.previous_ignored_keys, b=current_ignored_goals):
@@ -158,7 +160,9 @@ class Mapping:
             "visited_goals": set(),
             "opponent_head": None
         }
+        
         self.update_cells_mapping(state["sight"]) 
+        
 
         ## Copy for better readability
         self.observed_objects = self.state["observed_objects"] # as a reference
@@ -226,13 +230,13 @@ class Mapping:
                     if not (obj_type == Tiles.SUPER and perfect_state):
                         self.objects_updated = True
 
-        print(self.observed_objects)
+        # print(self.observed_objects)
         # if self.objects_updated:
         #     print("NEW OBJECTS OBSERVED")
-        
-        if self.logger.activate_mapping:
+        if self.logger.mapping_active:
             self.print_mapping([goal.position for goal in goals], actions_plan)
         self.logger.debug(f"New: {self.observed_objects}")
+        
 
     def a_in_b_objects(self, a, b):
         return all(a_i in b for a_i in a if a_i in self.observed_objects and not (self.observed_objects[a_i][0] == Tiles.SUPER and self.domain.is_perfect_effects(self.state)))
@@ -280,7 +284,7 @@ class Mapping:
         min_heuristic = None
         closest = None
         traverse = self.state["traverse"]
-        print("OBJECT TYPE: ", obj_type)
+        # print("OBJECT TYPE: ", obj_type)
         ## Get the closest food
         for position in self.observed_objects.keys():
             if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type or list(position) in self.state["body"]:
