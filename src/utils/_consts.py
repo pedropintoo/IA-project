@@ -114,7 +114,7 @@ def get_num_max_present_goals():
     Goal: So the snake goes for the present goals.
     """
     # infinite -> the get_near_goal_range will determine the quantity of present goals
-    return float("inf")#3
+    return 5
     
 def get_future_goals_priority(num_goals):
     """
@@ -141,11 +141,9 @@ def get_near_goal_range(current_range, body_length, super_food=False):
     """
     if body_length <= 20:
         return 10
-    elif body_length <= 60:
-        return 5
-    elif body_length <= 70:
+    elif body_length <= 40:
         return 3
-    elif body_length <= 80:
+    elif body_length <= 70:
         return 2
     else:
         return 1
