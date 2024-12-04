@@ -162,7 +162,6 @@ class Mapping:
         }
         
         
-        print("start cells_mapping: ", datetime.now())
         currently_observed = defaultdict(list)
         for x_str, y_dict in state["sight"].items():
             x = int(x_str)
@@ -173,9 +172,7 @@ class Mapping:
                 self.cells_mapping[(x, y)] = (seen + 1, timestamp)
                 currently_observed[(x, y)] = [obj_type, timestamp]  
         
-        self.expire_cells_mapping()
-        print("end: ", datetime.now())
-        
+        self.expire_cells_mapping()        
 
         ## Copy for better readability
         self.observed_objects = self.state["observed_objects"] # as a reference

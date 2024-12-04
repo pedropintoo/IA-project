@@ -116,8 +116,9 @@ class Agent:
         
     async def play(self):
         """Main loop of the agent, where the game is played"""
-        while True:
-            try:
+        
+        try:
+            while True:
                 state = json.loads(await self.websocket.recv())
 
                 state_ts = datetime.fromisoformat(state["ts"])
@@ -132,20 +133,15 @@ class Agent:
                 self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
                 ## --- Main Logic ---
-                print("start: ", datetime.now())
                 self.observe(state)
-                print(self.ts, self.ts + timedelta(seconds=1/(self.fps+0.6)))
-                print("observed: ", datetime.now())
                 self.think(time_limit = ( self.ts + timedelta(seconds=1/(self.fps+0.6)) ))
-                print("think: ", datetime.now())
                 await self.act()
-                print("act: ", datetime.now())
                 ## ------------------
                 
                 print(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
-            except websockets.exceptions.ConnectionClosedOK:
-                self.logger.warning("Server has cleanly disconnected us")      
-                sys.exit(0)            
+        except websockets.exceptions.ConnectionClosedOK:
+            self.logger.warning("Server has cleanly disconnected us")      
+            sys.exit(0)            
     
     # ------ Observe ------
     
@@ -182,7 +178,6 @@ class Agent:
             self.action = self.actions_plan.pop()
             self.logger.debug(f"Following action plan: {self.action}")
             self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
-            print("go -----", datetime.now())
             return
         
         ## Reset the action plan
@@ -198,8 +193,6 @@ class Agent:
         self.logger.mapping(f"Future goals {[goal.position for goal in self.future_goals]}")
         
         ## Store a safe path to future goals
-        print("time_limit: ", time_limit)
-        print("1: ", datetime.now())
         safe_action = None
         while safe_action is None and len(self.future_goals) > 0:
             ## Search structure
@@ -229,7 +222,6 @@ class Agent:
             else:
                 self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
                 
-        print("2: ", datetime.now())
         ## If no safe path found, get a fast action
         if safe_action is None: 
             self.logger.mapping("No safe path found! (using not perfect solution)")
@@ -273,7 +265,6 @@ class Agent:
             self.action = safe_action
             return
         
-        print("3: ", datetime.now())
         ## Set the next action
         self.logger.mapping(f"Goal action plan: {self.actions_plan}")
         self.action = self.actions_plan.pop()
@@ -360,20 +351,17 @@ class Agent:
             self.logger.mapping("Fast action!")
 
         # ## If there are no actions available, return None
-        # if self.domain.actions(self.mapping.state) == []:
-        #     self.logger.warning("No actions available!") # you're dead ;(
-        #     return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
+        if self.domain.actions(self.mapping.state) == []:
+            self.logger.warning("No actions available!") # you're dead ;(
+            return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
 
-        # ## Use heuristics to choose the best action
-        # min_heuristic = None
-        # for action in self.domain.actions(self.mapping.state):
-        #     next_state = self.domain.result(self.mapping.state, action, self.current_goals)
-        #     heuristic = self.domain.heuristic(next_state, self.current_goals) # change this!
-        #     if min_heuristic is None or heuristic < min_heuristic:
-        #         min_heuristic = heuristic
-        #         best_action = action
+        ## Use heuristics to choose the best action
+        min_heuristic = None
+        for action in self.domain.actions(self.mapping.state):
+            next_state = self.domain.result(self.mapping.state, action, self.current_goals)
+            heuristic = self.domain.heuristic(next_state, self.current_goals) # change this!
+            if min_heuristic is None or heuristic < min_heuristic:
+                min_heuristic = heuristic
+                best_action = action
 
-        # return best_action
-        
-        return random.choice(self.domain.actions(self.mapping.state))
-
+        return best_action

@@ -62,11 +62,12 @@ class SearchTree:
         while self.open_nodes is not None and len(self.open_nodes) > 0:          
             node = self.open_nodes.pop(0)
 
+            if time_limit is not None and datetime.datetime.now() >= time_limit: 
+                ## Time limit exceeded
+                return -1
+
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                self.best_solution = {"total_cost": node.heuristic, #+ node.cost,
-                                      "node": node}
-
                 ## In case only the first direction is needed
                 if first_action:
                     return self.first_action_to(node)
@@ -96,18 +97,9 @@ class SearchTree:
                     heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
                     action=act,
                     )
-
-                # ## Ignore nodes with heuristic much greater than the best solution
-                # if self.best_solution["total_cost"]*5 < new_total_cost:
-                #     continue
                 
                 new_lower_nodes.append(new_node)
                 
-                new_total_cost = new_node.heuristic #+ new_node.cost
-                ## Store the best solution
-                if not self.best_solution or self.best_solution["total_cost"] > new_total_cost:
-                    self.best_solution = {"total_cost": new_total_cost, "node": new_node}
-
             self.add_to_open(new_lower_nodes)
         return []
     
