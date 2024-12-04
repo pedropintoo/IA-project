@@ -196,7 +196,7 @@ class Mapping:
             sight_range = self.state["range"]
             exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, self.state["traverse"])
             average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
-            if average_seen_density >= exploration_point_seen_threshold:
+            if average_seen_density >= exploration_point_seen_threshold and not y == 0:
                 print("IGNOREED EXPLORATION BECAUSE IT WAS ALREADY SEEN WITH TOO MUCH DENSITY")
                 self.cumulated_ignored_goals[(x, y)] = self.DEFAULT_IGNORED_GOAL_DURATION
                 return False

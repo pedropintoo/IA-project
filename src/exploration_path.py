@@ -112,7 +112,7 @@ class ExplorationPath:
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
             #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
-            if (not is_ignored_goal(point) and not (sight_range == 2 and not self.is_valid_point(point, body, traverse))) and average_seen_density < exploration_point_seen_threshold:# or limit_iterations <= 0:
+            if not is_ignored_goal(point) and self.is_valid_point(point, body, traverse, average_seen_density, exploration_length_threshold):# or limit_iterations <= 0:
                 self.last_given_point = point
                 return point    
 
@@ -145,7 +145,8 @@ class ExplorationPath:
         if average_seen_density is None or exploration_point_seen_threshold is None:
             return (traverse or point not in self.internal_walls) and point not in body
         else:
-            return (traverse or point not in self.internal_walls) and point not in body and average_seen_density < exploration_point_seen_threshold
+            print("BODY IN VALIDATION POINT:", body)
+            return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
             
     
     def calcule_average_seen_density(self, point, sight_range, exploration_map):
