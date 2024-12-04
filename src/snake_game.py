@@ -155,13 +155,13 @@ class SnakeGame(SearchDomain):
                 if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
                     rounded_obstacles += 1
         
-        self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
+        # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
         heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
-        self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
+        # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
 
         return heuristic_value
 

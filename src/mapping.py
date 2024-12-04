@@ -225,7 +225,7 @@ class Mapping:
             if not min_heuristic or heuristic < min_heuristic:
                 min_heuristic = heuristic
                 closest = position
-        print("POINTS - ", points, "CLOSEST - ", closest)
+
         ## Get near goals
         near_objects = [closest]
         near_goal_range = 3
@@ -235,27 +235,22 @@ class Mapping:
                     continue
                 position = [closest[0] + x, closest[1] + y]
                 
-                print("p: ", position)
                 if tuple(position) not in points:
-                    print("POSITION (not in points) - ", position)
                     continue # not of this type
                 
                 if not traverse:
                     if self._outside_of_domain(position) or position in self.domain.internal_walls:
-                        print("POSITION (outside of domain) - ", position)
                         continue
                     near_objects.append(position)
                     
                 else:
                     if obj_type == Tiles.SUPER and self._outside_of_domain(position):
-                        print("POSITION (outside of domain SUPER) - ", position)
                         continue
                         
                     else:
                         position = [position[0] % self.domain.width, position[1] % self.domain.height]
                         near_objects.append(position)
         
-        print("NEAR OBJECTS - ", near_objects)                       
         return near_objects
 
         # # Sort points such that the first is closest to head, the second is closest to the first, and so on
