@@ -126,7 +126,7 @@ class SnakeGame(SearchDomain):
             ## Manhattan distance (not counting walls)
             distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
 
-            heuristic_value += distance * priority
+            heuristic_value += distance #* priority
             priority /= 5
             
             previous_goal_position = goal_position

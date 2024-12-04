@@ -66,8 +66,8 @@ class Mapping:
         #     del self.observed_objects[tuple(obj_pos)]
     
     def is_ignored_goal(self, obj_pos, debug=False):
-        if debug:
-            print("ignored_goals: ", [ig for ig in self.ignored_goals])
+        # if debug:
+        #     print("ignored_goals: ", [ig for ig in self.ignored_goals])
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self, force_traverse_disabled=False) -> tuple:
@@ -177,13 +177,13 @@ class Mapping:
             else:
                 # This position is new
                 if obj_type not in self.ignored_objects:
-                    print("NEW - ", obj_type)
+                    # print("NEW - ", obj_type)
                     self.observed_objects[position] = [obj_type, timestamp]
                     if not (obj_type == Tiles.SUPER and perfect_state):
                         self.objects_updated = True
 
-        if self.objects_updated:
-            print("NEW OBJECTS OBSERVED")
+        # if self.objects_updated:
+        #     print("NEW OBJECTS OBSERVED")
         
         if self.logger.activate_mapping:
             self.print_mapping([goal.position for goal in goals], actions_plan)
@@ -206,7 +206,7 @@ class Mapping:
             exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, self.state["traverse"])
             average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
             if average_seen_density >= exploration_point_seen_threshold and not y == 0:
-                print("IGNOREED EXPLORATION BECAUSE IT WAS ALREADY SEEN WITH TOO MUCH DENSITY")
+                # print("IGNOREED EXPLORATION BECAUSE IT WAS ALREADY SEEN WITH TOO MUCH DENSITY")
                 self.cumulated_ignored_goals[(x, y)] = self.DEFAULT_IGNORED_GOAL_DURATION
                 return False
 

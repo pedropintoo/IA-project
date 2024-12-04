@@ -95,7 +95,7 @@ class ExplorationPath:
         #     self.exploration_path = []
         
         if len(self.exploration_path) < exploration_length_threshold:
-            print("REGENERATING PATH BECAUSE OF LENGTH AFTER NEXT REQUEST")
+            # print("REGENERATING PATH BECAUSE OF LENGTH AFTER NEXT REQUEST")
             self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
 
         # self.print_exploration_path()
@@ -104,7 +104,7 @@ class ExplorationPath:
         while self.exploration_path:
             
             if len(self.exploration_path) < exploration_length_threshold: #or limit_iterations <= 0:
-                print("REGENERATING PATH BECAUSE OF LENGTH INSIDE THE LOOP")
+                # print("REGENERATING PATH BECAUSE OF LENGTH INSIDE THE LOOP")
                 self.generate_exploration_path(body[0], sight_range, exploration_map, traverse, False)
             
             point = list(self.exploration_path.pop(0))
@@ -116,20 +116,20 @@ class ExplorationPath:
                 self.last_given_point = point
                 return point    
 
-            print(f"---------->POINT SKIPPED {point}")
+            # print(f"---------->POINT SKIPPED {point}")
 
-            if is_ignored_goal(point):
-                print(f"Reason: IS AN IGNORED GOAL!")
-                is_ignored_goal(point, debug=True)
+            # if is_ignored_goal(point):
+            #     print(f"Reason: IS AN IGNORED GOAL!")
+            #     is_ignored_goal(point, debug=True)
             
-            if not self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):
-                print(f"Reason: NOT A VALID POINT!")
+            # if not self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):
+            #     print(f"Reason: NOT A VALID POINT!")
  
 
             # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
-        x_range, y_range = self.get_quadrant(goal_position)
+        x_range, y_range = self.get_quadrant(body[0])
         area_to_check = max(self.width, self.height) // 16
     
         min_obstacles = None
@@ -139,10 +139,10 @@ class ExplorationPath:
             for y in y_range:
                 point = [x, y]
                 if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
-                    print(F"PEEK: POINT {point} IS NOT VALID")
+                    # print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
                     
-                obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check)
+                obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check, is_ignored_goal)
                 if not min_obstacles or obstacles < min_obstacles:
                     min_obstacles = obstacles
                     best_point = point
@@ -155,30 +155,30 @@ class ExplorationPath:
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
         if average_seen_density is None or exploration_point_seen_threshold is None:
             # VALIDATION OF PEEK
-            if (not traverse and point in self.internal_walls):
-                print("POINT IN WALLS")
+            # if (not traverse and point in self.internal_walls):
+            #     print("POINT IN WALLS")
             
-            if point in body:
-                print("POINT IN BODY")
+            # if point in body:
+            #     print("POINT IN BODY")
 
             return (traverse or point not in self.internal_walls) and point not in body
         else:
             # VALIDATION OF NEXT POINT
-            print("BODY IN VALIDATION POINT:", body)
+            # print("BODY IN VALIDATION POINT:", body)
 
-            if (not traverse and point in self.internal_walls):
-                print("POINT IN WALLS")
+            # if (not traverse and point in self.internal_walls):
+            #     print("POINT IN WALLS")
             
-            if point in body:
-                print("POINT IN BODY")
+            # if point in body:
+            #     print("POINT IN BODY")
                 
-            if average_seen_density >= exploration_point_seen_threshold:
-                print("POINT ABOVE SEEN THRESHOLD")
-                print(f"AVERAGE = {average_seen_density} THRESHOLD = {exploration_point_seen_threshold}")
+            # if average_seen_density >= exploration_point_seen_threshold:
+            #     print("POINT ABOVE SEEN THRESHOLD")
+            #     print(f"AVERAGE = {average_seen_density} THRESHOLD = {exploration_point_seen_threshold}")
 
             return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
             
-    def count_obstacles_around_point(self, point, body, traverse, area_to_check):
+    def count_obstacles_around_point(self, point, body, traverse, area_to_check, is_ignore_goal):
         x0, y0 = point
         count = 0
 
@@ -196,6 +196,9 @@ class ExplorationPath:
 
                 if (not traverse and cell_point in self.internal_walls) or cell_point in body:
                     count += 1
+                
+                if is_ignore_goal(cell_point):
+                    count += 2
                 
         return count
     

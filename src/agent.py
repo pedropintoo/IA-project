@@ -206,6 +206,7 @@ class Agent:
                                 
                 ## Check max execution time
                 if datetime.now() > time_limit:
+                    self.mapping.ignore_goal(self.future_goals[0].position)
                     self.future_goals.pop(0)
                     break
             
@@ -219,8 +220,8 @@ class Agent:
         ## If no safe path found, get a fast action
         if safe_action is None: 
             self.logger.mapping("No safe path found! (using not perfect solution)")
-            best_node = temp_tree.best_solution["node"]
-            self.action = temp_tree.first_action_to(best_node)
+            # best_node = temp_tree.best_solution["node"]
+            # self.action = temp_tree.first_action_to(best_node)
             return
         
         ## Try to get a path to goal and then to the first future goal
@@ -303,7 +304,7 @@ class Agent:
             force_traverse_disabled = True # worst case scenario
         
         ## Insert food goals, if any
-        if len(goals) < max_goals and self.mapping.observed(Tiles.FOOD):
+        elif len(goals) < max_goals and self.mapping.observed(Tiles.FOOD):
             for obj_position in self.mapping.closest_objects(Tiles.FOOD):
                 if len(goals) >= max_goals:
                     break
