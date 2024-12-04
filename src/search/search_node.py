@@ -23,7 +23,7 @@ class SearchNode:
         return hash(str(self.state))
     def __lt__(self, other):
         ## A* search
-        #return (self.cost + self.heuristic) < (other.cost + other.heuristic)
+        # return (self.cost + self.heuristic) < (other.cost + other.heuristic)
         ## Greedy search
         return self.heuristic < other.heuristic
     
@@ -32,9 +32,9 @@ class SearchNode:
         if self.parent is None:
             return False
         
-        if self.parent.state == newstate:
+        if self.parent.state["body"] == newstate["body"] and self.parent.state["traverse"] == newstate["traverse"]:
             return True
-
+        
         return self.parent.in_parent(newstate)
 
     

@@ -112,13 +112,19 @@ class ExplorationPath:
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
             #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
-            if not is_ignored_goal(point) and self.is_valid_point(point, body, traverse, average_seen_density, exploration_length_threshold):# or limit_iterations <= 0:
+            if not is_ignored_goal(point) and self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):# or limit_iterations <= 0:
                 self.last_given_point = point
                 return point    
 
             print(f"---------->POINT SKIPPED {point}")
-            if average_seen_density >= exploration_point_seen_threshold:
-                print(f"--------------------->Point {point} has average density {average_seen_density} and is being ignored with traverse {traverse} and the threshold {exploration_point_seen_threshold}")    
+
+            if is_ignored_goal(point):
+                print(f"Reason: IS AN IGNORED GOAL!")
+                is_ignored_goal(point, debug=True)
+            
+            if not self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):
+                print(f"Reason: NOT A VALID POINT!")
+ 
 
             # limit_iterations -= 1 # Avoid infinite loop 
 
@@ -146,6 +152,17 @@ class ExplorationPath:
             return (traverse or point not in self.internal_walls) and point not in body
         else:
             print("BODY IN VALIDATION POINT:", body)
+
+            if (not traverse and point in self.internal_walls):
+                print("POINT IN WALLS")
+            
+            if point in body:
+                print("POINT IN BODY")
+                
+            if average_seen_density >= exploration_point_seen_threshold:
+                print("POINT ABOVE SEEN THRESHOLD")
+                print(f"AVERAGE = {average_seen_density} THRESHOLD = {exploration_point_seen_threshold}")
+
             return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
             
     

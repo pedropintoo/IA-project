@@ -65,7 +65,9 @@ class Mapping:
         # if tuple(obj_pos) in self.observed_objects:
         #     del self.observed_objects[tuple(obj_pos)]
     
-    def is_ignored_goal(self, obj_pos):
+    def is_ignored_goal(self, obj_pos, debug=False):
+        if debug:
+            print("ignored_goals: ", [ig for ig in self.ignored_goals])
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self, force_traverse_disabled=False) -> tuple:

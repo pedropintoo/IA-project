@@ -45,7 +45,6 @@ class SnakeGame(SearchDomain):
         
         if head_tuple in state["observed_objects"]:
             if state["observed_objects"][head_tuple][0] == Tiles.SNAKE:
-                print("TESTE!!!!!!!!")
                 return True # collision with other snake
         
         if not state["traverse"]:
@@ -108,7 +107,7 @@ class SnakeGame(SearchDomain):
         
         heuristic_value = 0   
         previous_goal_position = head
-        priority = 50
+        priority = 100
 
         snake_length = len(state["body"])
         body_weight = 1 # + snake_length // 10
@@ -117,11 +116,10 @@ class SnakeGame(SearchDomain):
         ## Manhattan distance to the goals
         for goal in goals: 
             if tuple(goal.position) in visited_goals:
-                priority /= 5
+                priority /= 10
                 if goal.goal_type == "super":
                     traverse = False # worst case scenario
                 continue
-            self.logger.critical(f"GOAL POSITION: {goal.position}")
             
             goal_position = goal.position
             goal_range = goal.visited_range
@@ -130,7 +128,7 @@ class SnakeGame(SearchDomain):
             distance = self.manhattan_distance(previous_goal_position, goal_position, traverse) - goal_range
 
             heuristic_value += distance * priority
-            priority /= 5
+            priority /= 10
             
             previous_goal_position = goal_position
             
@@ -156,7 +154,7 @@ class SnakeGame(SearchDomain):
                 if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
                     rounded_obstacles += 1
         
-        self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
+        # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
         heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):

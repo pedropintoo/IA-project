@@ -26,7 +26,7 @@ class Snake:
         self._alive = True
         self.lastkey = ""
         self.to_grow = 1
-        self.range = 3
+        self.range = 6
 
     def sight(self, mapa, snakes):
         in_range = mapa.get_zone(self.head, self.range)

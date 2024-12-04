@@ -349,7 +349,7 @@ class Agent:
             goals.append(Goal(
                 goal_type="exploration", 
                 max_time=0.07, 
-                visited_range=0,
+                visited_range=1,
                 priority=10, 
                 position=self.mapping.next_exploration(force_traverse_disabled)
             ))
