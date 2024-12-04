@@ -63,7 +63,7 @@ def get_duration_of_expire_cells(sight_range, fps):
     This is the duration of the cells in the exploration map.
     Goal: So the snake clears the exploration map of old cells so it has always some new cells to explore.
     """
-    return (45 / sight_range) * 10 / fps
+    return (30 / sight_range) * 10 / fps
 
 
 

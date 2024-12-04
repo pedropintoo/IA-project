@@ -159,9 +159,9 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
-        self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)} {state["body"]}")
+        # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)} {state["body"]}")
 
-        return heuristic_value
+        return heuristic_value + state["step"] * 0.1
 
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
