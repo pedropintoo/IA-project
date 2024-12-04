@@ -340,24 +340,26 @@ class Agent:
 
     def _get_fast_action(self, warning=True):
         """Non blocking fast action"""
-        self.actions_plan = []
+        # self.actions_plan = []
         
         if warning:
             self.logger.mapping("Fast action!")
 
-        ## If there are no actions available, return None
-        if self.domain.actions(self.mapping.state) == []:
-            self.logger.warning("No actions available!") # you're dead ;(
-            return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
+        # ## If there are no actions available, return None
+        # if self.domain.actions(self.mapping.state) == []:
+        #     self.logger.warning("No actions available!") # you're dead ;(
+        #     return random.choice(["NORTH", "WEST", "SOUTH", "EAST"])
 
-        ## Use heuristics to choose the best action
-        min_heuristic = None
-        for action in self.domain.actions(self.mapping.state):
-            next_state = self.domain.result(self.mapping.state, action, self.current_goals)
-            heuristic = self.domain.heuristic(next_state, self.current_goals) # change this!
-            if min_heuristic is None or heuristic < min_heuristic:
-                min_heuristic = heuristic
-                best_action = action
+        # ## Use heuristics to choose the best action
+        # min_heuristic = None
+        # for action in self.domain.actions(self.mapping.state):
+        #     next_state = self.domain.result(self.mapping.state, action, self.current_goals)
+        #     heuristic = self.domain.heuristic(next_state, self.current_goals) # change this!
+        #     if min_heuristic is None or heuristic < min_heuristic:
+        #         min_heuristic = heuristic
+        #         best_action = action
 
-        return best_action
+        # return best_action
+        
+        return random.choice(self.domain.actions(self.mapping.state))
 
