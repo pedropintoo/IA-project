@@ -90,7 +90,14 @@ class Mapping:
         )
 
     def update(self, state, perfect_state, goals, actions_plan):
-        self.objects_updated = False if self.last_step + 1 != state["step"] else True
+        
+        self.objects_updated = False
+                
+        if self.last_step + 1 != state["step"]:
+            self.logger.critical(f"Unsynced steps: {state['step']} {self.last_step + 1}")
+            self.objects_updated = True
+        
+        self.last_step += 1
         
         self.opponent.update(state)
 

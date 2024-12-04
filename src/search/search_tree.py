@@ -19,7 +19,7 @@ class SearchTree:
         self.problem = problem
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
-        self.best_solution = {"total_cost": root.heuristic, "node": root} 
+        self.best_solution = None
         self.non_terminals = 0
 
     # Get the root first action to a given node
@@ -105,7 +105,7 @@ class SearchTree:
                 
                 new_total_cost = new_node.heuristic #+ new_node.cost
                 ## Store the best solution
-                if self.best_solution["total_cost"] > new_total_cost:
+                if not self.best_solution or self.best_solution["total_cost"] > new_total_cost:
                     self.best_solution = {"total_cost": new_total_cost, "node": new_node}
 
             self.add_to_open(new_lower_nodes)
