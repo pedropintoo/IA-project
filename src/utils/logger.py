@@ -32,7 +32,7 @@ class Logger:
         if not self.mapping_active: self.log.warning(warningMsg)
 
     def critical(self, criticalMsg):
-        if not self.mapping_active: self.log.critical(criticalMsg)
+        self.log.critical(criticalMsg)
 
     def mapping(self, mappingMsg):
         self.log.mapping(mappingMsg)

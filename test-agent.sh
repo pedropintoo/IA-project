@@ -5,95 +5,83 @@ pids=$(lsof -ti tcp:8000)
 if [[ -n "$pids" ]]; then
     echo "Existing server instances detected. Terminating..."
     kill $pids
-    # Wait for the processes to terminate
     sleep 1
 fi
 
 total_score=0
 total_runs=5
+log_file="server_log.txt"
 
-# echo "Starting server..."
-
-# Start the server script with unbuffered output
-python3 -u server.py > server_log.txt 2>&1 &
+# Start the server with unbuffered output
+python3 -u server.py > "$log_file" 2>&1 &
 PID_SERVER=$!
 # echo "Server started with PID $PID_SERVER"
-
 sleep 1
 
-# Function to kill the server on Ctrl+C
+# Ensure the server is terminated on Ctrl+C
 trap "kill $PID_SERVER 2>/dev/null; exit" SIGINT
 
-# echo "Starting agent tests..."
+# Function to extract score and steps from the log
+extract_metrics() {
+    local log_file=$1
 
-for i in $(seq 1 $total_runs)
-do
+    # Extract the last 'Saving' line and score
+    score=$(grep --text 'Saving' "$log_file" | tail -n 1 | sed -n 's/.*<\([0-9]*\)>.*/\1/p')
+    
+    # Extract steps from the last [xxxx] occurrence
+    steps=$(grep --text -o '\[[0-9]*\]' "$log_file" | tail -n 1 | awk -F'[][]' '{print $2}')
+
+    echo "$score" "$steps"
+}
+
+# Run the agent and capture metrics
+for i in $(seq 1 "$total_runs"); do
     echo "Run #$i"
 
-    # Start the agent script
     NAME="lwe >> rsa" python3 student.py > /dev/null 2>&1 &
     PID_AGENT=$!
     # echo "Agent started with PID $PID_AGENT"
 
-    # Wait for the agent script to finish if it's still running
+    # Wait for agent completion
     if ps -p $PID_AGENT > /dev/null; then
         wait $PID_AGENT
-        # echo "Agent finished"
     fi
 
-    # Wait for the 'Saving' line to appear in the log
-    timeout=10    # Maximum time to wait in seconds
-    interval=0.5  # Interval between checks
+    # Wait for 'Saving' in the log with a timeout
+    timeout=10
+    interval=20
     elapsed=0
 
-    # echo "Waiting for 'Saving' line to appear in the log..."
     while (( $(echo "$elapsed < $timeout" | bc -l) )); do
-        if grep --text 'Saving' server_log.txt > /dev/null; then
-            # echo "'Saving' line found in the log"
+        if grep --text 'Saving' "$log_file" > /dev/null; then
+            sleep 1
             break
         fi
-        sleep $interval
+        sleep "$interval"
         elapsed=$(echo "$elapsed + $interval" | bc)
     done
 
-    # Extract the last line with 'Saving' from the server log
-    last_score_line=$(grep --text 'Saving' server_log.txt | tail -n 1)
+    # Extract metrics
+    read -r score steps <<< "$(extract_metrics "$log_file")"
 
-    # Check if the line was found
-    if [[ -z "$last_score_line" ]]; then
-        # echo "Score line not found after waiting."
-        continue
-    fi
-
-    # Extract the score from the line
-    score=$(echo "$last_score_line" | awk -F'[<>]' '{print $2}')
-
-    # Check if score is a valid number
+    # Handle score
     if [[ $score =~ ^[0-9]+$ ]]; then
         echo "Score: $score"
-        # Add the score to total_score
         total_score=$((total_score + score))
     else
         echo "Score not found or invalid."
     fi
 
-    # Extract the last value in a line that is between [xxxx]
-    steps=$(grep --text -o '\[[0-9]*\]' server_log.txt | tail -n 1 | awk -F'[][]' '{print $2}')
-
-    # Check if the value was found
+    # Handle steps
     if [[ -n "$steps" ]]; then
         echo "Steps: $steps"
     else
-        echo "No value found in brackets."
+        echo "No steps found."
     fi
 
-
-    # Clean up the log file for the next run
-    > server_log.txt
-
+    # Clear the log file
+    : > "$log_file"
 done
-
-echo -ne "\n"
 
 # Ensure the server is terminated
 if ps -p $PID_SERVER > /dev/null; then
@@ -102,7 +90,10 @@ if ps -p $PID_SERVER > /dev/null; then
     echo "Server terminated"
 fi
 
-# Calculate the average score
-average_score=$(echo "scale=2; $total_score / $total_runs" | bc)
-
-echo "Average score after $total_runs runs: $average_score"
+# Calculate and display the average score
+if [[ $total_runs -gt 0 ]]; then
+    average_score=$(echo "scale=2; $total_score / $total_runs" | bc)
+    echo "Average score after $total_runs runs: $average_score"
+else
+    echo "No runs completed."
+fi

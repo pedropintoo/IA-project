@@ -21,20 +21,23 @@ class SearchNode:
         return str(self)
     def __hash__(self):
         return hash(str(self.state))
-    def __lt__(self, other):
-        ## A* search
-        #return (self.cost + self.heuristic) < (other.cost + other.heuristic)
-        ## Greedy search
-        return self.heuristic < other.heuristic
+    # def __lt__(self, other):
+    #     ## A* search
+    #     # return (self.cost + self.heuristic) < (other.cost + other.heuristic)
+    #     ## Greedy search
+    #     return self.heuristic < other.heuristic
     
     def in_parent(self, newstate):
         
         if self.parent is None:
             return False
         
-        if self.parent.state == newstate:
+        if all(b in self.parent.state["body"] for b in newstate["body"]) and self.parent.state["traverse"] == newstate["traverse"]:
             return True
-
+        
+        # if newstate["body"][0] in self.parent.state["body"] and self.parent.state["traverse"] == newstate["traverse"]:
+        #     return True
+        
         return self.parent.in_parent(newstate)
 
     
