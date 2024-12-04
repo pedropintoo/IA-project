@@ -101,6 +101,21 @@ class Mapping:
         self.last_step += 1
         
         self.opponent.update(state)
+        
+        ## In case, opponent observed
+        if self.opponent.opponent_head_position != 0:
+            self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
+            self.domain.opponent_direction = self.opponent.opponent_direction
+            self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
+        
+        else:
+            self.domain.opponent_head = None
+            self.domain.opponent_direction = None
+            
+        ## Check if opponent change predicted direction
+        if self.opponent.predicted_failed:
+            self.objects_updated = True
+            self.logger.mapping("Opponent prediction failed")
 
         head = tuple(state["body"][0])
         self.cumulated_ignored_goals[head] = self.DEFAULT_IGNORED_GOAL_DURATION    
@@ -140,7 +155,8 @@ class Mapping:
             "traverse": state["traverse"],
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"],
-            "visited_goals": set()
+            "visited_goals": set(),
+            "opponent_head": None
         }
         self.update_cells_mapping(state["sight"]) 
 
@@ -188,6 +204,11 @@ class Mapping:
                     
                     # Update a flag
                     if not (obj_type == Tiles.SUPER and perfect_state):
+                        
+                        # In case, it's the opponent body and the prediction is correct
+                        if obj_type == Tiles.SNAKE and not self.opponent.predicted_failed:
+                            continue # not update the flag
+                            
                         self.objects_updated = True
                         
             else:

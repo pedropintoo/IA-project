@@ -2,10 +2,10 @@ import random
 
 from src.goal import Goal
 
-UP = [0, -1]
-DOWN = [0, 1]
-LEFT = [-1, 0]
-RIGHT = [1, 0]
+UP = [0, -1] # north
+DOWN = [0, 1] # south
+LEFT = [-1, 0] # west
+RIGHT = [1, 0] # east
 
 class OpponentMapping:
     def __init__(self, logger, width, height):
@@ -29,6 +29,7 @@ class OpponentMapping:
         self.previous_head_position = 0
         self.previous_opponent_body = []
         self.predicted_head_position = 0 
+        self.predicted_failed = False
 
         # Number of times the agent survived to the simpleTrap
         self.simple_trap_survival = 0
@@ -90,8 +91,10 @@ class OpponentMapping:
         if self.predicted_head_position != 0:
             if self.opponent_head_position != self.predicted_head_position:
                 self.logger.critical(f"PREDICTION ERROR: opponent_head_position = {self.opponent_head_position} != predicted_head_position = {self.predicted_head_position}")
+                self.predicted_failed = True
             else:
                 self.logger.info(f"PREDICTION SUCCESS: opponent_head_position = {self.opponent_head_position} == predicted_head_position = {self.predicted_head_position}")
+                self.predicted_failed = False
         
         # The opponent is visible. However, we are not sure about the position of the opponent head
         if self.opponent_head_position == 0:
@@ -182,13 +185,13 @@ class OpponentMapping:
         i = 0
         opponent_future_position = self.opponent_head_position
         while i < 5:
-            if self.opponent_direction == 'up':
+            if self.opponent_direction == 'NORTH':
                 opponent_future_position = self.go_up(opponent_future_position)
-            elif self.opponent_direction == 'down':
+            elif self.opponent_direction == 'SOUTH':
                 opponent_future_position = self.go_down(opponent_future_position)
-            elif self.opponent_direction == 'left':
+            elif self.opponent_direction == 'WEST':
                 opponent_future_position = self.go_left(opponent_future_position)
-            elif self.opponent_direction == 'right':
+            elif self.opponent_direction == 'EAST':
                 opponent_future_position = self.go_right(opponent_future_position)
             i += 1                                        
 
@@ -243,13 +246,13 @@ class OpponentMapping:
         
         # if self.opponent_target_food == 0:
         # Assume the opponent will move straight for simplicity
-        if direction == 'up':
+        if direction == 'NORTH':
             return self.go_up(opponent_head_position)
-        elif direction == 'down':
+        elif direction == 'SOUTH':
             return self.go_down(opponent_head_position)
-        elif direction == 'left':
+        elif direction == 'WEST':
             return self.go_left(opponent_head_position)
-        elif direction == 'right':
+        elif direction == 'EAST':
             return self.go_right(opponent_head_position)
         
         # If food is nearby, assume the opponent will move towards the food.
@@ -268,13 +271,13 @@ class OpponentMapping:
         if previous_head_position == 0:
             return 0
         if current_head_position[0] > previous_head_position[0]:
-            return 'right'
+            return 'EAST'
         elif current_head_position[0] < previous_head_position[0]:
-            return 'left'
+            return 'WEST'
         elif current_head_position[1] > previous_head_position[1]:
-            return 'down'
+            return 'SOUTH'
         elif current_head_position[1] < previous_head_position[1]:
-            return 'up'
+            return 'NORTH'
 
     def go_up(self, position):
         return [(position[0] + UP[0]) % self.width, (position[1] + UP[1]) % self.height]

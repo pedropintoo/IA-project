@@ -87,13 +87,31 @@ class SnakeGame(SearchDomain):
                 else:
                     break # if one goal is not visited, we break the loop
 
+        ## Increment opponent head
+        observed_objects = state["observed_objects"].copy()
+        new_opponent_head = state["opponent_head"]
+        
+        ## Add it in the first iteration
+        if new_opponent_head is None and self.opponent_head is not None:
+            new_opponent_head = self.opponent_head
+        
+        if new_opponent_head is not None:
+            
+            ## IMPORTANT: Not remove the last position!! (it will accumulate the body)
+            
+            opponent_vector = DIRECTIONS[self.opponent_direction]
+            new_opponent_head = ((new_opponent_head[0] + opponent_vector[0]) % self.width, (new_opponent_head[1] + opponent_vector[1]) % self.height)
+            
+            observed_objects[new_opponent_head] = [Tiles.SNAKE, 0]
+            
         return {
                 "body": new_body,
                 "range": state["range"],
                 "traverse": traverse,
-                "observed_objects": state["observed_objects"],
+                "observed_objects": observed_objects,
                 "step": state["step"] + 1,
-                "visited_goals": visited_goals
+                "visited_goals": visited_goals,
+                "opponent_head": new_opponent_head
                 }
 
     def cost(self, state, action):
@@ -158,6 +176,24 @@ class SnakeGame(SearchDomain):
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
+        
+        if state["opponent_head"] is not None:
+            ## Penalize predicted collision with the opponent
+            if head[0] == state["opponent_head"][0] and head[1] == state["opponent_head"][1]:
+                heuristic_value *= 150
+                
+            ## Penalize being in a possible collision with the opponent
+            for x in range(-1, 2):
+                for y in range(-1, 2):
+                    # impossible predictions
+                    if (x, y) == (0, 0) or (x, y) == (-1, -1) or (x, y) == (-1, 1) or (x, y) == (1, -1) or (x, y) == (1, 1):
+                        continue
+                    
+                    pred_x = (state["opponent_head"][0] + x) % self.width
+                    pred_y = (state["opponent_head"][1] + y) % self.height
+                    
+                    if head[0] == pred_x and head[1] == pred_y:
+                        heuristic_value *= 100
         
         # self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
 
