@@ -267,7 +267,7 @@ class Agent:
         self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled, time_limit)
         
         self.logger.mapping(f"Safe points {[point.position for point in self.future_goals]}")
-        
+        self.logger.mapping(f"Time allowed: {(time_limit - datetime.now()).total_seconds()}")
         ## Store a safe path to future goals
         safe_action = None
         while self._is_empty(safe_action) and len(self.future_goals) > 0:
@@ -277,12 +277,17 @@ class Agent:
             problem = SearchProblem(self.domain, start_state, [current_safe_point])
             temp_tree = SearchTree(problem, strategy="A*")
             
+            self.logger.mapping(f"[@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
+            
             ## Search for the given goals
             print("Max time: ", current_safe_point.max_time)
             safe_action = temp_tree.search(
                 first_two_actions=True,
                 time_limit=min(datetime.now() + timedelta(seconds=current_safe_point.max_time), time_limit)
             )
+            self.logger.mapping(f"[2@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
+            self.logger.mapping(f"[3@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
+
             print("safe_action: ", safe_action)
             
             if safe_action == -1:
