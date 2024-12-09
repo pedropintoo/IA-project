@@ -48,10 +48,10 @@ class Agent:
         
         ## Utils
         # print(f"Agent: {agent_name}")
-        self.logger = None#Logger(f"[{agent_name}]", logFile=None)
+        self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         #self.logger.disable()
@@ -193,8 +193,8 @@ class Agent:
         # self.logger.mapping(f"Future goals {[goal.position for goal in self.future_goals]}")
         
         ## Store a safe path to future goals
-        safe_action = None
-        while safe_action is None and len(self.future_goals) > 0:
+        safe_action = []
+        while safe_action == [] and len(self.future_goals) > 0:
             ## Search structure
             problem = SearchProblem(self.domain, self.mapping.state, self.future_goals)
             temp_tree = SearchTree(problem)
@@ -207,7 +207,7 @@ class Agent:
             
             if safe_action == -1:
                 current_time = datetime.now()
-                # self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
+                print(f"PATH TO SAFE POINT: Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
                                     
                 ## Check max execution time
                 if current_time > time_limit:
@@ -215,15 +215,17 @@ class Agent:
                     self.future_goals.pop(0)
                     break
             
-            if safe_action is None:
+            if safe_action == []:
                 # self.logger.mapping(f"[NOT FOUND] Safe path to {self.future_goals[0]}")
+                print(f"PATH TO SAFE POINT: NOT FOUND")
                 self.mapping.ignore_goal(self.future_goals[0].position)
                 self.future_goals.pop(0)
             # else:
             #     self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
                 
         ## If no safe path found, get a fast action
-        if safe_action is None: 
+        if safe_action == []: 
+            print(f"PATH TO SAFE POINT: NOT FOUND")
             # self.logger.mapping("No safe path found! (using not perfect solution)")
             # best_node = temp_tree.best_solution["node"]
             # self.action = temp_tree.first_action_to(best_node)

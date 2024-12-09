@@ -70,6 +70,7 @@ class SearchTree:
             if self.problem.goal_test(node.state):
                 ## In case only the first direction is needed
                 if first_action:
+                    print(f"PATH TO SAFE POINT: FOUND")
                     return self.first_action_to(node)
                 
                 return self.inverse_plan_to_solution(node)
