@@ -122,7 +122,7 @@ class SnakeGame(SearchDomain):
     def heuristic(self, state, goals):        
         
         if len(goals) == 1:
-            distance = self.manhattan_distance(state["body"][0], goals[0].position, state["traverse"]) * 2
+            distance = self.manhattan_distance(state["body"][0], goals[0].position, state["traverse"]) * 10
             print(f"HEURISTIC VALUE: {distance}")
             return distance
 

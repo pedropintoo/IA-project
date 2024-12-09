@@ -187,6 +187,8 @@ class Agent:
         ## Get directions to goal
         goals_directions, force_traverse_disabled = self.find_directions_to_goals(time_limit)
         
+        self.logger.mapping(f"time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+        
         ## Get direction to safe point
         start_state = self.domain.result(self.mapping.state, goals_directions[-1], self.current_goals) if goals_directions else self.mapping.state    
         safe_point_2directions = self.find_safe_point_2directions(start_state, force_traverse_disabled, time_limit)
@@ -246,7 +248,7 @@ class Agent:
         
         ## Search for the given goals
         actions = temp_tree.search(
-            time_limit=time_limit
+            time_limit=min(datetime.now() + timedelta(seconds=self.current_goals[0].max_time), time_limit)
         )
         
         print("actions: ", actions)
@@ -262,7 +264,7 @@ class Agent:
     def find_safe_point_2directions(self, start_state, force_traverse_disabled, time_limit):
         
         ## Get a safe point
-        self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled)
+        self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled, time_limit)
         
         self.logger.mapping(f"Safe points {[point.position for point in self.future_goals]}")
         
@@ -276,6 +278,7 @@ class Agent:
             temp_tree = SearchTree(problem, strategy="A*")
             
             ## Search for the given goals
+            print("Max time: ", current_safe_point.max_time)
             safe_action = temp_tree.search(
                 first_two_actions=True,
                 time_limit=min(datetime.now() + timedelta(seconds=current_safe_point.max_time), time_limit)
@@ -306,18 +309,16 @@ class Agent:
     def _is_empty(self, obj):
         return obj == -1 or obj is None or len(obj) == 0
     
-    def _find_future_goals(self, goals, force_traverse_disabled):
-        safe_point = self.mapping.peek_next_exploration(force_traverse_disabled=force_traverse_disabled)
-        
-        distance = self.mapping.manhattan_distance(self.mapping.state["body"][0], safe_point, self.mapping.state["traverse"])
-        
+    def _find_future_goals(self, goals, force_traverse_disabled, time_limit):
+        safe_points = self.mapping.peek_next_exploration(force_traverse_disabled=force_traverse_disabled)
+                
         return [Goal(
             goal_type="exploration",
-            max_time=0.09, # TODO: !!!
-            visited_range=distance // 4,
+            max_time=(time_limit - datetime.now()).total_seconds() / len(safe_points),
+            visited_range=1,
             priority=10,
-            position=safe_point
-        )]
+            position=pos
+        ) for pos in safe_points]
         
         # safe_point = self.mapping.peek_next_exploration()
         
@@ -339,6 +340,7 @@ class Agent:
         goals = []
         max_goals = get_num_max_present_goals()
         force_traverse_disabled = False
+        allowed_time = 1/(self.fps*2) - 0.01
 
         ## Insert super goals, if any
         if self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
@@ -347,7 +349,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="super", 
-                    max_time=0.05, 
+                    max_time=(self.ts + timedelta(seconds=allowed_time) - datetime.now()).total_seconds(),
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -361,7 +363,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="food", 
-                    max_time=0.05, 
+                    max_time=(self.ts + timedelta(seconds=allowed_time) - datetime.now()).total_seconds(), 
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -378,7 +380,7 @@ class Agent:
                 
             goals.append(Goal(
                 goal_type="exploration", 
-                max_time=0.05, 
+                max_time=(self.ts + timedelta(seconds=allowed_time) - datetime.now()).total_seconds(), 
                 visited_range=visited_range,
                 priority=10, 
                 position=exploration_pos

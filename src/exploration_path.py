@@ -44,8 +44,6 @@ class ExplorationPath:
         positions_to_evaluate = []
         for dx in range(-search_radius, search_radius + 1):
             for dy in range(-search_radius, search_radius + 1):
-                if abs(dx) + abs(dy) > search_radius:
-                    continue  # Skip points outside the search radius
                 x = head[0] + dx
                 y = head[1] + dy
                 if traverse:
@@ -123,15 +121,31 @@ class ExplorationPath:
             # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
-        x_range, y_range = self.get_quadrant(body[0])
+        x0, y0 = self.get_quadrant(body[0], traverse) 
         area_to_check = max(self.width, self.height) // 16
+        best_points = []
+
+        ranges_x = [(x0, x0+self.width//4), (x0-self.width//4, self.width//2)]
+        ranges_y = [(y0, y0+self.height//4), (y0-self.height//4, self.height//2)]
     
-        min_obstacles = None
+        for range_x in ranges_x:
+            for range_y in ranges_y:
+                x_range = range(range_x[0], range_x[1] - 1)
+                y_range = range(range_y[0], range_y[1] - 1)
+
+                best_point_in_quadrant = self.search_best_point_in_quadrant(x_range, y_range, body, traverse, is_ignored_goal, area_to_check)
+                if best_point_in_quadrant:
+                    best_points.append(best_point_in_quadrant)
+
+        return best_points
+    
+    def search_best_point_in_quadrant(self, x_range, y_range, body, traverse, is_ignored_goal, area_to_check):
         best_point = None
+        min_obstacles = None
 
         for x in x_range:
             for y in y_range:
-                point = [x, y]
+                point = [x % self.width, y % self.height]
                 if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
                     # print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
@@ -143,7 +157,7 @@ class ExplorationPath:
 
                     if obstacles == 0:
                         return best_point
-
+        
         return best_point
 
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
@@ -241,22 +255,36 @@ class ExplorationPath:
                         count += 1
         return count
 
-    def get_quadrant(self, point):
+    def get_quadrant(self, point, traverse):
         x, y = point
-        width_mid = self.width // 2
-        height_mid = self.height // 2
+        width_half = self.width // 4
+        height_half = self.height // 4
 
-        if x < width_mid:
-            x_range = range(0, width_mid)
-        else:
-            x_range = range(width_mid, self.width)
+        x_start = (x - width_half) % self.width if traverse else x - width_half
+
+        x_end = (x + width_half) % self.width if traverse else x + width_half
         
-        if y < height_mid:
-            y_range = range(0, height_mid)
-        else:
-            y_range = range(height_mid, self.height)
+        y_start = (y - height_half) % self.height if traverse else y - height_half
+        y_end = (y + height_half) % self.height if traverse  else y + height_half
+
+
+        if x_start < 0:
+            x_start = 0
+            x_end += abs(x_start)
+        if x_end >= self.width:
+            x_end = self.width - 1
+            x_start -= (x_end - self.width -1)
+
+        if y_start < 0:
+            y_start = 0
+            y_end += abs(y_start)
         
-        return x_range, y_range
+        if y_end >= self.height:
+            y_end = self.height - 1
+            y_start -= (y_end - self.height - 1)
+        
+
+        return x_start, y_start
     
     # def print_exploration_path(self):
     #     print("EXPLORATION PATH")

@@ -30,7 +30,7 @@ class SearchTree:
         previous = n.parent
         while previous is not None and previous.parent is not None:
             if previous.parent.parent is None:
-                return [previous.action, n.action]
+                return [n.action, n.parent.action]
             n = previous
             previous = n.parent
         return None
