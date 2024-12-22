@@ -121,12 +121,15 @@ class ExplorationPath:
             # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
-        x0, y0 = self.get_quadrant(body[0], traverse) 
+        quadrant_height = self.height // 4
+        quadrant_width = self.width // 4
+
+        x0, y0 = self.get_quadrant(body[0], traverse, quadrant_width, quadrant_height) 
         area_to_check = max(self.width, self.height) // 32
         best_points = []
 
-        ranges_x = [(x0, x0+self.width//4), (x0+self.width//4, x0 + self.width//2)]
-        ranges_y = [(y0, y0+self.height//4), (y0+self.height//4, y0 + self.height//2)]
+        ranges_x = [(x0, x0+quadrant_width), (x0+quadrant_width, x0 + quadrant_width*2)]
+        ranges_y = [(y0, y0+quadrant_height), (y0+quadrant_height, y0 + quadrant_height*2)]
         
         for range_x in ranges_x:
             for range_y in ranges_y:
@@ -156,12 +159,13 @@ class ExplorationPath:
                 start_time = datetime.now()
                 
                 obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check, is_ignored_goal)
-                if not min_obstacles or obstacles < min_obstacles:
-                    min_obstacles = obstacles
-                    best_point = point
+                # if not min_obstacles or obstacles < min_obstacles:
+                #     min_obstacles = obstacles
+                #     best_point = point
 
-                    if obstacles == 0:
-                        return best_point
+                if obstacles == 0:
+                    best_point = point
+                    return best_point
                 
                 print("count_obstacles_around_point time: ", (datetime.now() - start_time).total_seconds())
         
@@ -262,10 +266,10 @@ class ExplorationPath:
                         count += 1
         return count
 
-    def get_quadrant(self, point, traverse):
+    def get_quadrant(self, point, traverse, quadrant_width, quadrant_height):
         x, y = point
-        width_half = self.width // 4
-        height_half = self.height // 4
+        width_half = quadrant_width
+        height_half = quadrant_height
 
         x_start = (x - width_half) % self.width if traverse else x - width_half
 
