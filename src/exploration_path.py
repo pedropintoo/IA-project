@@ -127,9 +127,12 @@ class ExplorationPath:
 
         ranges_x = [(x0, x0+self.width//4), (x0+self.width//4, x0 + self.width//2)]
         ranges_y = [(y0, y0+self.height//4), (y0+self.height//4, y0 + self.height//2)]
-    
+        
+        from datetime import datetime
+        start_time = datetime.now()
         for range_x in ranges_x:
             for range_y in ranges_y:
+                print("TIME ELAPSED:", datetime.now() - start_time)
                 x_range = range(range_x[0], range_x[1])
                 y_range = range(range_y[0], range_y[1])
 
