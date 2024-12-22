@@ -71,7 +71,7 @@ class SearchTree:
 
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                print("__________________")
+                # print("__________________")
                 ## In case only the first two directions are needed
                 if first_two_actions:
                     return self.first_two_actions_to(node)
@@ -95,7 +95,7 @@ class SearchTree:
 
                 cost = node.cost + self.problem.domain.cost(node.state, act)
                 heuristic = self.problem.domain.heuristic(new_state, self.problem.goals)
-                print("heuristic: ", heuristic)
+                # print("heuristic: ", heuristic)
                 new_node = SearchNode(
                     new_state, 
                     node, 

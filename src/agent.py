@@ -51,10 +51,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        # self.logger.activate_mapping()
+        self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        self.logger.disable()
+        # self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -334,21 +334,6 @@ class Agent:
             priority=10,
             position=pos
         ) for i, pos in enumerate(safe_points)]        
-        
-        # safe_point = self.mapping.peek_next_exploration()
-        
-        # visited_range = 0
-        # if tuple(safe_point) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(safe_point)][0] == Tiles.SUPER:
-        #     self.logger.mapping("Safe point is a super food! (expanding range)")
-        #     visited_range = 1
-        
-        # return [Goal(
-        #     goal_type="exploration",
-        #     max_time=0.09,
-        #     visited_range=visited_range,
-        #     priority=10,
-        #     position=safe_point
-        # )]
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
