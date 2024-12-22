@@ -317,9 +317,9 @@ class Agent:
         self.logger.mapping(f"Time to peek_next_exploration: {(datetime.now() - start_t).total_seconds()}")
                 
         return [Goal(
-            goal_type="exploration",
+            goal_type="peek",
             max_time=(time_limit - datetime.now()).total_seconds() / len(safe_points),
-            visited_range=1,
+            visited_range=0,
             priority=10,
             position=pos
         ) for pos in safe_points]

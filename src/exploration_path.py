@@ -122,15 +122,15 @@ class ExplorationPath:
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         density = []
-        quadrant_height = self.height // 4
-        quadrant_width = self.width // 4
+        quadrant_height = self.height // 2
+        quadrant_width = self.width // 2
 
         x0, y0 = self.get_quadrant(body[0], traverse, quadrant_width, quadrant_height) 
         area_to_check = max(self.width, self.height) // 32
         best_points = []
 
-        ranges_x = [(x0, x0+quadrant_width), (x0+quadrant_width, x0 + quadrant_width*2)]
-        ranges_y = [(y0, y0+quadrant_height), (y0+quadrant_height, y0 + quadrant_height*2)]
+        ranges_x = [(x0, x0+quadrant_width//2), (x0+quadrant_width//2, x0 + quadrant_width)]
+        ranges_y = [(y0, y0+quadrant_height//2), (y0+quadrant_height//2, y0 + quadrant_height)]
         
         for range_x in ranges_x:
             for range_y in ranges_y:
@@ -177,7 +177,7 @@ class ExplorationPath:
                 
                 if obstacles == 0:
                     best_point = point
-                    print("best: ", best_point)
+                    print("best: ", best_point, "traverse:", traverse)
                 
                 print("count_obstacles_around_point time: ", (datetime.now() - start_time).total_seconds())
         
@@ -210,7 +210,6 @@ class ExplorationPath:
             return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
     
     def obstacle_value(self, point, traverse, body, is_ignored_goal):
-        print("traverse: ", traverse)
         x = point[0]
         y = point[1]
         count = 0
@@ -283,11 +282,10 @@ class ExplorationPath:
 
     def get_quadrant(self, point, traverse, quadrant_width, quadrant_height):
         x, y = point
-        width_half = quadrant_width
-        height_half = quadrant_height
+        width_half = quadrant_width // 2
+        height_half = quadrant_height // 2
 
         x_start = (x - width_half) % self.width if traverse else x - width_half
-
         x_end = (x + width_half) % self.width if traverse else x + width_half
         
         y_start = (y - height_half) % self.height if traverse else y - height_half
@@ -295,19 +293,20 @@ class ExplorationPath:
 
 
         if x_start < 0:
-            x_start = 0
             x_end += abs(x_start)
+            x_start = 0
+        
         if x_end >= self.width:
+            x_start -= (x_end - self.width - 1)
             x_end = self.width - 1
-            x_start -= (x_end - self.width -1)
 
         if y_start < 0:
-            y_start = 0
             y_end += abs(y_start)
+            y_start = 0
         
         if y_end >= self.height:
-            y_end = self.height - 1
             y_start -= (y_end - self.height - 1)
+            y_end = self.height - 1
         
 
         return x_start, y_start
