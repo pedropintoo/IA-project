@@ -18,6 +18,10 @@ DIRECTIONS = {
     "SOUTH": [0, 1] 
 }
 
+SUPER_TILE_MULTIPLIER = 50
+DIRECT_COLLISION_PENALTY = 150
+ADJACENT_COLLISION_PENALTY = 100
+
 class SnakeGame(SearchDomain):
     def __init__(self, logger, width, height, internal_walls, max_steps, opponent_head=None, opponent_direction=None):
         self.logger = logger
@@ -129,7 +133,7 @@ class SnakeGame(SearchDomain):
             visited_goals = state.get("visited_goals") # check if this is correct
                         
             if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-                heuristic_value *= 50
+                heuristic_value *= SUPER_TILE_MULTIPLIER
             
             ## Simulate opponent movement
             heuristic_value = self.calculate_opponent_heuristic(state, heuristic_value)
@@ -171,7 +175,7 @@ class SnakeGame(SearchDomain):
                 traverse = False # worst case scenario
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value *= 50
+            heuristic_value *= SUPER_TILE_MULTIPLIER
         
         ## Simulate opponent movement
         heuristic_value = self.calculate_opponent_heuristic(state, heuristic_value)
@@ -180,24 +184,23 @@ class SnakeGame(SearchDomain):
         return heuristic_value #+ state["step"] * 0.1
 
     def calculate_opponent_heuristic(self, state, heuristic_value):
-        head = state["body"][0]
-        if state["opponent_head"] is not None:
-            ## Penalize predicted collision with the opponent
-            if head[0] == state["opponent_head"][0] and head[1] == state["opponent_head"][1]:
-                heuristic_value *= 150
-                
-            ## Penalize being in a possible collision with the opponent
-            opponent_head = state["opponent_head"]
-            possible_collisions = [
-                ((opponent_head[0] - 1) % self.width, opponent_head[1]),
-                ((opponent_head[0] + 1) % self.width, opponent_head[1]),
-                (opponent_head[0], (opponent_head[1] - 1) % self.height),
-                (opponent_head[0], (opponent_head[1] + 1) % self.height)
-            ]
+        opponent_head = state.get("opponent_head")
+        if not opponent_head:
+            return heuristic_value
 
-            for pred_x, pred_y in possible_collisions:
-                if head[0] == pred_x and head[1] == pred_y:
-                    heuristic_value *= 100
+        head = state["body"][0]
+        if head == opponent_head:
+            return heuristic_value * DIRECT_COLLISION_PENALTY
+
+        possible_collisions = [
+            ((opponent_head[0] - 1) % self.width, opponent_head[1]),
+            ((opponent_head[0] + 1) % self.width, opponent_head[1]),
+            (opponent_head[0], (opponent_head[1] - 1) % self.height),
+            (opponent_head[0], (opponent_head[1] + 1) % self.height)
+        ]
+
+        if (head[0], head[1]) in possible_collisions:
+            return heuristic_value * ADJACENT_COLLISION_PENALTY
 
         return heuristic_value
 

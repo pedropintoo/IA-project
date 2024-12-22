@@ -50,9 +50,7 @@ class OpponentMapping:
             return      # THIS IS WRONG!!!!
         
         # Update the own information
-        self.own_body = state['body']
-        self.own_snake_length = len(self.own_body)
-        self.own_traverse = state['traverse']
+        self.update_own_information(state)
 
         own_sight_state = state['sight']
         self.sight_state = []
@@ -126,6 +124,74 @@ class OpponentMapping:
         # self.logger.info(f'Current head position assigned to previous_head_position: {self.previous_head_position}')
         self.opponent_head_position = self.predicted_head_position
         # self.logger.info(f'Next (predicted) head position: {self.predicted_head_position}')
+
+    def update_own_information(self, state):
+        self.own_body = state['body']
+        self.own_snake_length = len(self.own_body)
+        self.own_traverse = state['traverse']
+
+    def process_sight_state(self, sight):
+        self.sight_state = []
+        opponent_body = []
+        targets_food = []
+
+        for x, y_info in sight.items():
+            x = int(x)
+            for y, value in y_info.items():
+                y = int(y)
+                position = (x, y)
+                if list(position) in self.own_body:
+                    continue
+                self.sight_state.append([x, y, value])
+
+                if value == Tiles.SNAKE:
+                    opponent_body.append(position)
+                if value in [Tiles.FOOD, Tiles.SUPER]:
+                    targets_food.append(position)
+        
+        self.handle_opponent_visibility(opponent_body, targets_food)
+    
+    def handle_opponent_visibility(self, opponent_body, targets_food):
+        if not opponent_body:
+            self.reset_opponent_prediction()
+            return
+        
+        self.opponent_head_position = self.determine_current_head_position()
+        self.update_prediction_status()
+
+        if not self.opponent_head_position:
+            self.reset_opponent_prediction()
+            return
+        
+        if targets_food:
+            self.update_opponent_target_food(targets_food)
+        else:
+            self.opponent_target_food = None
+    
+    def reset_opponent_prediction(self):
+        self.opponent_head_position = None
+        self.previous_head_position = None
+        self.predicted_head_position = None
+        self.predicted_failed = False
+
+    def update_prediction_status(self):
+        if self.predicted_head_position and self.oppnent_heand_position != self.predicted_head_position:
+            self.predicted_failed = True
+
+    def update_opponent_target_food(self, targets_food):
+        closest_food = min(
+            targets_food,
+            key=lambda food: self.calculate_distance(self.opponent_head_position, food, self.opponent_traverse),
+            default=None
+        )
+        self.opponent_target_food = closest_food
+
+    def calculate_distance(self, position1, position2, traverse):
+        dx_no_crossing_walls = abs(position1[0] - position2[0])
+        dx = min(dx_no_crossing_walls, self.width - dx_no_crossing_walls) if traverse else dx_no_crossing_walls
+        dy_no_crossing_walls = abs(position1[1] - position2[1])
+        dy = min(dy_no_crossing_walls, self.height - dy_no_crossing_walls) if traverse else dy_no_crossing_walls
+        return dx + dy
 
     def is_to_attack_opponent(self):
         # return self.opponent_head_position if it is not 0 
