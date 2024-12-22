@@ -51,10 +51,10 @@ class Agent:
         self.logger = Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        # self.logger.disable()
+        self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -273,7 +273,7 @@ class Agent:
         ## Store a safe path to future goals
         safe_action = None
         while self._is_empty(safe_action) and len(self.future_goals) > 0:
-            print("remaining goals: ", len(self.future_goals))
+            #print("remaining goals: ", len(self.future_goals))
             current_safe_point = self.future_goals[0]
 
             ## Search structure
@@ -283,13 +283,13 @@ class Agent:
             self.logger.mapping(f"[@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
             
             ## Search for the given goals
-            print("Max time: ", current_safe_point.max_time)
+            #print("Max time: ", current_safe_point.max_time)
             safe_action = temp_tree.search(
                 first_two_actions=True,
                 time_limit=min(datetime.now() + timedelta(seconds=current_safe_point.max_time), time_limit)
             )
 
-            print("safe_action: ", safe_action)
+            #print("safe_action: ", safe_action)
             
             if safe_action == -1:
                 current_time = datetime.now()

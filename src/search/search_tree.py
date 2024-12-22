@@ -66,7 +66,7 @@ class SearchTree:
 
             if time_limit is not None and datetime.datetime.now() >= time_limit: 
                 ## Time limit exceeded
-                print("time limit exceeded")
+                #print("time limit exceeded")
                 return -1
 
             ## Goals test: all goals are satisfied
@@ -94,11 +94,13 @@ class SearchTree:
                     continue
 
                 cost = node.cost + self.problem.domain.cost(node.state, act)
+                heuristic = self.problem.domain.heuristic(new_state, self.problem.goals)
+                print("heuristic: ", heuristic)
                 new_node = SearchNode(
                     new_state, 
                     node, 
                     cost,
-                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
+                    heuristic=heuristic,
                     action=act,
                     )
                 

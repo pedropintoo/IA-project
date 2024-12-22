@@ -138,13 +138,13 @@ class ExplorationPath:
                 y_range = range(range_y[0], range_y[1])
 
                 best_point_in_quadrant, quadrant_density = self.search_best_point_in_quadrant(x_range, y_range, body, traverse, is_ignored_goal, area_to_check)
-                print(best_point_in_quadrant)
+                #print(best_point_in_quadrant)
                 if best_point_in_quadrant:
                     best_points.append(best_point_in_quadrant)
                     density.append(quadrant_density)
 
         ## Sort by quadrant (density)
-        print(best_points)
+        #print(best_points)
         return [point for _, point in sorted(zip(density, best_points), key=lambda x: x[0])]
     
     def search_best_point_in_quadrant(self, x_range, y_range, body, traverse, is_ignored_goal, area_to_check):
@@ -172,7 +172,7 @@ class ExplorationPath:
                 
                 if obstacles == 0:
                     best_point = point
-                    print("best: ", best_point, "traverse:", traverse)
+                    #print("best: ", best_point, "traverse:", traverse)
                 
         
         return best_point, quadrant_density

@@ -166,28 +166,6 @@ class SnakeGame(SearchDomain):
             
             if goal.goal_type == "super":
                 traverse = False # worst case scenario
-                    
-        # ## Count how many walls or body rounded by the snake
-        # rounded_obstacles = 0 
-        # for x in range(-2, 3):
-        #     for y in range(-2, 3):
-        #         if (x, y) == (0, 0):
-        #             continue # skip the head
-        #         neighbor_x = (head[0] + x) % self.width if traverse else head[0] + x
-        #         neighbor_y = (head[1] + y) % self.height if traverse else head[1] + y
-                
-        #         # Border walls
-        #         if neighbor_x < 0 or neighbor_x >= self.width or neighbor_y < 0 or neighbor_y >= self.height:
-        #             rounded_obstacles += 1 
-                    
-        #         elif [neighbor_x, neighbor_y] in state["body"]:
-        #             rounded_obstacles += 1 # at least one body part is in the neighborhood
-                
-        #         if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
-        #             rounded_obstacles += 1
-        
-        # # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
-        # heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
