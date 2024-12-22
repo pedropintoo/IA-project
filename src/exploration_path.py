@@ -122,17 +122,14 @@ class ExplorationPath:
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         x0, y0 = self.get_quadrant(body[0], traverse) 
-        area_to_check = max(self.width, self.height) // 16
+        area_to_check = max(self.width, self.height) // 32
         best_points = []
 
         ranges_x = [(x0, x0+self.width//4), (x0+self.width//4, x0 + self.width//2)]
         ranges_y = [(y0, y0+self.height//4), (y0+self.height//4, y0 + self.height//2)]
         
-        from datetime import datetime
-        start_time = datetime.now()
         for range_x in ranges_x:
             for range_y in ranges_y:
-                print("TIME ELAPSED:", datetime.now() - start_time)
                 x_range = range(range_x[0], range_x[1])
                 y_range = range(range_y[0], range_y[1])
 
@@ -145,14 +142,19 @@ class ExplorationPath:
     def search_best_point_in_quadrant(self, x_range, y_range, body, traverse, is_ignored_goal, area_to_check):
         best_point = None
         min_obstacles = None
-
+        
+        from datetime import datetime
+        start_time = datetime.now()
         for x in x_range:
             for y in y_range:
                 point = [x % self.width, y % self.height]
                 if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
                     # print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
-                    
+                
+                print("is_valid_point time: ", (datetime.now() - start_time).total_seconds())
+                start_time = datetime.now()
+                
                 obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check, is_ignored_goal)
                 if not min_obstacles or obstacles < min_obstacles:
                     min_obstacles = obstacles
@@ -160,6 +162,8 @@ class ExplorationPath:
 
                     if obstacles == 0:
                         return best_point
+                
+                print("count_obstacles_around_point time: ", (datetime.now() - start_time).total_seconds())
         
         return best_point
 
