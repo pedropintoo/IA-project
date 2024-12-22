@@ -120,6 +120,19 @@ class SnakeGame(SearchDomain):
         return 1
     
     def heuristic(self, state, goals):        
+        
+        if len(goals) == 1:
+            heuristic_value = self.manhattan_distance(state["body"][0], goals[0].position, state["traverse"]) 
+            
+            head = state["body"][0]
+            traverse = state["traverse"]
+            visited_goals = state.get("visited_goals") # check if this is correct
+                        
+            if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
+                heuristic_value *= 50
+            
+            return heuristic_value * 10
+
         head = state["body"][0]
         traverse = state["traverse"]
         visited_goals = state.get("visited_goals") # check if this is correct
