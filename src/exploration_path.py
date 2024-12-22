@@ -291,7 +291,7 @@ class ExplorationPath:
             x_start = 0
         
         if x_end >= self.width:
-            x_start -= (x_end - self.width - 1)
+            x_start -= (x_end - self.width + 1)
             x_end = self.width - 1
 
         if y_start < 0:
@@ -299,7 +299,7 @@ class ExplorationPath:
             y_start = 0
         
         if y_end >= self.height:
-            y_start -= (y_end - self.height - 1)
+            y_start -= (y_end - self.height + 1)
             y_end = self.height - 1
         
 
