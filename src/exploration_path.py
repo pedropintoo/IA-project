@@ -121,6 +121,7 @@ class ExplorationPath:
             # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
+        density = []
         quadrant_height = self.height // 4
         quadrant_width = self.width // 4
 
@@ -136,14 +137,19 @@ class ExplorationPath:
                 x_range = range(range_x[0], range_x[1])
                 y_range = range(range_y[0], range_y[1])
 
-                best_point_in_quadrant = self.search_best_point_in_quadrant(x_range, y_range, body, traverse, is_ignored_goal, area_to_check)
+                best_point_in_quadrant, quadrant_density = self.search_best_point_in_quadrant(x_range, y_range, body, traverse, is_ignored_goal, area_to_check)
+                print(best_point_in_quadrant)
                 if best_point_in_quadrant:
                     best_points.append(best_point_in_quadrant)
+                    density.append(quadrant_density)
 
-        return best_points
+        ## Sort by quadrant (density)
+        print(best_points)
+        return [point for _, point in sorted(zip(density, best_points), key=lambda x: x[0])]
     
     def search_best_point_in_quadrant(self, x_range, y_range, body, traverse, is_ignored_goal, area_to_check):
         best_point = None
+        quadrant_density = 0
         min_obstacles = None
         
         from datetime import datetime
@@ -151,6 +157,12 @@ class ExplorationPath:
         for x in x_range:
             for y in y_range:
                 point = [x % self.width, y % self.height]
+                
+                quadrant_density += self.obstacle_value(point, traverse, body, is_ignored_goal)
+                
+                if best_point:
+                    continue # already found a point
+                
                 if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
                     # print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
@@ -162,14 +174,14 @@ class ExplorationPath:
                 # if not min_obstacles or obstacles < min_obstacles:
                 #     min_obstacles = obstacles
                 #     best_point = point
-
+                
                 if obstacles == 0:
                     best_point = point
-                    return best_point
+                    print("best: ", best_point)
                 
                 print("count_obstacles_around_point time: ", (datetime.now() - start_time).total_seconds())
         
-        return best_point
+        return best_point, quadrant_density
 
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
         if average_seen_density is None or exploration_point_seen_threshold is None:
@@ -196,8 +208,23 @@ class ExplorationPath:
             #     print(f"AVERAGE = {average_seen_density} THRESHOLD = {exploration_point_seen_threshold}")
 
             return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
-            
-    def count_obstacles_around_point(self, point, body, traverse, area_to_check, is_ignore_goal):
+    
+    def obstacle_value(self, point, traverse, body, is_ignored_goal):
+        print("traverse: ", traverse)
+        x = point[0]
+        y = point[1]
+        count = 0
+        
+        if x < 0 or x >= self.width or y < 0 or y >= self.height:
+            return 1
+        if (not traverse and point in self.internal_walls) or point in body:
+            count += 1
+        if is_ignored_goal(point):
+            count += 2
+        
+        return count
+    
+    def count_obstacles_around_point(self, point, body, traverse, area_to_check, is_ignored_goal):
         x0, y0 = point
         count = 0
 
@@ -205,19 +232,7 @@ class ExplorationPath:
             for dy in range(-area_to_check, area_to_check + 1):
                 x = (x0 + dx) % self.width if traverse else x0 + dx
                 y = (y0 + dy) % self.height if traverse else y0 + dy
-
-                if x < 0 or x >= self.width or y < 0 or y >= self.height:
-                    # If the point is out of bounds, it is considered an obstacle
-                    count += 1
-                    continue
-                
-                cell_point = [x, y]
-
-                if (not traverse and cell_point in self.internal_walls) or cell_point in body:
-                    count += 1
-                
-                if is_ignore_goal(cell_point):
-                    count += 2
+                count += self.obstacle_value([x, y], traverse, body, is_ignored_goal)
                 
         return count
     
