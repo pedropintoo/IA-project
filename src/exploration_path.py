@@ -152,8 +152,6 @@ class ExplorationPath:
         quadrant_density = 0
         min_obstacles = None
         
-        from datetime import datetime
-        start_time = datetime.now()
         for x in x_range:
             for y in y_range:
                 point = [x % self.width, y % self.height]
@@ -166,10 +164,7 @@ class ExplorationPath:
                 if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
                     # print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
-                
-                print("is_valid_point time: ", (datetime.now() - start_time).total_seconds())
-                start_time = datetime.now()
-                
+                                
                 obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check, is_ignored_goal)
                 # if not min_obstacles or obstacles < min_obstacles:
                 #     min_obstacles = obstacles
@@ -179,7 +174,6 @@ class ExplorationPath:
                     best_point = point
                     print("best: ", best_point, "traverse:", traverse)
                 
-                print("count_obstacles_around_point time: ", (datetime.now() - start_time).total_seconds())
         
         return best_point, quadrant_density
 

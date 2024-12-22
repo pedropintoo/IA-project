@@ -54,7 +54,7 @@ class Agent:
         self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        #self.logger.disable()
+        # self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -237,7 +237,6 @@ class Agent:
         
     def find_directions_to_goals(self, time_limit):
         
-        
         ## Get a new goal
         self.current_goals, force_traverse_disabled = self._find_goals() # Find a new goal
         self.logger.mapping(f"Searching for: {[goal.position for goal in self.current_goals]}")
@@ -268,11 +267,9 @@ class Agent:
         ## Store a safe path to future goals
         safe_action = None
         while self._is_empty(safe_action) and len(self.future_goals) > 0:
+            print("remaining goals: ", len(self.future_goals))
             current_safe_point = self.future_goals[0]
-                     
-            if (time_limit - datetime.now()).total_seconds() < 0.01:
-                break         
-                        
+
             ## Search structure
             problem = SearchProblem(self.domain, start_state, [current_safe_point])
             temp_tree = SearchTree(problem, strategy="A*")
@@ -315,14 +312,22 @@ class Agent:
         start_t = datetime.now()
         safe_points = self.mapping.peek_next_exploration(force_traverse_disabled=force_traverse_disabled)
         self.logger.mapping(f"Time to peek_next_exploration: {(datetime.now() - start_t).total_seconds()}")
-                
+
+        total_time = (time_limit - datetime.now()).total_seconds()
+        num_safe_points = len(safe_points)
+        decay_factor = 0.5  # Adjust this factor to control the rate of exponential decay
+
+        # Calculate the sum of the exponential series
+        sum_exponential = sum(decay_factor ** i for i in range(num_safe_points))
+
+        # Allocate time to each goal based on the exponential decay factor
         return [Goal(
             goal_type="peek",
-            max_time=(time_limit - datetime.now()).total_seconds() / len(safe_points),
+            max_time=(total_time / sum_exponential) * (decay_factor ** i),
             visited_range=0,
             priority=10,
             position=pos
-        ) for pos in safe_points]
+        ) for i, pos in enumerate(safe_points)]        
         
         # safe_point = self.mapping.peek_next_exploration()
         
