@@ -102,14 +102,15 @@ class Mapping:
         else:
             self.last_step += 1
         
+        start_t = datetime.now()
         self.opponent.update(state)
+        self.logger.mapping(f"Opponent update time: {(datetime.now() - start_t).total_seconds()}s")
         
         ## In case, opponent observed
-        if self.opponent.opponent_head_position != 0:
+        if self.opponent.opponent_head_position:
             self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
             self.domain.opponent_direction = self.opponent.opponent_direction
-            # self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
-        
+            self.logger.mapping(f"[NEW] Opponent head: {self.domain.opponent_head} {self.domain.opponent_direction}")
         else:
             self.domain.opponent_head = None
             self.domain.opponent_direction = None
@@ -117,7 +118,7 @@ class Mapping:
         ## Check if opponent change predicted direction
         if self.opponent.predicted_failed:
             self.objects_updated = True
-            # self.logger.mapping("Opponent prediction failed")
+            self.logger.mapping("Opponent prediction failed")
 
         head = tuple(state["body"][0])
         self.cumulated_ignored_goals[head] = self.DEFAULT_IGNORED_GOAL_DURATION    
@@ -237,8 +238,8 @@ class Mapping:
                         self.objects_updated = True
 
         # print(self.observed_objects)
-        # if self.objects_updated:
-        #     print("NEW OBJECTS OBSERVED")
+        if self.objects_updated:
+            print("NEW OBJECTS OBSERVED")
         if self.logger.mapping_active:
             self.print_mapping([goal.position for goal in goals], actions_plan)
         # self.logger.debug(f"New: {self.observed_objects}")

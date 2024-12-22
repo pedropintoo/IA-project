@@ -1,34 +1,36 @@
 import random
 
 from src.goal import Goal
+from consts import Tiles
 
-UP = [0, -1] # north
-DOWN = [0, 1] # south
-LEFT = [-1, 0] # west
-RIGHT = [1, 0] # east
+DIRECTIONS = {
+    'NORTH': [0, -1],
+    'SOUTH': [0, 1],
+    'WEST': [-1, 0],
+    'EAST': [1, 0]
+}
 
 class OpponentMapping:
     def __init__(self, logger, width, height):
         self.logger = logger
 
         # Own Information
-        self.own_body = [] # e.g: [[15, 14], [14, 14], [13, 14]]
+        self.own_body = []
         self.own_snake_length = 0
         self.own_traverse = False
         self.sight_state = [] # points [[int(x), int(y), value]] in the sight without the player's own snake
         self.previous_sight_state = []
 
         # Opponent Information
-        self.opponent_name = ''
-        self.opponent_direction = 0
-        self.opponent_head_position = 0 
-        self.opponent_target_food = 0         
+        self.opponent_direction = None
+        self.opponent_head_position = None
+        self.opponent_target_food = None
         self.opponent_traverse = True 
 
         # Previous and Future Opponent Information
-        self.previous_head_position = 0
+        self.previous_head_position = None
         self.previous_opponent_body = []
-        self.predicted_head_position = 0 
+        self.predicted_head_position = None
         self.predicted_failed = False
 
         # Number of times the agent survived to the simpleTrap
@@ -43,11 +45,10 @@ class OpponentMapping:
         self.height = height
 
     def update(self, state):
-        if len(state['players']) == 1:
-            return
+        # TODO: make a function to determine if the agent is the only one in the game
+        if len(state['players']) == 1: 
+            return      # THIS IS WRONG!!!!
         
-        self.opponent_name = state['players'][1]
-
         # Update the own information
         self.own_body = state['body']
         self.own_snake_length = len(self.own_body)
@@ -67,43 +68,41 @@ class OpponentMapping:
                 
                 value = set_y_coordinates[y_coordinate]
                 self.sight_state.append([int(x_coordinate), int(y_coordinate), value]) 
-                if value == 4:
+                
+                if value == Tiles.SNAKE:
                     opponent_body.append([int(x_coordinate), int(y_coordinate)])
-                if value == 2:
+                    
+                if value in [Tiles.FOOD, Tiles.SUPER]:
                     targets_food.append([int(x_coordinate), int(y_coordinate)])
 
         # If the opponent is not visible, return
         if len(opponent_body) == 0:
-            # self.logger.critical('OPPONENT NOT VISIBLE')
-            self.opponent_head_position = 0
-            self.previous_head_position = 0
-            self.predicted_head_position = 0
+            self.opponent_head_position = None
+            self.previous_head_position = None
+            self.predicted_head_position = None
+            self.predicted_failed = False
             self.previous_sight_state = self.sight_state
             return
-        # else:
-        #     self.logger.info('OPPONENT VISIBLE')
 
         # Determine the opponent head position
         self.opponent_head_position = self.determine_current_head_position()
         self.previous_sight_state = self.sight_state
 
         # Evaluate the prediction made in the previous step
-        if self.predicted_head_position != 0:
-            if self.opponent_head_position != self.predicted_head_position:
-                # self.logger.critical(f"PREDICTION ERROR: opponent_head_position = {self.opponent_head_position} != predicted_head_position = {self.predicted_head_position}")
-                self.predicted_failed = True
-            else:
-                # self.logger.info(f"PREDICTION SUCCESS: opponent_head_position = {self.opponent_head_position} == predicted_head_position = {self.predicted_head_position}")
-                self.predicted_failed = False
+        if self.predicted_head_position:
+            self.predicted_failed = self.opponent_head_position != self.predicted_head_position
         
         # The opponent is visible. However, we are not sure about the position of the opponent head
-        if self.opponent_head_position == 0:
-            self.previous_head_position = 0
-            self.predicted_head_position = 0
+        if not self.opponent_head_position:
+            self.previous_head_position = None
+            self.predicted_head_position = None
+            self.predicted_failed = False
+            self.logger.critical('NO OPPONENT HEAD POSITION')
             return 
         
         if len(targets_food) == 0:
-            self.opponent_target_food = 0
+            self.opponent_target_food = None
+        
         else:
             # Find the closest food to the opponent head position considering self.own_traverse
             previous_distance = self.width + self.height # maximum distance
@@ -131,7 +130,7 @@ class OpponentMapping:
     def is_to_attack_opponent(self):
         # return self.opponent_head_position if it is not 0 
         # self.logger.critical(f'IS TO ATTACK OPPONENT?')
-        if self.opponent_head_position != 0 and self.opponent_direction != 0:
+        if self.opponent_head_position and self.opponent_direction:
             return True
         else:
             # self.logger.critical('NO OPPONENT HEAD POSITION')
@@ -139,13 +138,13 @@ class OpponentMapping:
         
     def is_to_attack_food(self):
         # Check if the opponent is not moving towards the food 
-        if self.opponent_target_food == 0:
+        if not self.opponent_target_food:
             return False
         
         # If some of the points are not empty or do not have a food, do not attack unless the agent is in traverse mode and the point is a wall (STONE = 1)
         # Check self.sight_state to see if the points are empty
-        self.first_point = self.opponent_target_food + LEFT
-        self.second_point = self.opponent_target_food + RIGHT
+        self.first_point = self.opponent_target_food + DIRECTIONS["WEST"]
+        self.second_point = self.opponent_target_food + DIRECTIONS["EAST"]
         
         for [x, y, value] in self.sight_state:
             if [x, y] == self.first_point or [x, y] == self.second_point:
@@ -174,10 +173,7 @@ class OpponentMapping:
         opponent_distance_to_food = opponent_dx + opponent_dy
 
         # Check if the food is closer to the agent than to the opponent
-        if own_distance_to_food < opponent_distance_to_food:
-            return True
-        else:
-            return False
+        return own_distance_to_food < opponent_distance_to_food
         
     def attack_opponent(self):
         # Predict the future position of the opponent in five steps from the current position if the opponent is moving straight using self.opponent_direction
@@ -185,14 +181,7 @@ class OpponentMapping:
         i = 0
         opponent_future_position = self.opponent_head_position
         while i < 5:
-            if self.opponent_direction == 'NORTH':
-                opponent_future_position = self.go_up(opponent_future_position)
-            elif self.opponent_direction == 'SOUTH':
-                opponent_future_position = self.go_down(opponent_future_position)
-            elif self.opponent_direction == 'WEST':
-                opponent_future_position = self.go_left(opponent_future_position)
-            elif self.opponent_direction == 'EAST':
-                opponent_future_position = self.go_right(opponent_future_position)
+            opponent_future_position = self.go_direction(opponent_future_position, self.opponent_direction)
             i += 1                                        
 
         # self.logger.info(f"Opponent Direction: {self.opponent_direction} ; Opponent Head Position: {self.opponent_head_position}")
@@ -226,50 +215,31 @@ class OpponentMapping:
         # If in the same position (x,y) the value is different than the previous value and is 4, then the head is in that position
         if len(self.previous_sight_state) == 0:
             # self.logger.info('we dont have previous sight state')
-            return 0
+            return None
 
         for [x, y, value] in self.sight_state:
             for [x_previous, y_previous, value_previous] in self.previous_sight_state:
                 if x == x_previous and y == y_previous:
-                    if value == 4 and value_previous != 4:
-                        # self.logger.info(f'Head position: [{x}, {y}]')
+                    if value == Tiles.SNAKE and value_previous != Tiles.SNAKE:
                         return [x, y]
-        return 0
+    
+        return None
 
     def determine_predicted_head_position(self, opponent_head_position, direction, target_food):
         # If no food is nearby, assume the opponent will move straight unless forced to turn.
         # self.logger.info(f'Opponent Direction: {direction}')
         
         # If we could not determine the direction of the opponent, we cannot predict the future position
-        if direction == 0:
-            return 0
+        if not direction:
+            return None
         
-        # if self.opponent_target_food == 0:
         # Assume the opponent will move straight for simplicity
-        if direction == 'NORTH':
-            return self.go_up(opponent_head_position)
-        elif direction == 'SOUTH':
-            return self.go_down(opponent_head_position)
-        elif direction == 'WEST':
-            return self.go_left(opponent_head_position)
-        elif direction == 'EAST':
-            return self.go_right(opponent_head_position)
-        
-        # If food is nearby, assume the opponent will move towards the food.
-        # else:
-            # if opponent_head_position[0] < target_food[0]:
-                # return self.go_right(opponent_head_position)
-            # elif opponent_head_position[0] > target_food[0]:
-                # return self.go_left(opponent_head_position)
-            # elif opponent_head_position[1] < target_food[1]:
-                # return self.go_down(opponent_head_position)
-            # elif opponent_head_position[1] > target_food[1]:
-                # return self.go_up(opponent_head_position)
+        return self.go_direction(opponent_head_position, direction)
 
     def determine_opponent_direction(self, previous_head_position, current_head_position):
         # self.logger.info(f'Previous head position: {previous_head_position} ; Current head position: {current_head_position}')
-        if previous_head_position == 0:
-            return 0
+        if not previous_head_position:
+            return None
         if current_head_position[0] > previous_head_position[0]:
             return 'EAST'
         elif current_head_position[0] < previous_head_position[0]:
@@ -279,36 +249,30 @@ class OpponentMapping:
         elif current_head_position[1] < previous_head_position[1]:
             return 'NORTH'
 
-    def go_up(self, position):
-        return [(position[0] + UP[0]) % self.width, (position[1] + UP[1]) % self.height]
+    def go_direction(self, position, direction):
+        if DIRECTIONS.get(direction) is None:
+            return None
+        return [(position[0] + DIRECTIONS[direction][0]) % self.width, (position[1] + DIRECTIONS[direction][1]) % self.height]
 
-    def go_down(self, position):
-        return [(position[0] + DOWN[0]) % self.width, (position[1] + DOWN[1]) % self.height]
-    
-    def go_left(self, position):
-        return [(position[0] + LEFT[0]) % self.width, (position[1] + LEFT[1]) % self.height]
-    
-    def go_right(self, position):
-        return [(position[0] + RIGHT[0]) % self.width, (position[1] + RIGHT[1]) % self.height]
 
-    # Traps
-    def simpleTrap(self):
-        # Return the two points that the agent must pass through to set a trap 
-        self.simple_trap_survival += 1
-        return [self.first_point, self.second_point] 
+    # # Traps
+    # def simpleTrap(self):
+    #     # Return the two points that the agent must pass through to set a trap 
+    #     self.simple_trap_survival += 1
+    #     return [self.first_point, self.second_point] 
 
-    def advancedTrap(self):
-        # Return the three points that the agent must pass through to set a trap
-        # Note: Now the points depend on the current length of our snake
-        first_point = self.opponent_target_food + LEFT
+    # def advancedTrap(self):
+    #     # Return the three points that the agent must pass through to set a trap
+    #     # Note: Now the points depend on the current length of our snake
+    #     first_point = self.opponent_target_food + LEFT
         
-        second_point_variation_in_x_coordinate = self.own_snake_length//3 # The variation depends on the length of our snake
-        second_point = self.opponent_target_food + RIGHT + [second_point_variation_in_x_coordinate, 0]
+    #     second_point_variation_in_x_coordinate = self.own_snake_length//3 # The variation depends on the length of our snake
+    #     second_point = self.opponent_target_food + RIGHT + [second_point_variation_in_x_coordinate, 0]
 
-        third_point_variation_in_x_coordinate = second_point_variation_in_x_coordinate//2 # TODO... add this in _consts.py
-        third_point_variation_in_y_coordinate = second_point_variation_in_x_coordinate//3
-        third_point = self.opponent_target_food + RIGHT + [third_point_variation_in_x_coordinate, third_point_variation_in_y_coordinate]
+    #     third_point_variation_in_x_coordinate = second_point_variation_in_x_coordinate//2 # TODO... add this in _consts.py
+    #     third_point_variation_in_y_coordinate = second_point_variation_in_x_coordinate//3
+    #     third_point = self.opponent_target_food + RIGHT + [third_point_variation_in_x_coordinate, third_point_variation_in_y_coordinate]
         
-        return [first_point, second_point, third_point]
+    #     return [first_point, second_point, third_point]
     
 

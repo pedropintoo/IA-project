@@ -131,6 +131,9 @@ class SnakeGame(SearchDomain):
             if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
                 heuristic_value *= 50
             
+            ## Simulate opponent movement
+            heuristic_value = self.calculate_opponent_heuristic(state, heuristic_value)
+            
             return heuristic_value * 10
 
         head = state["body"][0]
@@ -170,6 +173,14 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= 50
         
+        ## Simulate opponent movement
+        heuristic_value = self.calculate_opponent_heuristic(state, heuristic_value)
+        
+        #self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
+        return heuristic_value #+ state["step"] * 0.1
+
+    def calculate_opponent_heuristic(self, state, heuristic_value):
+        head = state["body"][0]
         if state["opponent_head"] is not None:
             ## Penalize predicted collision with the opponent
             if head[0] == state["opponent_head"][0] and head[1] == state["opponent_head"][1]:
@@ -187,10 +198,8 @@ class SnakeGame(SearchDomain):
             for pred_x, pred_y in possible_collisions:
                 if head[0] == pred_x and head[1] == pred_y:
                     heuristic_value *= 100
-        
-        #self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
 
-        return heuristic_value #+ state["step"] * 0.1
+        return heuristic_value
 
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
