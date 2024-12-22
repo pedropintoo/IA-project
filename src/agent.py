@@ -178,14 +178,20 @@ class Agent:
             self.action = self.actions_plan.pop()
             
             ## Store a safe action for the next step
+            now = datetime.now()
+            half_time_limit = now + timedelta(seconds=(time_limit - now).total_seconds()/2)
             start_state = self.domain.result(self.mapping.state, self.action, self.current_goals)    
-            safe_point_2directions = self.find_safe_point_2directions(start_state, False, time_limit)
+            safe_point_2directions = self.find_safe_point_2directions(start_state, False, time_limit=half_time_limit)
             self.logger.mapping(f"[iteration] safe point time: {(datetime.now() - self.ts).total_seconds()}")
             self.safe_action = safe_point_2directions.pop() if safe_point_2directions else None
 
-            self.logger.debug(f"Following action plan: {self.action}")
-            self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
-            return
+            if self.safe_action:
+                self.logger.debug(f"Following action plan: {self.action}")
+                self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
+                return # confirm the action plan
+
+            self.logger.critical("Safe action not found during iteration")
+            self.mapping.ignore_goal(self.current_goals[0].position)                
         
         ## Reset the action plan
         self.actions_plan = []
