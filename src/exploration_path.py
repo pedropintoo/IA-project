@@ -125,13 +125,13 @@ class ExplorationPath:
         area_to_check = max(self.width, self.height) // 16
         best_points = []
 
-        ranges_x = [(x0, x0+self.width//4), (x0-self.width//4, self.width//2)]
-        ranges_y = [(y0, y0+self.height//4), (y0-self.height//4, self.height//2)]
+        ranges_x = [(x0, x0+self.width//4), (x0+self.width//4, x0 + self.width//2)]
+        ranges_y = [(y0, y0+self.height//4), (y0+self.height//4, y0 + self.height//2)]
     
         for range_x in ranges_x:
             for range_y in ranges_y:
-                x_range = range(range_x[0], range_x[1] - 1)
-                y_range = range(range_y[0], range_y[1] - 1)
+                x_range = range(range_x[0], range_x[1])
+                y_range = range(range_y[0], range_y[1])
 
                 best_point_in_quadrant = self.search_best_point_in_quadrant(x_range, y_range, body, traverse, is_ignored_goal, area_to_check)
                 if best_point_in_quadrant:
