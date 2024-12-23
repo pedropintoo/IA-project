@@ -1,58 +1,325 @@
-2024-12-23 11:53:07,288 - asyncio - DEBUG - Using selector: EpollSelector
-2024-12-23 11:53:07,288 - Game - INFO - Game(level=1)
-2024-12-23 11:53:07,288 - Map - INFO - Generating a MAP
-2024-12-23 11:53:07,289 - Server - INFO - Listenning @ :8000
-2024-12-23 11:53:07,292 - Server - INFO - Waiting for players
-2024-12-23 11:53:08,245 - Server - INFO - <lwe >> rsa> has joined
-2024-12-23 11:53:08,245 - Server - INFO - Starting game
-2024-12-23 11:53:08,245 - Game - INFO - Game(level=1)
-2024-12-23 11:53:08,245 - Map - INFO - Generating a MAP
-2024-12-23 11:53:08,246 - Game - DEBUG - Reset world
-2024-12-23 11:53:08,246 - Map - DEBUG - Food spawned at (27, 21)
-2024-12-23 11:53:08,246 - Map - DEBUG - Food spawned at (18, 2)
-2024-12-23 11:53:08,246 - Map - DEBUG - Food spawned at (11, 3)
-2024-12-23 11:53:08,246 - Map - DEBUG - Food spawned at (33, 5)
-2024-12-23 11:53:09,566 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:09,566 - Map - DEBUG - Food spawned at (1, 19)
-2024-12-23 11:53:10,580 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:10,580 - Map - DEBUG - Food spawned at (32, 3)
-2024-12-23 11:53:12,306 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:12,307 - Map - DEBUG - Food spawned at (27, 9)
-2024-12-23 11:53:12,611 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:12,611 - Map - DEBUG - Food spawned at (24, 4)
-2024-12-23 11:53:13,624 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:13,624 - Map - DEBUG - Food spawned at (30, 8)
-2024-12-23 11:53:15,246 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:15,246 - Map - DEBUG - Food spawned at (38, 11)
-2024-12-23 11:53:17,378 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:17,378 - Map - DEBUG - Food spawned at (22, 23)
-2024-12-23 11:53:18,391 - Map - DEBUG - Food spawned at (8, 1)
-2024-12-23 11:53:18,391 - Game - DEBUG - [100] SCORE lwe >> rsa: 7
-2024-12-23 11:53:25,601 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:25,601 - Map - DEBUG - Food spawned at (10, 5)
-2024-12-23 11:53:28,545 - Map - DEBUG - Food spawned at (14, 23)
-2024-12-23 11:53:28,546 - Game - DEBUG - [200] SCORE lwe >> rsa: 8
-2024-12-23 11:53:30,981 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:30,981 - Map - DEBUG - Food spawned at (38, 16)
-2024-12-23 11:53:32,806 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:32,807 - Map - DEBUG - Food spawned at (46, 7)
-2024-12-23 11:53:34,732 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:34,732 - Map - DEBUG - Food spawned at (30, 3)
-2024-12-23 11:53:38,693 - Map - DEBUG - Food spawned at (1, 11)
-2024-12-23 11:53:38,693 - Game - DEBUG - [300] SCORE lwe >> rsa: 11
-2024-12-23 11:53:38,796 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:38,796 - Map - DEBUG - Food spawned at (40, 3)
-2024-12-23 11:53:41,336 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:41,336 - Map - DEBUG - Food spawned at (46, 10)
-2024-12-23 11:53:41,640 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:41,640 - Map - DEBUG - Food spawned at (12, 11)
-2024-12-23 11:53:44,177 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:44,177 - Map - DEBUG - Food spawned at (32, 6)
-2024-12-23 11:53:47,523 - Game - DEBUG - Snake <lwe >> rsa> ate <RANGE> at position ((1, 11))
-2024-12-23 11:53:47,523 - Game - DEBUG - Snake ate superfood and range changed to: 5
-2024-12-23 11:53:48,845 - Map - DEBUG - Food spawned at (46, 19)
-2024-12-23 11:53:48,845 - Game - DEBUG - [400] SCORE lwe >> rsa: 15
-2024-12-23 11:53:50,675 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:50,676 - Map - DEBUG - Food spawned at (42, 21)
-2024-12-23 11:53:53,422 - Game - DEBUG - Snake <lwe >> rsa> ate food
-2024-12-23 11:53:53,422 - Map - DEBUG - Food spawned at (9, 23)
+2024-12-23 13:37:26,994 - asyncio - DEBUG - Using selector: EpollSelector
+2024-12-23 13:37:26,995 - Game - INFO - Game(level=1)
+2024-12-23 13:37:26,995 - Map - INFO - Generating a MAP
+2024-12-23 13:37:26,995 - Server - INFO - Listenning @ :8000
+2024-12-23 13:37:27,001 - Server - INFO - Waiting for players
+2024-12-23 13:37:27,880 - Server - INFO - <lwe >> rsa> has joined
+2024-12-23 13:37:27,880 - Server - INFO - Starting game
+2024-12-23 13:37:27,880 - Game - INFO - Game(level=1)
+2024-12-23 13:37:27,880 - Map - INFO - Generating a MAP
+2024-12-23 13:37:27,880 - Game - DEBUG - Reset world
+2024-12-23 13:37:27,880 - Map - DEBUG - Food spawned at (2, 7)
+2024-12-23 13:37:27,880 - Map - DEBUG - Food spawned at (43, 10)
+2024-12-23 13:37:27,881 - Map - DEBUG - Food spawned at (36, 19)
+2024-12-23 13:37:27,881 - Map - DEBUG - Food spawned at (8, 22)
+2024-12-23 13:37:30,721 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:30,721 - Map - DEBUG - Food spawned at (2, 0)
+2024-12-23 13:37:32,345 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:32,345 - Map - DEBUG - Food spawned at (36, 23)
+2024-12-23 13:37:34,172 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:34,172 - Map - DEBUG - Food spawned at (10, 0)
+2024-12-23 13:37:35,895 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:35,896 - Map - DEBUG - Food spawned at (14, 10)
+2024-12-23 13:37:36,706 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:36,707 - Map - DEBUG - Food spawned at (23, 18)
+2024-12-23 13:37:37,112 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:37,112 - Map - DEBUG - Food spawned at (6, 20)
+2024-12-23 13:37:38,025 - Map - DEBUG - Food spawned at (18, 10)
+2024-12-23 13:37:38,025 - Game - DEBUG - [100] SCORE lwe >> rsa: 6
+2024-12-23 13:37:38,633 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:38,634 - Map - DEBUG - Food spawned at (11, 6)
+2024-12-23 13:37:40,562 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:40,562 - Map - DEBUG - Food spawned at (10, 7)
+2024-12-23 13:37:45,229 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:45,229 - Map - DEBUG - Food spawned at (19, 15)
+2024-12-23 13:37:45,938 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:45,939 - Map - DEBUG - Food spawned at (42, 1)
+2024-12-23 13:37:46,142 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:46,142 - Map - DEBUG - Food spawned at (38, 5)
+2024-12-23 13:37:48,170 - Map - DEBUG - Food spawned at (28, 2)
+2024-12-23 13:37:48,171 - Game - DEBUG - [200] SCORE lwe >> rsa: 11
+2024-12-23 13:37:51,619 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:51,620 - Map - DEBUG - Food spawned at (28, 0)
+2024-12-23 13:37:57,301 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:57,301 - Map - DEBUG - Food spawned at (12, 2)
+2024-12-23 13:37:58,317 - Map - DEBUG - Food spawned at (0, 9)
+2024-12-23 13:37:58,317 - Game - DEBUG - [300] SCORE lwe >> rsa: 13
+2024-12-23 13:37:58,519 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:37:58,520 - Map - DEBUG - Food spawned at (14, 8)
+2024-12-23 13:38:05,727 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:05,727 - Map - DEBUG - Food spawned at (41, 0)
+2024-12-23 13:38:07,147 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:07,147 - Map - DEBUG - Food spawned at (8, 23)
+2024-12-23 13:38:07,960 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:07,960 - Map - DEBUG - Food spawned at (44, 10)
+2024-12-23 13:38:08,466 - Map - DEBUG - Food spawned at (35, 9)
+2024-12-23 13:38:08,466 - Game - DEBUG - [400] SCORE lwe >> rsa: 17
+2024-12-23 13:38:09,788 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:09,788 - Map - DEBUG - Food spawned at (29, 0)
+2024-12-23 13:38:09,890 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:09,890 - Map - DEBUG - Food spawned at (3, 2)
+2024-12-23 13:38:16,688 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:16,689 - Map - DEBUG - Food spawned at (10, 16)
+2024-12-23 13:38:18,615 - Map - DEBUG - Food spawned at (4, 0)
+2024-12-23 13:38:18,616 - Game - DEBUG - [500] SCORE lwe >> rsa: 20
+2024-12-23 13:38:18,819 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:18,819 - Map - DEBUG - Food spawned at (1, 0)
+2024-12-23 13:38:19,632 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:19,633 - Map - DEBUG - Food spawned at (16, 5)
+2024-12-23 13:38:20,038 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:20,038 - Map - DEBUG - Food spawned at (36, 12)
+2024-12-23 13:38:20,850 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:20,851 - Map - DEBUG - Food spawned at (30, 14)
+2024-12-23 13:38:24,804 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:24,804 - Map - DEBUG - Food spawned at (10, 5)
+2024-12-23 13:38:28,352 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:28,352 - Map - DEBUG - Food spawned at (34, 2)
+2024-12-23 13:38:28,759 - Map - DEBUG - Food spawned at (30, 22)
+2024-12-23 13:38:28,759 - Game - DEBUG - [600] SCORE lwe >> rsa: 26
+2024-12-23 13:38:31,503 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:31,504 - Map - DEBUG - Food spawned at (16, 3)
+2024-12-23 13:38:35,361 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:35,361 - Map - DEBUG - Food spawned at (16, 7)
+2024-12-23 13:38:36,173 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:36,173 - Map - DEBUG - Food spawned at (27, 2)
+2024-12-23 13:38:38,915 - Map - DEBUG - Food spawned at (27, 5)
+2024-12-23 13:38:38,915 - Game - DEBUG - [700] SCORE lwe >> rsa: 29
+2024-12-23 13:38:42,574 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:42,574 - Map - DEBUG - Food spawned at (19, 13)
+2024-12-23 13:38:48,560 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:48,560 - Map - DEBUG - Food spawned at (29, 11)
+2024-12-23 13:38:49,068 - Map - DEBUG - Food spawned at (31, 7)
+2024-12-23 13:38:49,069 - Game - DEBUG - [800] SCORE lwe >> rsa: 31
+2024-12-23 13:38:49,475 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:49,476 - Map - DEBUG - Food spawned at (32, 17)
+2024-12-23 13:38:50,491 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:50,491 - Map - DEBUG - Food spawned at (16, 5)
+2024-12-23 13:38:50,693 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:50,694 - Map - DEBUG - Food spawned at (30, 16)
+2024-12-23 13:38:52,316 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:52,316 - Map - DEBUG - Food spawned at (14, 7)
+2024-12-23 13:38:52,418 - Game - DEBUG - Snake <lwe >> rsa> ate <POINTS> at position ((28, 2))
+2024-12-23 13:38:52,418 - Game - DEBUG - Snake ate superfood and scored: -1
+2024-12-23 13:38:53,433 - Game - DEBUG - Snake <lwe >> rsa> ate <LENGTH> at position ((31, 7))
+2024-12-23 13:38:53,433 - Game - DEBUG - Snake ate superfood and grew: 0
+2024-12-23 13:38:56,072 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:56,072 - Map - DEBUG - Food spawned at (23, 21)
+2024-12-23 13:38:56,377 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:56,377 - Map - DEBUG - Food spawned at (39, 23)
+2024-12-23 13:38:57,495 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:57,495 - Map - DEBUG - Food spawned at (39, 22)
+2024-12-23 13:38:59,219 - Map - DEBUG - Food spawned at (45, 18)
+2024-12-23 13:38:59,220 - Game - DEBUG - [900] SCORE lwe >> rsa: 37
+2024-12-23 13:38:59,828 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:59,828 - Map - DEBUG - Food spawned at (6, 17)
+2024-12-23 13:38:59,929 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:38:59,929 - Map - DEBUG - Food spawned at (7, 0)
+2024-12-23 13:39:05,108 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:05,108 - Map - DEBUG - Food spawned at (45, 20)
+2024-12-23 13:39:08,362 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:08,362 - Map - DEBUG - Food spawned at (12, 22)
+2024-12-23 13:39:09,375 - Map - DEBUG - Food spawned at (2, 18)
+2024-12-23 13:39:09,375 - Game - DEBUG - [1000] SCORE lwe >> rsa: 41
+2024-12-23 13:39:12,417 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:12,418 - Map - DEBUG - Food spawned at (29, 12)
+2024-12-23 13:39:13,533 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:13,534 - Map - DEBUG - Food spawned at (45, 21)
+2024-12-23 13:39:14,752 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:14,753 - Map - DEBUG - Food spawned at (20, 21)
+2024-12-23 13:39:19,521 - Map - DEBUG - Food spawned at (44, 8)
+2024-12-23 13:39:19,522 - Game - DEBUG - [1100] SCORE lwe >> rsa: 44
+2024-12-23 13:39:19,928 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:19,928 - Map - DEBUG - Food spawned at (17, 2)
+2024-12-23 13:39:22,568 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:22,568 - Map - DEBUG - Food spawned at (26, 4)
+2024-12-23 13:39:22,670 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:22,670 - Map - DEBUG - Food spawned at (38, 12)
+2024-12-23 13:39:29,670 - Map - DEBUG - Food spawned at (29, 3)
+2024-12-23 13:39:29,670 - Game - DEBUG - [1200] SCORE lwe >> rsa: 47
+2024-12-23 13:39:33,322 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:33,322 - Map - DEBUG - Food spawned at (4, 15)
+2024-12-23 13:39:36,775 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:36,775 - Map - DEBUG - Food spawned at (36, 14)
+2024-12-23 13:39:38,095 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:38,095 - Map - DEBUG - Food spawned at (27, 7)
+2024-12-23 13:39:38,299 - Game - DEBUG - Snake <lwe >> rsa> ate <LENGTH> at position ((27, 5))
+2024-12-23 13:39:38,299 - Game - DEBUG - Snake ate superfood and grew: -2
+2024-12-23 13:39:38,502 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:38,502 - Map - DEBUG - Food spawned at (39, 6)
+2024-12-23 13:39:39,823 - Map - DEBUG - Food spawned at (25, 19)
+2024-12-23 13:39:39,823 - Game - DEBUG - [1300] SCORE lwe >> rsa: 51
+2024-12-23 13:39:39,925 - Game - DEBUG - Snake <lwe >> rsa> ate <RANGE> at position ((25, 19))
+2024-12-23 13:39:39,925 - Game - DEBUG - Snake ate superfood and range changed to: 5
+2024-12-23 13:39:42,967 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:42,968 - Map - DEBUG - Food spawned at (45, 15)
+2024-12-23 13:39:43,374 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:43,375 - Map - DEBUG - Food spawned at (19, 17)
+2024-12-23 13:39:46,524 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:46,524 - Map - DEBUG - Food spawned at (19, 12)
+2024-12-23 13:39:49,772 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:49,772 - Map - DEBUG - Food spawned at (39, 23)
+2024-12-23 13:39:49,975 - Map - DEBUG - Food spawned at (27, 14)
+2024-12-23 13:39:49,975 - Game - DEBUG - [1400] SCORE lwe >> rsa: 55
+2024-12-23 13:39:50,483 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:50,483 - Map - DEBUG - Food spawned at (33, 0)
+2024-12-23 13:39:57,492 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:57,493 - Map - DEBUG - Food spawned at (3, 21)
+2024-12-23 13:39:58,002 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:39:58,002 - Map - DEBUG - Food spawned at (6, 16)
+2024-12-23 13:40:00,135 - Map - DEBUG - Food spawned at (45, 3)
+2024-12-23 13:40:00,135 - Game - DEBUG - [1500] SCORE lwe >> rsa: 58
+2024-12-23 13:40:00,135 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:00,135 - Map - DEBUG - Food spawned at (37, 20)
+2024-12-23 13:40:00,845 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:00,846 - Map - DEBUG - Food spawned at (37, 21)
+2024-12-23 13:40:01,252 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:01,253 - Map - DEBUG - Food spawned at (36, 1)
+2024-12-23 13:40:01,355 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:01,355 - Map - DEBUG - Food spawned at (39, 6)
+2024-12-23 13:40:02,778 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:02,778 - Map - DEBUG - Food spawned at (34, 9)
+2024-12-23 13:40:03,591 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:03,591 - Map - DEBUG - Food spawned at (20, 21)
+2024-12-23 13:40:05,419 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:05,419 - Map - DEBUG - Food spawned at (42, 10)
+2024-12-23 13:40:09,991 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:09,991 - Map - DEBUG - Food spawned at (18, 5)
+2024-12-23 13:40:10,296 - Map - DEBUG - Food spawned at (16, 14)
+2024-12-23 13:40:10,296 - Game - DEBUG - [1600] SCORE lwe >> rsa: 66
+2024-12-23 13:40:10,804 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:10,804 - Map - DEBUG - Food spawned at (20, 22)
+2024-12-23 13:40:15,168 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:15,169 - Map - DEBUG - Food spawned at (1, 0)
+2024-12-23 13:40:16,081 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:16,082 - Map - DEBUG - Food spawned at (33, 0)
+2024-12-23 13:40:16,184 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:16,184 - Map - DEBUG - Food spawned at (11, 5)
+2024-12-23 13:40:20,253 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:20,253 - Map - DEBUG - Food spawned at (7, 21)
+2024-12-23 13:40:20,456 - Map - DEBUG - Food spawned at (18, 13)
+2024-12-23 13:40:20,457 - Game - DEBUG - [1700] SCORE lwe >> rsa: 71
+2024-12-23 13:40:22,595 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:22,595 - Map - DEBUG - Food spawned at (24, 23)
+2024-12-23 13:40:26,963 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:26,963 - Map - DEBUG - Food spawned at (8, 9)
+2024-12-23 13:40:29,703 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:29,704 - Map - DEBUG - Food spawned at (18, 5)
+2024-12-23 13:40:30,619 - Map - DEBUG - Food spawned at (34, 13)
+2024-12-23 13:40:30,619 - Game - DEBUG - [1800] SCORE lwe >> rsa: 74
+2024-12-23 13:40:31,636 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:31,637 - Map - DEBUG - Food spawned at (23, 1)
+2024-12-23 13:40:32,347 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:32,347 - Map - DEBUG - Food spawned at (33, 9)
+2024-12-23 13:40:33,870 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:33,870 - Map - DEBUG - Food spawned at (38, 3)
+2024-12-23 13:40:34,783 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:34,783 - Map - DEBUG - Food spawned at (42, 12)
+2024-12-23 13:40:35,087 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:35,087 - Map - DEBUG - Food spawned at (8, 17)
+2024-12-23 13:40:40,676 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:40,676 - Map - DEBUG - Food spawned at (26, 10)
+2024-12-23 13:40:40,777 - Map - DEBUG - Food spawned at (41, 3)
+2024-12-23 13:40:40,778 - Game - DEBUG - [1900] SCORE lwe >> rsa: 80
+2024-12-23 13:40:41,895 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:41,896 - Map - DEBUG - Food spawned at (12, 10)
+2024-12-23 13:40:42,709 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:42,710 - Map - DEBUG - Food spawned at (28, 16)
+2024-12-23 13:40:46,064 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:46,064 - Map - DEBUG - Food spawned at (34, 16)
+2024-12-23 13:40:46,368 - Game - DEBUG - Snake <lwe >> rsa> ate <POINTS> at position ((41, 3))
+2024-12-23 13:40:46,368 - Game - DEBUG - Snake ate superfood and scored: -1
+2024-12-23 13:40:46,775 - Game - DEBUG - Snake <lwe >> rsa> ate <RANGE> at position ((45, 3))
+2024-12-23 13:40:46,775 - Game - DEBUG - Snake ate superfood and range changed to: 6
+2024-12-23 13:40:49,314 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:49,315 - Map - DEBUG - Food spawned at (38, 16)
+2024-12-23 13:40:50,435 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:50,435 - Map - DEBUG - Food spawned at (1, 8)
+2024-12-23 13:40:50,946 - Map - DEBUG - Food spawned at (36, 11)
+2024-12-23 13:40:50,947 - Game - DEBUG - [2000] SCORE lwe >> rsa: 84
+2024-12-23 13:40:55,324 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:55,324 - Map - DEBUG - Food spawned at (6, 3)
+2024-12-23 13:40:55,932 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:55,932 - Map - DEBUG - Food spawned at (21, 16)
+2024-12-23 13:40:56,339 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:56,339 - Map - DEBUG - Food spawned at (44, 13)
+2024-12-23 13:40:57,254 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:40:57,254 - Map - DEBUG - Food spawned at (23, 13)
+2024-12-23 13:41:01,115 - Map - DEBUG - Food spawned at (17, 6)
+2024-12-23 13:41:01,115 - Game - DEBUG - [2100] SCORE lwe >> rsa: 88
+2024-12-23 13:41:01,116 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:01,116 - Map - DEBUG - Food spawned at (7, 12)
+2024-12-23 13:41:02,134 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:02,134 - Map - DEBUG - Food spawned at (46, 2)
+2024-12-23 13:41:03,152 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:03,152 - Map - DEBUG - Food spawned at (14, 6)
+2024-12-23 13:41:05,285 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:05,285 - Map - DEBUG - Food spawned at (17, 17)
+2024-12-23 13:41:08,539 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:08,539 - Map - DEBUG - Food spawned at (31, 22)
+2024-12-23 13:41:09,049 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:09,050 - Map - DEBUG - Food spawned at (39, 9)
+2024-12-23 13:41:09,559 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:09,559 - Map - DEBUG - Food spawned at (30, 3)
+2024-12-23 13:41:11,285 - Map - DEBUG - Food spawned at (14, 13)
+2024-12-23 13:41:11,286 - Game - DEBUG - [2200] SCORE lwe >> rsa: 95
+2024-12-23 13:41:12,607 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:12,608 - Map - DEBUG - Food spawned at (34, 12)
+2024-12-23 13:41:14,640 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:14,641 - Map - DEBUG - Food spawned at (32, 18)
+2024-12-23 13:41:20,442 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:20,442 - Map - DEBUG - Food spawned at (33, 1)
+2024-12-23 13:41:20,951 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:20,951 - Map - DEBUG - Food spawned at (17, 4)
+2024-12-23 13:41:21,458 - Map - DEBUG - Food spawned at (2, 4)
+2024-12-23 13:41:21,458 - Game - DEBUG - [2300] SCORE lwe >> rsa: 99
+2024-12-23 13:41:21,458 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:21,459 - Map - DEBUG - Food spawned at (15, 22)
+2024-12-23 13:41:21,968 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:21,968 - Map - DEBUG - Food spawned at (32, 19)
+2024-12-23 13:41:22,070 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:22,070 - Map - DEBUG - Food spawned at (29, 0)
+2024-12-23 13:41:23,595 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:23,595 - Map - DEBUG - Food spawned at (30, 3)
+2024-12-23 13:41:31,630 - Map - DEBUG - Food spawned at (40, 18)
+2024-12-23 13:41:31,630 - Game - DEBUG - [2400] SCORE lwe >> rsa: 103
+2024-12-23 13:41:32,850 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:32,850 - Map - DEBUG - Food spawned at (47, 13)
+2024-12-23 13:41:33,258 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:33,259 - Map - DEBUG - Food spawned at (34, 19)
+2024-12-23 13:41:35,912 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:35,912 - Map - DEBUG - Food spawned at (18, 19)
+2024-12-23 13:41:36,726 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:36,726 - Map - DEBUG - Food spawned at (34, 4)
+2024-12-23 13:41:37,339 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:37,339 - Map - DEBUG - Food spawned at (30, 2)
+2024-12-23 13:41:41,818 - Map - DEBUG - Food spawned at (41, 15)
+2024-12-23 13:41:41,818 - Game - DEBUG - [2500] SCORE lwe >> rsa: 108
+2024-12-23 13:41:44,972 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:44,972 - Map - DEBUG - Food spawned at (18, 0)
+2024-12-23 13:41:45,584 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:45,584 - Map - DEBUG - Food spawned at (26, 13)
+2024-12-23 13:41:46,705 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:46,705 - Map - DEBUG - Food spawned at (3, 0)
+2024-12-23 13:41:48,639 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:48,639 - Map - DEBUG - Food spawned at (20, 18)
+2024-12-23 13:41:50,369 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:50,369 - Map - DEBUG - Food spawned at (38, 1)
+2024-12-23 13:41:52,002 - Map - DEBUG - Food spawned at (39, 0)
+2024-12-23 13:41:52,003 - Game - DEBUG - [2600] SCORE lwe >> rsa: 113
+2024-12-23 13:41:54,955 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:54,955 - Map - DEBUG - Food spawned at (10, 19)
+2024-12-23 13:41:57,500 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:41:57,500 - Map - DEBUG - Food spawned at (32, 23)
+2024-12-23 13:42:00,962 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:42:00,962 - Map - DEBUG - Food spawned at (21, 6)
+2024-12-23 13:42:01,778 - Game - DEBUG - Snake <lwe >> rsa> ate food
+2024-12-23 13:42:01,778 - Map - DEBUG - Food spawned at (17, 1)
+2024-12-23 13:42:02,183 - Map - DEBUG - Food spawned at (18, 0)
+2024-12-23 13:42:02,183 - Game - DEBUG - [2700] SCORE lwe >> rsa: 117
+2024-12-23 13:42:06,017 - Game - DEBUG - Head (39, 23) can't move to (38, 23) with direction 3
+2024-12-23 13:42:06,017 - Game - INFO - GAME OVER
+2024-12-23 13:42:06,018 - Server - INFO - Saving: lwe >> rsa <117>
+2024-12-23 13:42:26,039 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): tetriscores.av.it.pt:80
+2024-12-23 13:42:26,385 - urllib3.connectionpool - DEBUG - http://tetriscores.av.it.pt:80 "POST /game HTTP/1.1" 200 105
+2024-12-23 13:42:26,388 - Server - INFO - Waiting for players
+2024-12-23 13:42:26,388 - Server - INFO - Client disconnected: sent 1000 (OK); no close frame received
