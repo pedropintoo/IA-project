@@ -39,20 +39,19 @@ DIRECTION_TO_KEY = {
 }
 
 wslogger = logging.getLogger("websockets")
-wslogger.setLevel(logging.INFO)
+wslogger.setLevel(logging.CRITICAL)
 
 class Agent:
     """Autonomous AI client."""
     
-    def __init__(self, server_address, agent_name, exploration_v2=False):
+    def __init__(self, server_address, agent_name):
         
         ## Utils
         print(f"Agent: {agent_name}")
-        self.logger = Logger(f"[{agent_name}]", logFile=None)
-        self.exploration_v2 = exploration_v2
+        self.logger = None#Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
-        self.logger.activate_mapping()
+        # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
         # self.logger.disable()
@@ -82,7 +81,7 @@ class Agent:
     async def close(self):
         """Close the websocket connection"""
         await self.websocket.close()
-        self.logger.info("Websocket connection closed")
+        # self.logger.info("Websocket connection closed")
     
     async def run(self):
         """Start the execution of the agent"""
@@ -95,8 +94,8 @@ class Agent:
         self.websocket = await websockets.connect(f"ws://{self.server_address}/player")
         await self.websocket.send(json.dumps({"cmd": "join", "name": self.agent_name}))
 
-        self.logger.info(f"Connected to server {self.server_address}")
-        self.logger.debug(f"Waiting for game information")
+        # self.logger.info(f"Connected to server {self.server_address}")
+        # self.logger.debug(f"Waiting for game information")
         
         map_info = json.loads(await self.websocket.recv())
         
@@ -113,8 +112,7 @@ class Agent:
         self.mapping = Mapping(
             logger=self.logger,
             domain=self.domain,
-            fps=self.fps,
-            exploration_v2=self.exploration_v2
+            fps=self.fps
         )
         
     async def play(self):
@@ -125,7 +123,7 @@ class Agent:
                 state = json.loads(await self.websocket.recv())
 
                 if not state.get("body"):
-                    self.logger.warning("Game Over!")
+                    # self.logger.warning("Game Over!")
                     break
                 
                 state_ts = datetime.fromisoformat(state["ts"])
@@ -140,7 +138,7 @@ class Agent:
                 await self.act()
                 ## ------------------
                 
-                self.logger.mapping(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+                # self.logger.mapping(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
         except websockets.exceptions.ConnectionClosedOK:
             # self.logger.warning("Server has cleanly disconnected us")      
             sys.exit(0)            
@@ -158,13 +156,13 @@ class Agent:
 
     async def act(self):
         """Send the action to the server"""
-        self.logger.debug(f"Action: [{self.action}] in [{self.domain.actions(self.mapping.state)}]")
+        # self.logger.debug(f"Action: [{self.action}] in [{self.domain.actions(self.mapping.state)}]")
         
         if self._action_not_possible():
             # Big problem, because the agent is trying to do something that is not possible
             # Can happen if the sync between the agent and the server is not perfect
             # TODO: understand why this is happening. Maybe is masking some bigger problem
-            self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
+            # self.logger.critical(f"\33[31mAction not possible! [{self.action}]\33[0m")
             self.action = self._get_fast_action(warning=True)
         
         await self.websocket.send(json.dumps({"cmd": "key", "key": DIRECTION_TO_KEY[self.action]})) # mapping to the server key
@@ -184,15 +182,15 @@ class Agent:
             half_time_limit = now + timedelta(seconds=(time_limit - now).total_seconds()/2)
             start_state = self.domain.result(self.mapping.state, self.action, self.current_goals)    
             safe_point_2directions = self.find_safe_point_2directions(start_state, False, time_limit=half_time_limit)
-            self.logger.mapping(f"[iteration] safe point time: {(datetime.now() - self.ts).total_seconds()}")
+            # self.logger.mapping(f"[iteration] safe point time: {(datetime.now() - self.ts).total_seconds()}")
             self.safe_action = safe_point_2directions.pop() if safe_point_2directions else None
 
             if self.safe_action:
-                self.logger.debug(f"Following action plan: {self.action}")
-                self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
+                # self.logger.debug(f"Following action plan: {self.action}")
+                # self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
                 return # confirm the action plan
 
-            self.logger.critical("Safe action not found during iteration")
+            # self.logger.critical("Safe action not found during iteration")
             self.mapping.ignore_goal(self.current_goals[0].position)                
         
         ## Reset the action plan
@@ -202,13 +200,13 @@ class Agent:
         ## Get directions to goal
         goals_directions, force_traverse_disabled = self.find_directions_to_goals(time_limit)
         
-        self.logger.mapping(f"find goal time: {(datetime.now() - self.ts).total_seconds()}")
+        # self.logger.mapping(f"find goal time: {(datetime.now() - self.ts).total_seconds()}")
         
         ## Get direction to safe point
         start_state = self.mapping.state if not goals_directions else self.domain.result(self.mapping.state, goals_directions[-1], self.current_goals)    
         safe_point_2directions = self.find_safe_point_2directions(start_state, force_traverse_disabled, time_limit)
         
-        self.logger.mapping(f"safe point time: {(datetime.now() - self.ts).total_seconds()}")
+        # self.logger.mapping(f"safe point time: {(datetime.now() - self.ts).total_seconds()}")
         
         ## In case of goals found and safe point found
         if goals_directions and safe_point_2directions:
@@ -218,7 +216,7 @@ class Agent:
             ## Store a safe action for the next step
             self.safe_action = safe_point_2directions.pop()
             
-            self.logger.mapping("Goal action plan set!")
+            # self.logger.mapping("Goal action plan set!")
         
         ## In case of safe point found (only)
         elif safe_point_2directions: 
@@ -227,7 +225,7 @@ class Agent:
             ## Store a safe action for the next step
             self.safe_action = safe_point_2directions.pop()
             
-            self.logger.mapping("Safe action set!")
+            # self.logger.mapping("Safe action set!")
             
         ## In case of nothing found, or only goals found
         else:
@@ -235,19 +233,19 @@ class Agent:
             if self.safe_action is not None:
                 self.action = self.safe_action
                 self.safe_action = None
-                self.logger.mapping("Safe action set! [no path found for both]")
+                # self.logger.mapping("Safe action set! [no path found for both]")
                 return
             
             self.action = self._get_fast_action(warning=True)
             
-            self.logger.mapping("No path found! [no safe point found]")
+            # self.logger.mapping("No path found! [no safe point found]")
                 
         
     def find_directions_to_goals(self, time_limit):
         
         ## Get a new goal
         self.current_goals, force_traverse_disabled = self._find_goals() # Find a new goal
-        self.logger.mapping(f"Searching for: {[goal.position for goal in self.current_goals]}")
+        # self.logger.mapping(f"Searching for: {[goal.position for goal in self.current_goals]}")
                 
         problem = SearchProblem(self.domain, self.mapping.state, self.current_goals)
         temp_tree = SearchTree(problem, strategy="A*")
@@ -270,8 +268,8 @@ class Agent:
         ## Get a safe point
         self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled, time_limit)
         
-        self.logger.mapping(f"Safe points {[point.position for point in self.future_goals]}")
-        self.logger.mapping(f"Time allowed: {(time_limit - datetime.now()).total_seconds()}")
+        # self.logger.mapping(f"Safe points {[point.position for point in self.future_goals]}")
+        # self.logger.mapping(f"Time allowed: {(time_limit - datetime.now()).total_seconds()}")
         ## Store a safe path to future goals
         safe_action = None
         while self._is_empty(safe_action) and len(self.future_goals) > 0:
@@ -282,7 +280,7 @@ class Agent:
             problem = SearchProblem(self.domain, start_state, [current_safe_point])
             temp_tree = SearchTree(problem, strategy="A*")
             
-            self.logger.mapping(f"[@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
+            # self.logger.mapping(f"[@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
             
             ## Search for the given goals
             #print("Max time: ", current_safe_point.max_time)
@@ -295,7 +293,7 @@ class Agent:
             
             if safe_action == -1:
                 current_time = datetime.now()
-                self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
+                # self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
                                     
                 ## Check max execution time
                 if current_time > time_limit:
@@ -319,7 +317,7 @@ class Agent:
     def _find_future_goals(self, goals, force_traverse_disabled, time_limit):
         start_t = datetime.now()
         safe_points = self.mapping.peek_next_exploration(force_traverse_disabled=force_traverse_disabled)
-        self.logger.mapping(f"Time to peek_next_exploration: {(datetime.now() - start_t).total_seconds()}")
+        # self.logger.mapping(f"Time to peek_next_exploration: {(datetime.now() - start_t).total_seconds()}")
 
         total_time = (time_limit - datetime.now()).total_seconds()
         num_safe_points = len(safe_points)

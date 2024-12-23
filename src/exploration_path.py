@@ -3,7 +3,7 @@ from src.utils._consts import get_exploration_length_threshold, get_last_explora
 
 class ExplorationPath:
     
-    def __init__(self, internal_walls, height, width, exploration_v2):
+    def __init__(self, internal_walls, height, width):
         self.internal_walls = internal_walls
         self.height = height
         self.width = width
@@ -11,7 +11,6 @@ class ExplorationPath:
         self.exploration_path = []
         self.exploration_generations_cache = {}
         self.last_given_point = None
-        self.exploration_v2 = exploration_v2 # True or False
 
     def generate_exploration_path(self, head, sight_range, exploration_map, traverse):
         
@@ -30,96 +29,25 @@ class ExplorationPath:
         
         self.exploration_path += GilbertCurve.adjust_path_to_target(new_exploration_path, target)
 
-    def next_point_v2(self, body, sight_range, exploration_map, traverse, is_ignored_goal):
-        head = body[0]
-        exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
-
-        min_density = None
-        closest_point = None
-        min_distance = None
-
-        # Define a reasonable search radius around the snake's head to limit computation
-        search_radius = 5 * sight_range  # Adjust based on performance needs
-
-        # Generate positions within the search radius
-        positions_to_evaluate = []
-        for dx in range(-search_radius, search_radius + 1):
-            for dy in range(-search_radius, search_radius + 1):
-                x = head[0] + dx
-                y = head[1] + dy
-                if traverse:
-                    x %= self.width
-                    y %= self.height
-                else:
-                    if x < 0 or x >= self.width or y < 0 or y >= self.height:
-                        continue  # Skip out-of-bounds positions
-                positions_to_evaluate.append((x, y))
-
-        for point in positions_to_evaluate:
-            if point in body:
-                continue  # Skip snake's body
-            if is_ignored_goal(point):
-                continue  # Skip ignored goals
-
-            # Calculate density
-            density = self.calcule_average_seen_density(point, sight_range, exploration_map)
-            if density > exploration_point_seen_threshold:
-                continue  # Skip points exceeding density threshold
-
-            # Calculate distance to head
-            distance = self.calcule_distance(traverse, head, point)
-
-            # Select point with acceptable density and minimal distance
-            if closest_point is None or distance < min_distance:
-                closest_point = point
-                min_distance = distance
-
-        return closest_point  # Returns None if no suitable point is found
-
-
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
-        if self.exploration_v2: #not traverse or sight_range in [5, 6]:
-            return self.next_point_v2(body, sight_range, exploration_map, traverse, is_ignored_goal)
 
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
-        # last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)
-
-        # if self.calcule_distance(traverse, body[0], self.last_given_point) > last_exploration_distance_threshold:
-        #     self.exploration_path = []
-        
         if len(self.exploration_path) < exploration_length_threshold:
-            # print("REGENERATING PATH BECAUSE OF LENGTH AFTER NEXT REQUEST")
             self.generate_exploration_path(body[0], sight_range, exploration_map, traverse)
 
-        # self.print_exploration_path()
         exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, traverse)
-        # limit_iterations = 45 / sight_range
         while self.exploration_path:
             
-            if len(self.exploration_path) < exploration_length_threshold: #or limit_iterations <= 0:
-                # print("REGENERATING PATH BECAUSE OF LENGTH INSIDE THE LOOP")
+            if len(self.exploration_path) < exploration_length_threshold:
                 self.generate_exploration_path(body[0], sight_range, exploration_map, traverse)
             
             point = list(self.exploration_path.pop(0))
 
             average_seen_density = self.calcule_average_seen_density(point, sight_range, exploration_map)
 
-            #if self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold) and (not is_ignored_goal(tuple(point)) or limit_iterations <= 0):
-            if not is_ignored_goal(point) and self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):# or limit_iterations <= 0:
+            if not is_ignored_goal(point) and self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):
                 self.last_given_point = point
                 return point    
-
-            # print(f"---------->POINT SKIPPED {point}")
-
-            # if is_ignored_goal(point):
-            #     print(f"Reason: IS AN IGNORED GOAL!")
-            #     is_ignored_goal(point, debug=True)
-            
-            # if not self.is_valid_point(point, body, traverse, average_seen_density, exploration_point_seen_threshold):
-            #     print(f"Reason: NOT A VALID POINT!")
- 
-
-            # limit_iterations -= 1 # Avoid infinite loop 
 
     def peek_exploration_point(self, body, traverse, exploration_map, n_points, is_ignored_goal, goal_position):
         density = []
@@ -145,7 +73,6 @@ class ExplorationPath:
                     density.append(quadrant_density)
 
         ## Sort by quadrant (density)
-        #print(best_points)
         return [point for _, point in sorted(zip(density, best_points), key=lambda x: x[0])]
     
     def search_best_point_in_quadrant(self, x_range, y_range, body, traverse, is_ignored_goal, area_to_check):
@@ -163,45 +90,19 @@ class ExplorationPath:
                     continue # already found a point
                 
                 if not self.is_valid_point(point, body, traverse) or is_ignored_goal(point, debug=True):
-                    # print(F"PEEK: POINT {point} IS NOT VALID")
                     continue
                                 
                 obstacles = self.count_obstacles_around_point(point, body, traverse, area_to_check, is_ignored_goal)
-                # if not min_obstacles or obstacles < min_obstacles:
-                #     min_obstacles = obstacles
-                #     best_point = point
-                
                 if obstacles == 0:
                     best_point = point
-                    #print("best: ", best_point, "traverse:", traverse)
                 
         
         return best_point, quadrant_density
 
     def is_valid_point(self, point, body, traverse, average_seen_density=None, exploration_point_seen_threshold=None):
         if average_seen_density is None or exploration_point_seen_threshold is None:
-            # VALIDATION OF PEEK
-            # if (not traverse and point in self.internal_walls):
-            #     print("POINT IN WALLS")
-            
-            # if point in body:
-            #     print("POINT IN BODY")
-
             return (traverse or point not in self.internal_walls) and point not in body
         else:
-            # VALIDATION OF NEXT POINT
-            # print("BODY IN VALIDATION POINT:", body)
-
-            # if (not traverse and point in self.internal_walls):
-            #     print("POINT IN WALLS")
-            
-            # if point in body:
-            #     print("POINT IN BODY")
-                
-            # if average_seen_density >= exploration_point_seen_threshold:
-            #     print("POINT ABOVE SEEN THRESHOLD")
-            #     print(f"AVERAGE = {average_seen_density} THRESHOLD = {exploration_point_seen_threshold}")
-
             return (traverse or point not in self.internal_walls) and point not in body and (average_seen_density < exploration_point_seen_threshold or point[1] == 0)
     
     def obstacle_value(self, point, traverse, body, is_ignored_goal):
@@ -305,17 +206,6 @@ class ExplorationPath:
         
 
         return x_start, y_start
-    
-    # def print_exploration_path(self):
-    #     print("EXPLORATION PATH")
-    #     for y in range(self.height):
-    #         row = ""
-    #         for x in range(self.width):
-    #             if (x, y) in self.exploration_path:
-    #                 row += "X"
-    #             else:
-    #                 row += "."
-    #         print(row)
 
 class GilbertCurve:
     def get_curve(width, height, sight_range=1, traverse=True):
@@ -460,8 +350,3 @@ class GilbertCurve:
             closest_point_index = path.index(closest_point)
             return path[closest_point_index:] + path[:closest_point_index]
 
-# if __name__ == "__main__":
-#     jorge = GilbertCurve.get_curve(48,24, 2, True)
-#     for jorginho in jorge:
-#         print(tuple(jorginho))
-#     print(len(jorge))

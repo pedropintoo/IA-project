@@ -142,7 +142,6 @@ async def main(SCALE):
                     score=snake["score"],
                     name=snake["name"],
                     traverse=snake["traverse"],
-                    sight=snake["sight"]
                 )
                 for snake in snakes_update
             }
@@ -163,7 +162,6 @@ async def main(SCALE):
         else:
             for snake in snakes_update:
                 snakes[snake["name"]].body = snake["body"]
-                snakes[snake["name"]].sight = snake["sight"]
                 head = snake["body"][0]
                 neck = snake["body"][1]
                 snakes[snake["name"]].direction = get_direction(

@@ -67,7 +67,7 @@ class OpponentMapping:
         if not self.opponent_head_position:
             self.opponent_head_position = opponent_body[0]
         
-        self.logger.mapping(f'Opponent Head Position: {self.opponent_head_position}')
+        # self.logger.mapping(f'Opponent Head Position: {self.opponent_head_position}')
         self.previous_sight_state = self.sight_state
 
         # Evaluate the prediction made in the previous step
@@ -76,7 +76,7 @@ class OpponentMapping:
         # The opponent is visible. However, we are not sure about the position of the opponent head
         if not self.opponent_head_position:
             self.reset_opponent_prediction()
-            self.logger.critical('NO OPPONENT HEAD POSITION')
+            # self.logger.critical('NO OPPONENT HEAD POSITION')
             return 
         
         if len(targets_food) == 0:
