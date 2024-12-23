@@ -47,7 +47,7 @@ class Agent:
     def __init__(self, server_address, agent_name):
         
         ## Utils
-        print(f"Agent: {agent_name}")
+        # print(f"Agent: {agent_name}")
         self.logger = None#Logger(f"[{agent_name}]", logFile=None)
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
