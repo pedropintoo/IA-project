@@ -239,8 +239,8 @@ class Mapping:
                         self.objects_updated = True
 
         # print(self.observed_objects)
-        if self.objects_updated:
-            print("NEW OBJECTS OBSERVED")
+        # if self.objects_updated:
+        #     print("NEW OBJECTS OBSERVED")
         if self.logger.mapping_active:
             self.print_mapping([goal.position for goal in goals], actions_plan)
         # self.logger.debug(f"New: {self.observed_objects}")
@@ -391,7 +391,7 @@ class Mapping:
         return dx + dy                  
     
     def expire_cells_mapping(self):
-        duration = get_duration_of_expire_cells(self.state["range"], self.fps)
+        duration = get_duration_of_expire_cells(self.state["range"], self.fps, self.domain.width, self.domain.height)
 
         for position, (seen, timestamp) in self.cells_mapping.items():
             if timestamp is not None and time.time() - timestamp > duration:

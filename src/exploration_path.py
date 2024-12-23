@@ -17,11 +17,11 @@ class ExplorationPath:
         
         exploration_path = self.exploration_path
 
-        if self.exploration_generations_cache.get(sight_range) is None:
+        if self.exploration_generations_cache.get((sight_range, traverse)) is None:
             new_exploration_path = GilbertCurve.get_curve(self.width, self.height, sight_range, traverse)
-            self.exploration_generations_cache[sight_range] = new_exploration_path
+            self.exploration_generations_cache[(sight_range, traverse)] = new_exploration_path
         else:
-            new_exploration_path = self.exploration_generations_cache[sight_range]
+            new_exploration_path = self.exploration_generations_cache[(sight_range, traverse)]
         
         if len(exploration_path) == 0:
             target = self.find_best_target(head, new_exploration_path, exploration_map, traverse, sight_range)

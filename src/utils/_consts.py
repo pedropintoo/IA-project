@@ -58,14 +58,14 @@ def get_food_seen_threshold(sight_range):
     else:
         return 45
         
-def get_duration_of_expire_cells(sight_range, fps):
+def get_duration_of_expire_cells(sight_range, fps, width, height):
     """
     This is the duration of the cells in the exploration map.
     Goal: So the snake clears the exploration map of old cells so it has always some new cells to explore.
     """
-    return (30 / sight_range) * 10 / fps
-
-
+    # (48, 24)
+    # return (30 / sight_range) * 10 / fps
+    return ((30 / sight_range) * 10 / fps) * (width / 48) * (height / 24)
 
 
 ############################################################################################################

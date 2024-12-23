@@ -52,7 +52,7 @@ class SnakeGame(SearchDomain):
         ## Predict opponent next head collision
         opponent_head = state["opponent_head"]
         if opponent_head:
-            print(opponent_head)
+            # print(opponent_head)
             if new_head == opponent_head:
                 return True # collision with opponent head
 

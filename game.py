@@ -10,8 +10,8 @@ logger = logging.getLogger("Game")
 logger.setLevel(logging.DEBUG)
 
 INITIAL_SCORE = 0
-GAME_SPEED = 20
-MAP_SIZE = (48, 24)
+GAME_SPEED = 10
+MAP_SIZE = (30, 30)
 FOOD_IN_MAP = 4
 
 class Snake:
