@@ -11,7 +11,7 @@ from consts import Tiles
 from src.utils._consts import get_exploration_point_seen_threshold, get_duration_of_expire_cells, get_food_seen_threshold, get_near_goal_range
 
 class Mapping:
-    def __init__(self, logger, domain, fps):
+    def __init__(self, logger, domain, fps, exploration_v2):
         self.state = None
         
         self.logger = logger
@@ -29,7 +29,8 @@ class Mapping:
         self.exploration_path = ExplorationPath(
             internal_walls=domain.internal_walls, 
             height=domain.height,
-            width=domain.width
+            width=domain.width,
+            exploration_v2=exploration_v2
         )
         # TODO: change the ignore_objects
         self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE}
@@ -108,7 +109,7 @@ class Mapping:
         
         ## In case, opponent observed
         if self.opponent.opponent_head_position:
-            self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
+            self.domain.opponent_head = tuple(self.opponent.previous_head_position)
             self.domain.opponent_direction = self.opponent.opponent_direction
             self.logger.mapping(f"[NEW] Opponent head: {self.domain.opponent_head} {self.domain.opponent_direction}")
         else:
@@ -160,7 +161,7 @@ class Mapping:
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"],
             "visited_goals": set(),
-            "opponent_head": None
+            "opponent_head": self.domain.opponent_head
         }
         
         

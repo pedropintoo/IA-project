@@ -3,7 +3,7 @@ from src.utils._consts import get_exploration_length_threshold, get_last_explora
 
 class ExplorationPath:
     
-    def __init__(self, internal_walls, height, width):
+    def __init__(self, internal_walls, height, width, exploration_v2):
         self.internal_walls = internal_walls
         self.height = height
         self.width = width
@@ -11,6 +11,7 @@ class ExplorationPath:
         self.exploration_path = []
         self.exploration_generations_cache = {}
         self.last_given_point = None
+        self.exploration_v2 = exploration_v2 # True or False
 
     def generate_exploration_path(self, head, sight_range, exploration_map, traverse):
         
@@ -77,8 +78,8 @@ class ExplorationPath:
 
 
     def next_exploration_point(self, body, sight_range, traverse, exploration_map, is_ignored_goal):
-        # if not traverse or sight_range in [5, 6]:
-        #     return self.next_point_v2(body, sight_range, exploration_map, traverse, is_ignored_goal)
+        if self.exploration_v2: #not traverse or sight_range in [5, 6]:
+            return self.next_point_v2(body, sight_range, exploration_map, traverse, is_ignored_goal)
 
         exploration_length_threshold = get_exploration_length_threshold(sight_range)
         # last_exploration_distance_threshold = get_last_exploration_distance_threshold(sight_range, body[0], self.width)

@@ -44,11 +44,12 @@ wslogger.setLevel(logging.INFO)
 class Agent:
     """Autonomous AI client."""
     
-    def __init__(self, server_address, agent_name):
+    def __init__(self, server_address, agent_name, exploration_v2=False):
         
         ## Utils
         print(f"Agent: {agent_name}")
         self.logger = Logger(f"[{agent_name}]", logFile=None)
+        self.exploration_v2 = exploration_v2
         
         ## Activate the mapping level (comment the next line to disable mapping logging)
         self.logger.activate_mapping()
@@ -113,6 +114,7 @@ class Agent:
             logger=self.logger,
             domain=self.domain,
             fps=self.fps,
+            exploration_v2=self.exploration_v2
         )
         
     async def play(self):

@@ -1,0 +1,1 @@
+NAME=${1:-"jorginhoooo"} python3 student2.py

@@ -45,10 +45,26 @@ class SnakeGame(SearchDomain):
             return True
         
         head_tuple = tuple(new_head)
-        
         if head_tuple in state["observed_objects"]:
             if state["observed_objects"][head_tuple][0] == Tiles.SNAKE:
                 return True # collision with other snake
+            
+        ## Predict opponent next head collision
+        opponent_head = state["opponent_head"]
+        if opponent_head:
+            print(opponent_head)
+            if new_head == opponent_head:
+                return True # collision with opponent head
+
+            possible_collisions = [
+                ((opponent_head[0] - 1) % self.width, opponent_head[1]),
+                ((opponent_head[0] + 1) % self.width, opponent_head[1]),
+                (opponent_head[0], (opponent_head[1] - 1) % self.height),
+                (opponent_head[0], (opponent_head[1] + 1) % self.height)
+            ]
+
+            if (new_head[0], new_head[1]) in possible_collisions:
+                return True # POSSIBLE collision with opponent head
         
         if not state["traverse"]:
             if new_head in self.internal_walls:
@@ -101,7 +117,7 @@ class SnakeGame(SearchDomain):
         if new_opponent_head is None and self.opponent_head is not None:
             new_opponent_head = self.opponent_head
         
-        if new_opponent_head is not None:
+        if new_opponent_head is not None and self.opponent_direction is not None:
 
             ## IMPORTANT: Not remove the last position!! (it will accumulate the body)
             
@@ -136,7 +152,7 @@ class SnakeGame(SearchDomain):
                 heuristic_value *= SUPER_TILE_MULTIPLIER
             
             ## Simulate opponent movement
-            heuristic_value = self.calculate_opponent_heuristic(state, heuristic_value)
+            # heuristic_value *= self.calculate_opponent_heuristic(state)
             
             return heuristic_value * 10
 
@@ -177,32 +193,29 @@ class SnakeGame(SearchDomain):
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
             heuristic_value *= SUPER_TILE_MULTIPLIER
         
-        ## Simulate opponent movement
-        heuristic_value = self.calculate_opponent_heuristic(state, heuristic_value)
+        # ## Simulate opponent movement
+        # heuristic_value *= self.calculate_opponent_heuristic(state)
         
         #self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
         return heuristic_value #+ state["step"] * 0.1
 
-    def calculate_opponent_heuristic(self, state, heuristic_value):
-        opponent_head = state.get("opponent_head")
-        if not opponent_head:
-            return heuristic_value
-
-        head = state["body"][0]
-        if head == opponent_head:
-            return heuristic_value * DIRECT_COLLISION_PENALTY
-
-        possible_collisions = [
-            ((opponent_head[0] - 1) % self.width, opponent_head[1]),
-            ((opponent_head[0] + 1) % self.width, opponent_head[1]),
-            (opponent_head[0], (opponent_head[1] - 1) % self.height),
-            (opponent_head[0], (opponent_head[1] + 1) % self.height)
-        ]
-
-        if (head[0], head[1]) in possible_collisions:
-            return heuristic_value * ADJACENT_COLLISION_PENALTY
-
-        return heuristic_value
+    # def calculate_opponent_heuristic(self, state):
+    #     opponents_density = 1
+    #     opponent_head = state["opponent_head"]
+    #     head = state["body"][0]
+        
+    #     if opponent_head is not None:
+    #         observed_objects = state["observed_objects"]
+    #         for x in range(head[0] - 1, head[0] + 2):
+    #             for y in range(head[1] - 1, head[1] + 2):
+    #                 x = x % self.width
+    #                 y = y % self.height
+                    
+    #                 if (x, y) in observed_objects and observed_objects[(x, y)][0] == Tiles.SNAKE and [x, y] not in state["body"]:
+    #                     print(f"OPPONENT HEAD: {opponent_head} {x} {y}")
+    #                     opponents_density += ADJACENT_COLLISION_PENALTY
+        
+    #     return opponents_density
 
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
