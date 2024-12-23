@@ -6,6 +6,7 @@
  # @ Create Time: 2024-10-13
  '''
 import datetime
+import sys
 from operator import attrgetter
 
 from src.search.search_node import SearchNode
@@ -15,20 +16,21 @@ from src.utils.exceptions import TimeLimitExceeded
 class SearchTree:
     """Search Tree"""
     
-    def __init__(self, problem: SearchProblem):
+    def __init__(self, problem: SearchProblem, strategy="A*"):
         self.problem = problem
         root = SearchNode(problem.initial, None, heuristic=problem.domain.heuristic(problem.initial, problem.goals))
         self.open_nodes = [root]
         self.best_solution = None
         self.non_terminals = 0
+        self.strategy = strategy
 
-    # Get the root first action to a given node
-    def first_action_to(self, node):
+    # Get the root two actions to a given node
+    def first_two_actions_to(self, node):
         n = node
         previous = n.parent
-        while previous is not None:
-            if previous.parent is None:
-                return n.action
+        while previous is not None and previous.parent is not None:
+            if previous.parent.parent is None:
+                return [n.action, n.parent.action]
             n = previous
             previous = n.parent
         return None
@@ -58,19 +60,21 @@ class SearchTree:
         return self.inverse_plan(solution)
 
     # Search solution
-    def search(self, time_limit=None, first_action=False):
+    def search(self, time_limit=None, first_two_actions=False):
         while self.open_nodes is not None and len(self.open_nodes) > 0:          
             node = self.open_nodes.pop(0)
 
             if time_limit is not None and datetime.datetime.now() >= time_limit: 
                 ## Time limit exceeded
+                #print("time limit exceeded")
                 return -1
 
             ## Goals test: all goals are satisfied
             if self.problem.goal_test(node.state):
-                ## In case only the first direction is needed
-                if first_action:
-                    return self.first_action_to(node)
+                # print("__________________")
+                ## In case only the first two directions are needed
+                if first_two_actions:
+                    return self.first_two_actions_to(node)
                 
                 return self.inverse_plan_to_solution(node)
 
@@ -90,11 +94,13 @@ class SearchTree:
                     continue
 
                 cost = node.cost + self.problem.domain.cost(node.state, act)
+                heuristic = self.problem.domain.heuristic(new_state, self.problem.goals)
+                # print("heuristic: ", heuristic)
                 new_node = SearchNode(
                     new_state, 
                     node, 
                     cost,
-                    heuristic=self.problem.domain.heuristic(new_state, self.problem.goals), # aqui ele considera os que ja foram visitados, com base no estado
+                    heuristic=heuristic,
                     action=act,
                     )
                 
@@ -106,15 +112,14 @@ class SearchTree:
     # add new nodes to the list of open nodes according to the strategy
     def add_to_open(self, new_lower_nodes):
         self.open_nodes.extend(new_lower_nodes)
-        self.open_nodes.sort(key=attrgetter('heuristic'))
-    
-    def remove_goal(self, idx):
-        goal = self.problem.goals.pop(idx)
         
-        ## Remove affected nodes
-        self.open_nodes = [node for node in self.open_nodes if not self.problem.domain.satisfies(node.state, goal)]
-        self.open_nodes.sort(key=attrgetter('heuristic'))
-        
+        if self.strategy == "A*":
+            self.open_nodes.sort(key=lambda node: node.cost + node.heuristic)
+            #print(self.open_nodes)
+        elif self.strategy == "greedy":
+            self.open_nodes.sort(key=lambda node: node.heuristic)
+        else:
+            sys.exit(f"Unknown strategy: {self.strategy}")        
         
     def __str__(self):
         return f"SearchTree: {self.problem} {self.best_solution} {self.non_terminals} {self.open_nodes}"

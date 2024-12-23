@@ -39,7 +39,7 @@ DIRECTION_TO_KEY = {
 }
 
 wslogger = logging.getLogger("websockets")
-wslogger.setLevel(logging.INFO)
+wslogger.setLevel(logging.CRITICAL)
 
 class Agent:
     """Autonomous AI client."""
@@ -54,7 +54,7 @@ class Agent:
         # self.logger.activate_mapping()
         
         ## Disable logging (comment the next line to enable logging)
-        #self.logger.disable()
+        # self.logger.disable()
         
         self.server_address = server_address
         self.agent_name = agent_name
@@ -73,6 +73,7 @@ class Agent:
         self.current_goals = []
         self.future_goals = []
         self.perfect_effects = False
+        self.safe_action = None
         
     
     # ----- Main Loop -----
@@ -111,7 +112,7 @@ class Agent:
         self.mapping = Mapping(
             logger=self.logger,
             domain=self.domain,
-            fps=self.fps,
+            fps=self.fps
         )
         
     async def play(self):
@@ -127,10 +128,9 @@ class Agent:
                 
                 state_ts = datetime.fromisoformat(state["ts"])
                 if state_ts > datetime.now(state_ts.tzinfo):
-                    # print(state_ts, "vs", datetime.now(state_ts.tzinfo))
                     continue
                 
-                # self.logger.debug(f"Received state. Step: [{state["step"]}]")
+                #self.logger.debug(f"Received state. Step: [{state["step"]}]")
                 
                 ## --- Main Logic ---
                 self.observe(state)
@@ -138,7 +138,7 @@ class Agent:
                 await self.act()
                 ## ------------------
                 
-                # print(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
+                # self.logger.mapping(f"Time elapsed: {(datetime.now() - self.ts).total_seconds()}")
         except websockets.exceptions.ConnectionClosedOK:
             # self.logger.warning("Server has cleanly disconnected us")      
             sys.exit(0)            
@@ -176,34 +176,120 @@ class Agent:
         ## Follow the action plain (nothing new observed)            
         if len(self.actions_plan) != 0 and self.mapping.nothing_new_observed(self.current_goals):
             self.action = self.actions_plan.pop()
-            # self.logger.debug(f"Following action plan: {self.action}")
-            # self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
-            return
+            
+            ## Store a safe action for the next step
+            now = datetime.now()
+            half_time_limit = now + timedelta(seconds=(time_limit - now).total_seconds()/2)
+            start_state = self.domain.result(self.mapping.state, self.action, self.current_goals)    
+            safe_point_2directions = self.find_safe_point_2directions(start_state, False, time_limit=half_time_limit)
+            # self.logger.mapping(f"[iteration] safe point time: {(datetime.now() - self.ts).total_seconds()}")
+            self.safe_action = safe_point_2directions.pop() if safe_point_2directions else None
+
+            if self.safe_action:
+                # self.logger.debug(f"Following action plan: {self.action}")
+                # self.logger.debug(f"Current action plan length: {len(self.actions_plan)}")
+                return # confirm the action plan
+
+            # self.logger.critical("Safe action not found during iteration")
+            self.mapping.ignore_goal(self.current_goals[0].position)                
         
         ## Reset the action plan
         self.actions_plan = []
         self.action = None
+                
+        ## Get directions to goal
+        goals_directions, force_traverse_disabled = self.find_directions_to_goals(time_limit)
+        
+        # self.logger.mapping(f"find goal time: {(datetime.now() - self.ts).total_seconds()}")
+        
+        ## Get direction to safe point
+        start_state = self.mapping.state if not goals_directions else self.domain.result(self.mapping.state, goals_directions[-1], self.current_goals)    
+        safe_point_2directions = self.find_safe_point_2directions(start_state, force_traverse_disabled, time_limit)
+        
+        # self.logger.mapping(f"safe point time: {(datetime.now() - self.ts).total_seconds()}")
+        
+        ## In case of goals found and safe point found
+        if goals_directions and safe_point_2directions:
+            self.actions_plan = goals_directions
+            self.action = self.actions_plan.pop()
+            
+            ## Store a safe action for the next step
+            self.safe_action = safe_point_2directions.pop()
+            
+            # self.logger.mapping("Goal action plan set!")
+        
+        ## In case of safe point found (only)
+        elif safe_point_2directions: 
+            ## This step will take a safe action, but store a safe action for the next step
+            self.action = safe_point_2directions.pop()
+            ## Store a safe action for the next step
+            self.safe_action = safe_point_2directions.pop()
+            
+            # self.logger.mapping("Safe action set!")
+            
+        ## In case of nothing found, or only goals found
+        else:
+            
+            if self.safe_action is not None:
+                self.action = self.safe_action
+                self.safe_action = None
+                # self.logger.mapping("Safe action set! [no path found for both]")
+                return
+            
+            self.action = self._get_fast_action(warning=True)
+            
+            # self.logger.mapping("No path found! [no safe point found]")
+                
+        
+    def find_directions_to_goals(self, time_limit):
         
         ## Get a new goal
         self.current_goals, force_traverse_disabled = self._find_goals() # Find a new goal
-        # self.logger.mapping(f"New goals {[goal.position for goal in self.current_goals]}")
+        # self.logger.mapping(f"Searching for: {[goal.position for goal in self.current_goals]}")
+                
+        problem = SearchProblem(self.domain, self.mapping.state, self.current_goals)
+        temp_tree = SearchTree(problem, strategy="A*")
         
-        ## Get a safe path
-        self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled)
-        # self.logger.mapping(f"Future goals {[goal.position for goal in self.future_goals]}")
+        ## Search for the given goals
+        actions = temp_tree.search(
+            time_limit=min(datetime.now() + timedelta(seconds=self.current_goals[0].max_time), time_limit)
+        )
+                
+        ## Ignore the goal if no path found
+        if self._is_empty(actions):
+            self.mapping.ignore_goal(self.current_goals[0].position)
+            return None, True
         
+        return actions, force_traverse_disabled
+
+
+    def find_safe_point_2directions(self, start_state, force_traverse_disabled, time_limit):
+        
+        ## Get a safe point
+        self.future_goals = self._find_future_goals(self.current_goals, force_traverse_disabled, time_limit)
+        
+        # self.logger.mapping(f"Safe points {[point.position for point in self.future_goals]}")
+        # self.logger.mapping(f"Time allowed: {(time_limit - datetime.now()).total_seconds()}")
         ## Store a safe path to future goals
         safe_action = None
-        while safe_action is None and len(self.future_goals) > 0:
+        while self._is_empty(safe_action) and len(self.future_goals) > 0:
+            #print("remaining goals: ", len(self.future_goals))
+            current_safe_point = self.future_goals[0]
+
             ## Search structure
-            problem = SearchProblem(self.domain, self.mapping.state, self.future_goals)
-            temp_tree = SearchTree(problem)
+            problem = SearchProblem(self.domain, start_state, [current_safe_point])
+            temp_tree = SearchTree(problem, strategy="A*")
+            
+            # self.logger.mapping(f"[@] Time allowed: {(time_limit - datetime.now()).total_seconds()}")
             
             ## Search for the given goals
+            #print("Max time: ", current_safe_point.max_time)
             safe_action = temp_tree.search(
-                first_action=True,
-                time_limit=min(datetime.now() + timedelta(seconds=self.future_goals[0].max_time), time_limit)
+                first_two_actions=True,
+                time_limit=min(datetime.now() + timedelta(seconds=current_safe_point.max_time), time_limit)
             )
+
+            #print("safe_action: ", safe_action)
             
             if safe_action == -1:
                 current_time = datetime.now()
@@ -211,100 +297,50 @@ class Agent:
                                     
                 ## Check max execution time
                 if current_time > time_limit:
-                    self.mapping.ignore_goal(self.future_goals[0].position)
+                    self.mapping.ignore_goal(current_safe_point.position)
                     self.future_goals.pop(0)
                     break
             
-            if safe_action is None:
-                # self.logger.mapping(f"[NOT FOUND] Safe path to {self.future_goals[0]}")
-                self.mapping.ignore_goal(self.future_goals[0].position)
-                self.future_goals.pop(0)
-            # else:
-            #     self.logger.mapping(f"Safe path to {self.future_goals[0]} found!")
-                
-        ## If no safe path found, get a fast action
-        if safe_action is None: 
-            # self.logger.mapping("No safe path found! (using not perfect solution)")
-            # best_node = temp_tree.best_solution["node"]
-            # self.action = temp_tree.first_action_to(best_node)
-            return
-                
-        ## Try to get a path to goal and then to the first future goal
-        present_goals = self.current_goals + self.future_goals
-        num_goals = len(self.current_goals)
+            if self._is_empty(safe_action):
+                # self.logger.mapping(f"[NOT FOUND] Safe path to {current_safe_point}")
+                self.mapping.ignore_goal(current_safe_point.position)
+                current_safe_point = self.future_goals.pop(0)
         
-        ## Search structure
-        problem = SearchProblem(self.domain, self.mapping.state, present_goals, num_present_goals=num_goals)
-        temp_tree = SearchTree(problem)
-            
-        while num_goals > 0 and self._is_empty(self.actions_plan):
-            self.actions_plan = temp_tree.search(time_limit=min(datetime.now() + timedelta(seconds=present_goals[0].max_time), time_limit))
-            
-            if self.actions_plan == -1:
-                current_time = datetime.now()
-                # self.logger.mapping(f"Time limit exceeded: {(current_time - time_limit).total_seconds()}s")
-                
-                ## Check max execution time
-                if current_time > time_limit:
-                    num_goals = 1 # last goal
-            
-            num_goals -= 1
-            
-            if self._is_empty(self.actions_plan):
-                # self.logger.mapping(f"Ignore goal {present_goals[num_goals].position}")
-                
-                ## Clear the last present goal from search tree (and all affected)
-                self.mapping.ignore_goal(present_goals[num_goals].position)
-                temp_tree.remove_goal(idx=num_goals)
-                problem.num_present_goals = len(present_goals)
+        if self._is_empty(safe_action):
+            return None
         
-        ## If no path found, set the safe path
-        if self._is_empty(self.actions_plan):
-            # self.logger.mapping("Safe action set! After all, no path found.")
-            self.actions_plan = []
-            self.action = safe_action
-            return
+        return safe_action
         
-        ## Set the next action
-        # self.logger.mapping(f"Goal action plan: {self.actions_plan}")
-        self.action = self.actions_plan.pop()
-    
     def _is_empty(self, obj):
         return obj == -1 or obj is None or len(obj) == 0
     
-    def _find_future_goals(self, goals, force_traverse_disabled):
-        safe_point = self.mapping.peek_next_exploration()
-        
-        distance = self.mapping.manhattan_distance(self.mapping.state["body"][0], safe_point, self.mapping.state["traverse"])
-        
+    def _find_future_goals(self, goals, force_traverse_disabled, time_limit):
+        start_t = datetime.now()
+        safe_points = self.mapping.peek_next_exploration(force_traverse_disabled=force_traverse_disabled)
+        # self.logger.mapping(f"Time to peek_next_exploration: {(datetime.now() - start_t).total_seconds()}")
+
+        total_time = (time_limit - datetime.now()).total_seconds()
+        num_safe_points = len(safe_points)
+        decay_factor = 0.5  # Adjust this factor to control the rate of exponential decay
+
+        # Calculate the sum of the exponential series
+        sum_exponential = sum(decay_factor ** i for i in range(num_safe_points))
+
+        # Allocate time to each goal based on the exponential decay factor
         return [Goal(
-            goal_type="exploration",
-            max_time=0.09,
-            visited_range=distance // 4,
+            goal_type="peek",
+            max_time=(total_time / sum_exponential) * (decay_factor ** i),
+            visited_range=0,
             priority=10,
-            position=safe_point
-        )]
-        
-        # safe_point = self.mapping.peek_next_exploration()
-        
-        # visited_range = 0
-        # if tuple(safe_point) in self.mapping.observed_objects and self.mapping.observed_objects[tuple(safe_point)][0] == Tiles.SUPER:
-        #     self.logger.mapping("Safe point is a super food! (expanding range)")
-        #     visited_range = 1
-        
-        # return [Goal(
-        #     goal_type="exploration",
-        #     max_time=0.09,
-        #     visited_range=visited_range,
-        #     priority=10,
-        #     position=safe_point
-        # )]
+            position=pos
+        ) for i, pos in enumerate(safe_points)]        
 
     def _find_goals(self, ):
         """Find a new goal based on mapping and state"""
         goals = []
         max_goals = get_num_max_present_goals()
         force_traverse_disabled = False
+        allowed_time = 1/(self.fps*2) - 0.01
 
         ## Insert super goals, if any
         if self.mapping.observed(Tiles.SUPER) and not self.perfect_effects:
@@ -313,7 +349,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="super", 
-                    max_time=0.04, 
+                    max_time=(self.ts + timedelta(seconds=allowed_time) - datetime.now()).total_seconds(),
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -327,7 +363,7 @@ class Agent:
                     break
                 goals.append(Goal(
                     goal_type="food", 
-                    max_time=0.04, 
+                    max_time=(self.ts + timedelta(seconds=allowed_time) - datetime.now()).total_seconds(), 
                     visited_range=0,
                     priority=10, 
                     position=obj_position
@@ -344,7 +380,7 @@ class Agent:
                 
             goals.append(Goal(
                 goal_type="exploration", 
-                max_time=0.07, 
+                max_time=(self.ts + timedelta(seconds=allowed_time) - datetime.now()).total_seconds(), 
                 visited_range=visited_range,
                 priority=10, 
                 position=exploration_pos

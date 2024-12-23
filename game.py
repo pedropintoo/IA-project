@@ -215,17 +215,18 @@ class Game:
             lastkey = snake.lastkey
 
             assert lastkey in "wasd" or lastkey == ""
-
-            # Update position
-            snake.move(
-                self.map,
-                key2direction(snake.lastkey)
-                if snake.lastkey in "wasd" and snake.lastkey != ""
-                else snake.direction,
-            )
-
         except AssertionError:
             logger.error("Invalid key <%s> pressed. Valid keys: w,a,s,d", lastkey)
+            snake.move(self.map, snake.direction)
+            return False
+
+        # Update position
+        snake.move(
+            self.map,
+            key2direction(snake.lastkey)
+            if snake.lastkey in "wasd" and snake.lastkey != ""
+            else snake.direction,
+        )
 
         return True
 

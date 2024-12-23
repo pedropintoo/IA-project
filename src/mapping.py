@@ -31,7 +31,7 @@ class Mapping:
             height=domain.height,
             width=domain.width
         )
-        # TODO: change the ignore_objects
+        
         self.ignored_objects = {Tiles.PASSAGE, Tiles.STONE}
 
         # Cells mapping: 0 - unseen, 1 - seen
@@ -62,14 +62,8 @@ class Mapping:
     def ignore_goal(self, obj_pos):
         self.temp_ignored_goals.add((tuple(obj_pos), time.time()))
         self.cumulated_ignored_goals[tuple(obj_pos)] *= 2 # double the time to ignore the goal
-        
-        # also remove from the observed objects
-        # if tuple(obj_pos) in self.observed_objects:
-        #     del self.observed_objects[tuple(obj_pos)]
     
     def is_ignored_goal(self, obj_pos, debug=False):
-        # if debug:
-        #     print("ignored_goals: ", [ig for ig in self.ignored_goals])
         return any(obj_pos[0] == x and obj_pos[1] == y for ((x, y), ts) in self.ignored_goals)
      
     def next_exploration(self, force_traverse_disabled=False) -> tuple:
@@ -102,14 +96,15 @@ class Mapping:
         else:
             self.last_step += 1
         
+        start_t = datetime.now()
         self.opponent.update(state)
+        # self.logger.mapping(f"Opponent update time: {(datetime.now() - start_t).total_seconds()}s")
         
         ## In case, opponent observed
-        if self.opponent.opponent_head_position != 0:
-            self.domain.opponent_head = tuple(self.opponent.opponent_head_position)
+        if self.opponent.opponent_head_position:
+            self.domain.opponent_head = tuple(self.opponent.previous_head_position)
             self.domain.opponent_direction = self.opponent.opponent_direction
-            # self.logger.mapping(f"Opponent: {self.domain.opponent_head} {self.domain.opponent_direction}")
-        
+            # self.logger.mapping(f"[NEW] Opponent head: {self.domain.opponent_head} {self.domain.opponent_direction}")
         else:
             self.domain.opponent_head = None
             self.domain.opponent_direction = None
@@ -134,7 +129,6 @@ class Mapping:
             
             if current_range_val > self.state["range"]:
                 self.objects_updated = True # Stop eating super foods!
-                # print("stop eating super foods")
         
         if self.state and self.state["traverse"] != current_traverse_val:
             # Reset the exploration path if the traverse is changed
@@ -159,7 +153,7 @@ class Mapping:
             "observed_objects": self.state["observed_objects"] if self.state else dict(),
             "step": state["step"],
             "visited_goals": set(),
-            "opponent_head": None
+            "opponent_head": self.domain.opponent_head
         }
         
         
@@ -236,9 +230,6 @@ class Mapping:
                     if not (obj_type == Tiles.SUPER and perfect_state):
                         self.objects_updated = True
 
-        # print(self.observed_objects)
-        # if self.objects_updated:
-        #     print("NEW OBJECTS OBSERVED")
         # if self.logger.mapping_active:
         #     self.print_mapping([goal.position for goal in goals], actions_plan)
         # self.logger.debug(f"New: {self.observed_objects}")
@@ -273,7 +264,6 @@ class Mapping:
             exploration_point_seen_threshold = get_exploration_point_seen_threshold(sight_range, self.state["traverse"])
             average_seen_density = self.exploration_path.calcule_average_seen_density([x,y], sight_range, self.cells_mapping)
             if average_seen_density >= exploration_point_seen_threshold and not y == 0:
-                # print("IGNOREED EXPLORATION BECAUSE IT WAS ALREADY SEEN WITH TOO MUCH DENSITY")
                 self.cumulated_ignored_goals[(x, y)] = self.DEFAULT_IGNORED_GOAL_DURATION
                 return False
 
@@ -290,7 +280,6 @@ class Mapping:
         min_heuristic = None
         closest = None
         traverse = self.state["traverse"]
-        # print("OBJECT TYPE: ", obj_type)
         ## Get the closest food
         for position in self.observed_objects.keys():
             if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type or list(position) in self.state["body"]:
@@ -332,48 +321,6 @@ class Mapping:
                         near_objects.append(position)
         
         return near_objects
-
-        # # Sort points such that the first is closest to head, the second is closest to the first, and so on
-        # sorted_points = []
-        # traverse = self.state["traverse"]
-        # current_point = self.state["body"][0]
-
-        # while points:
-        #     # Find the closest point to the current point
-        #     closest_point = min(points, key=lambda pos: self.manhattan_distance(current_point, pos, traverse))
-        #     sorted_points.append(closest_point)
-        #     points.remove(closest_point)
-        #     current_point = closest_point
-
-        # return sorted_points
-        
-        # else:
-        #     # TODO: change this!
-        #     closest = None
-        #     min_heuristic = None
-
-        #     default_goal = Goal(
-        #         goal_type=obj_type,
-        #         max_time=None,
-        #         visited_range=0,
-        #         priority=1,
-        #         position=None
-        #     )
-
-        #     for position in self.observed_objects.keys():
-        #         if self.is_ignored_goal(position) or self.observed_objects[position][0] != obj_type:
-        #             continue
-                
-        #         default_goal.position = position
-        #         heuristic = self.domain.heuristic(self.state, [default_goal]) # change this!
-                
-        #         if min_heuristic is None or heuristic < min_heuristic:
-        #             min_heuristic = heuristic
-        #             closest = position
-            
-        #     self.logger.debug(f"Closest {obj_type}: {closest}")
-            
-        #     return list(closest)  
     
     def _outside_of_domain(self, position):
         x, y = position
@@ -389,7 +336,7 @@ class Mapping:
         return dx + dy                  
     
     def expire_cells_mapping(self):
-        duration = get_duration_of_expire_cells(self.state["range"], self.fps)
+        duration = get_duration_of_expire_cells(self.state["range"], self.fps, self.domain.width, self.domain.height)
 
         for position, (seen, timestamp) in self.cells_mapping.items():
             if timestamp is not None and time.time() - timestamp > duration:
@@ -450,12 +397,12 @@ class Mapping:
     #                             b = 255
                                 
     #                     row += f"\033[38;2;{r};{g};{b}m{seen:2}\033[0m "
-        #     self.logger.mapping(row)
-        # self.logger.mapping("Goals: " + str([g for g in goals]))
-        # self.logger.mapping("Body: " + str(self.state["body"]))
-        # self.logger.mapping("Action plan: " + str(actions_plan))
-        # self.logger.mapping("Observed: " + str([p for p in self.observed_objects.keys()]))
-        # self.logger.mapping("Traversal: " + str(self.state["traverse"]))
-        # self.logger.mapping("Range: " + str(self.state["range"]))
-        # self.logger.mapping("Step: " + str(self.state["step"]))
+    #         self.logger.mapping(row)
+    #     self.logger.mapping("Goals: " + str([g for g in goals]))
+    #     self.logger.mapping("Body: " + str(self.state["body"]))
+    #     self.logger.mapping("Action plan: " + str(actions_plan))
+    #     self.logger.mapping("Observed: " + str([p for p in self.observed_objects.keys()]))
+    #     self.logger.mapping("Traversal: " + str(self.state["traverse"]))
+    #     self.logger.mapping("Range: " + str(self.state["range"]))
+    #     self.logger.mapping("Step: " + str(self.state["step"]))
         

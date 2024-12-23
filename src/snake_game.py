@@ -18,6 +18,10 @@ DIRECTIONS = {
     "SOUTH": [0, 1] 
 }
 
+SUPER_TILE_MULTIPLIER = 50
+DIRECT_COLLISION_PENALTY = 150
+ADJACENT_COLLISION_PENALTY = 100
+
 class SnakeGame(SearchDomain):
     def __init__(self, logger, width, height, internal_walls, max_steps, opponent_head=None, opponent_direction=None):
         self.logger = logger
@@ -41,10 +45,26 @@ class SnakeGame(SearchDomain):
             return True
         
         head_tuple = tuple(new_head)
-        
         if head_tuple in state["observed_objects"]:
             if state["observed_objects"][head_tuple][0] == Tiles.SNAKE:
                 return True # collision with other snake
+            
+        ## Predict opponent next head collision
+        opponent_head = state["opponent_head"]
+        if opponent_head:
+            # print(opponent_head)
+            if new_head == opponent_head:
+                return True # collision with opponent head
+
+            possible_collisions = [
+                ((opponent_head[0] - 1) % self.width, opponent_head[1]),
+                ((opponent_head[0] + 1) % self.width, opponent_head[1]),
+                (opponent_head[0], (opponent_head[1] - 1) % self.height),
+                (opponent_head[0], (opponent_head[1] + 1) % self.height)
+            ]
+
+            if (new_head[0], new_head[1]) in possible_collisions:
+                return True # POSSIBLE collision with opponent head
         
         if not state["traverse"]:
             if new_head in self.internal_walls:
@@ -97,7 +117,7 @@ class SnakeGame(SearchDomain):
         if new_opponent_head is None and self.opponent_head is not None:
             new_opponent_head = self.opponent_head
         
-        if new_opponent_head is not None:
+        if new_opponent_head is not None and self.opponent_direction is not None:
 
             ## IMPORTANT: Not remove the last position!! (it will accumulate the body)
             
@@ -120,6 +140,22 @@ class SnakeGame(SearchDomain):
         return 1
     
     def heuristic(self, state, goals):        
+        
+        if len(goals) == 1:
+            heuristic_value = self.manhattan_distance(state["body"][0], goals[0].position, state["traverse"]) 
+            
+            head = state["body"][0]
+            traverse = state["traverse"]
+            visited_goals = state.get("visited_goals") # check if this is correct
+                        
+            if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
+                heuristic_value *= SUPER_TILE_MULTIPLIER
+            
+            ## Simulate opponent movement
+            # heuristic_value *= self.calculate_opponent_heuristic(state)
+            
+            return heuristic_value * 10
+
         head = state["body"][0]
         traverse = state["traverse"]
         visited_goals = state.get("visited_goals") # check if this is correct
@@ -153,53 +189,33 @@ class SnakeGame(SearchDomain):
             
             if goal.goal_type == "super":
                 traverse = False # worst case scenario
-                    
-        # ## Count how many walls or body rounded by the snake
-        # rounded_obstacles = 0 
-        # for x in range(-2, 3):
-        #     for y in range(-2, 3):
-        #         if (x, y) == (0, 0):
-        #             continue # skip the head
-        #         neighbor_x = (head[0] + x) % self.width if traverse else head[0] + x
-        #         neighbor_y = (head[1] + y) % self.height if traverse else head[1] + y
-                
-        #         # Border walls
-        #         if neighbor_x < 0 or neighbor_x >= self.width or neighbor_y < 0 or neighbor_y >= self.height:
-        #             rounded_obstacles += 1 
-                    
-        #         elif [neighbor_x, neighbor_y] in state["body"]:
-        #             rounded_obstacles += 1 # at least one body part is in the neighborhood
-                
-        #         if not traverse and [neighbor_x, neighbor_y] in self.internal_walls:
-        #             rounded_obstacles += 1
-        
-        # # self.logger.critical(f"ROUNDED OBSTACLES: {rounded_obstacles}")
-        # heuristic_value *= 1 + (((rounded_obstacles-3) // 3)  / 100)
         
         if self.is_perfect_effects(state) and any([head[0] == p[0] and head[1] == p[1] and state["observed_objects"][p][0] == Tiles.SUPER for p in state["observed_objects"]]):
-            heuristic_value *= 50
+            heuristic_value *= SUPER_TILE_MULTIPLIER
         
-        if state["opponent_head"] is not None:
-            ## Penalize predicted collision with the opponent
-            if head[0] == state["opponent_head"][0] and head[1] == state["opponent_head"][1]:
-                heuristic_value *= 150
-                
-            ## Penalize being in a possible collision with the opponent
-            opponent_head = state["opponent_head"]
-            possible_collisions = [
-                ((opponent_head[0] - 1) % self.width, opponent_head[1]),
-                ((opponent_head[0] + 1) % self.width, opponent_head[1]),
-                (opponent_head[0], (opponent_head[1] - 1) % self.height),
-                (opponent_head[0], (opponent_head[1] + 1) % self.height)
-            ]
-
-            for pred_x, pred_y in possible_collisions:
-                if head[0] == pred_x and head[1] == pred_y:
-                    heuristic_value *= 100
+        # ## Simulate opponent movement
+        # heuristic_value *= self.calculate_opponent_heuristic(state)
         
         #self.logger.critical(f"HEURISTIC VALUE: {heuristic_value} {len(visited_goals)}")
-
         return heuristic_value #+ state["step"] * 0.1
+
+    # def calculate_opponent_heuristic(self, state):
+    #     opponents_density = 1
+    #     opponent_head = state["opponent_head"]
+    #     head = state["body"][0]
+        
+    #     if opponent_head is not None:
+    #         observed_objects = state["observed_objects"]
+    #         for x in range(head[0] - 1, head[0] + 2):
+    #             for y in range(head[1] - 1, head[1] + 2):
+    #                 x = x % self.width
+    #                 y = y % self.height
+                    
+    #                 if (x, y) in observed_objects and observed_objects[(x, y)][0] == Tiles.SNAKE and [x, y] not in state["body"]:
+    #                     print(f"OPPONENT HEAD: {opponent_head} {x} {y}")
+    #                     opponents_density += ADJACENT_COLLISION_PENALTY
+        
+    #     return opponents_density
 
     def manhattan_distance(self, head, goal_position, traverse):
         dx_no_crossing_walls = abs(head[0] - goal_position[0])
