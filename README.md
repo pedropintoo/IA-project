@@ -1,4 +1,13 @@
-[![Review Assignment Due Date](https://classroom.github.com/assets/deadline-readme-button-22041afd0340ce965d47ae6ef1cefeee28c7c493a6346c4f15d667ab976d596c.svg)](https://classroom.github.com/a/rnI3I4bM)
+# 3ano/1semestre/IA/IA-project
+
+# Nota: 18.47
+
+Pedro Pinto (115304)
+
+Guilherme Santos (113893)
+
+João Pinto (104384)
+
 # ia-snakes
 Snakes clone for AI teaching
 
